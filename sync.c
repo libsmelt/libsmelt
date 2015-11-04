@@ -56,11 +56,15 @@ int __thread_init(int _tid, int _nproc)
     char *_tmp = (char*) malloc(1000);
     sprintf(_tmp, "sync%d", _tid);
 
-    tree_init(_tmp);
+    if (_tid == SEQUENTIALIZER) {
+        
+        tree_init(_tmp);
 
-    tree_reset();
-    tree_connect("DUMMY");
+        tree_reset();
+        tree_connect("DUMMY");
 
+    }
+    
     return 0;
 }
 
