@@ -46,6 +46,10 @@ LIBS += -lnuma
 CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS) -std=c++11
 
 all: $(TARGET)
+test: test/barrier
+
+test/barrier: $(DEPS) $(EXTERNAL_OBJS) test/barrier.cpp
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/barrier.cpp -o $@
 
 # Build shared library
 # --------------------------------------------------
@@ -65,7 +69,8 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f *.o $(TARGET)
+	rm -f *.o test/*.o $(TARGET)
+	$(MAKE) -C $(UMPQ) clean
 
 debug:
 	echo $(HEADERS)
