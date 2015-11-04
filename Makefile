@@ -25,25 +25,25 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 # Switch buildtype: supported are "debug" and "release"
 # Do this only if not yet defined (e.g. from parent Makefile)
 ifndef BUILDTYPE
-	BUILDTYPE := release
+	BUILDTYPE := debug
 endif
 
 COMMONFLAGS +=  -Wall -pthread -fPIC #-fpic
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
 CFLAGS += -std=c99 $(COMMONFLAGS)
-
 INC += -I inc -I $(UMPQ)
 
 ifeq ($(BUILDTYPE),debug)
-	CXXFLAGS +=-ggdb -O2 -pg -DSYNC_DEBUG
-	CFLAGS +=-ggdb -O2 -pg -DSYNC_DEBUG
+	OPT=-ggdb -O0 -pg -DSYNC_DEBUG
 else
-	CXXFLAGS += -O3
-	CFLAGS += -O3
+	OPT=-O3
 endif
 
+CXXFLAGS += $(OPT)
+CFLAGS += $(OPT)
+
 LIBS += -lnuma
-CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS) -std=c++11
+CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)
 
 all: $(TARGET)
 test: test/barrier
