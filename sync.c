@@ -1,9 +1,9 @@
 #include "stdio.h"
 
-#include "sync/shm.h"
-#include "sync/sync.h"
-#include "sync/topo.h"
-#include "sync/internal.h"
+#include "shm.h"
+#include "sync.h"
+#include "topo.h"
+#include "internal.h"
 
 __thread int tid;
 static int nproc;
@@ -17,6 +17,8 @@ static int nproc;
  */
 void __sync_init(void)
 {
+    printf("Initializing libsync .. model has %d nodes\n", topo_num_cores());
+    
     // Master share allows simple barriers; needed for boot-strapping
     debug_printfff(DBG__INIT, "Initializing master share .. \n");
     init_master_share();
@@ -40,14 +42,9 @@ int __thread_init(int _tid, int _nproc)
     tid = _tid;
     printf("Hello world from thread %d .. \n", tid);
 
-#ifdef USE_THREADS
-    // In case of threads, we need to initialize everything only once
-    if (tid==0) {
-        __sync_init();
-        nproc = _nproc;
-    }
-#else
+#if !defined(USE_THREADS)
     assert (!"NYI: do initialization in EACH process");
+    __sync_init(); // XXX untested
 #endif
 
     // Busy wait for master share to be mounted
@@ -56,13 +53,13 @@ int __thread_init(int _tid, int _nproc)
     // Message passing part
     // --------------------------------------------------
 
-    char *_tmp = malloc(1000);
+    char *_tmp = (char*) malloc(1000);
     sprintf(_tmp, "sync%d", _tid);
 
     tree_init(_tmp);
 
-    //tree_reset();
-    /* tree_connect(qrm_my_name); */
+    tree_reset();
+    tree_connect("DUMMY");
 
     return 0;
 }
@@ -70,7 +67,7 @@ int __thread_init(int _tid, int _nproc)
 /**
  * \brief Return current thread's id.
  */
-int get_thread_id(void)
+unsigned int get_thread_id(void)
 {
     return tid;
 }
@@ -85,16 +82,7 @@ int __thread_end(void)
     return 0;
 }
 
-/**
- * \brief Get core ID of the current thread/process
- *
- */
-int get_core_id(void)
-{
-    return disp_get_core_id();
-}
-
-int get_num_threads(void)
+unsigned int get_num_threads(void)
 {
     return nproc;
 }

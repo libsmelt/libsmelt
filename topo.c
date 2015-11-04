@@ -1,8 +1,8 @@
-#include "sync/sync.h"
-#include "sync/topo.h"
+#include "sync.h"
+#include "topo.h"
 
 // Include the pre-generated model
-#include "sync/model.h"
+#include "model.h"
 
 // --------------------------------------------------
 // Data structures - shared
@@ -14,7 +14,7 @@ static int topo_idx = -1;
 // --------------------------------------------------
 // Functions
 
-int get_topo_idx(void);
+unsigned int get_topo_idx(void);
 void init_topo(void);
 int topo_is_edge(coreid_t src, coreid_t dest);
 int topo_is_real_edge(coreid_t src, coreid_t dest);
@@ -35,6 +35,9 @@ bool topo_does_shm_receive(coreid_t core);
  * on top of the topo. In order for the topo switch to be
  * successful, the message passing tree as well as the shared memory
  * queues have to be reinitialized.
+ *
+ * When using threads, all threads share the same topology. In that
+ * case, only the sequentializer thread is going to do the switch.
  */
 void switch_topo(void)
 {
@@ -60,7 +63,7 @@ void switch_topo(void)
     assert(LAST_NODE!=SEQUENTIALIZER); // LAST_NODE switched with topo
 }
 
-int get_topo_idx(void)
+unsigned int get_topo_idx(void)
 {
     return topo_idx;
 }
@@ -220,4 +223,9 @@ int topo_get(int x, int y)
 int topos_get(int mod, int x, int y)
 {
     return __topo_get(topo_combined[mod], x, y);
+}
+
+int topo_num_cores(void)
+{
+    return TOPO_NUM_CORES;
 }

@@ -11,12 +11,14 @@
 #ifndef SYNC_H
 #define SYNC_H 1
 
-#include <barrelfish_kpi/types.h>
-#include <barrelfish/barrelfish.h>
-#include <barrelfish/waitset.h>
-#include <barrelfish/ump_impl.h>
+#ifdef __linux__
+#include "backends/linux.h"
+#else
+#include "backends/barrelfish.h"
+#endif
 
-#include "sync/debug.h"
+#include "debug.h"
+#include "backend.h"
 
 // ==================================================
 // Functions
@@ -26,9 +28,9 @@ void __sync_init(void);
 int  __thread_init(int,int);
 int  __thread_end(void);
 
-int  get_thread_id(void);
+unsigned int  get_thread_id(void);
 int  get_core_id(void);
-int  get_num_threads(void);
+unsigned int  get_num_threads(void);
 
 // ==================================================
 // Defines

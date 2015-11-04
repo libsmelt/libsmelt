@@ -1,6 +1,6 @@
-#include "sync/sync.h"
-#include "sync/shm.h"
-#include "sync/barrier.h"
+#include "sync.h"
+#include "shm.h"
+#include "barrier.h"
 
 void shl_barrier_shm(int b_count);
 
@@ -24,7 +24,7 @@ int shl_barrier_destroy(shl_barrier_t *barrier)
     return 0;
 }
 
-static int barrier_num = 0;
+static unsigned barrier_num = 0;
 int shl_barrier_init(shl_barrier_t *barrier,
                      const void *attr, unsigned count)
 {
@@ -53,7 +53,7 @@ int shl_barrier_wait(shl_barrier_t *barrier)
     return 0;
 }
 
-__thread int round = 0;
+static __thread int _shl_round = 0;
 void shl_barrier_shm(int b_count)
 {
 #if defined(QRM_DBG_ENABLED)
@@ -106,7 +106,7 @@ void shl_barrier_shm(int b_count)
     assert(get_master_share()!=NULL);
 #endif
 
-    volatile uint8_t *ptr = &(get_master_share()->data.rounds[round]);
+    volatile uint8_t *ptr = &(get_master_share()->data.rounds[_shl_round]);
 
 #if defined(QRM_DBG_ENABLED)
     uint8_t val =
@@ -115,7 +115,7 @@ void shl_barrier_shm(int b_count)
 
     debug_printfff(DBG__QRM_BARRIER,
                    "qrm_barrier: core %d value %d waiting for %d round %d\n",
-                   get_thread_id(), val, b_count, round);
+                   get_thread_id(), val, b_count, _shl_round);
 
 #ifdef SIMULATOR
     uint64_t i = 1;
@@ -141,7 +141,8 @@ void shl_barrier_shm(int b_count)
     // one. Access to this barriers counter is save now to the
     // coordinator, which can reset it's value to 0.
     if (get_thread_id()==SEQUENTIALIZER) {
-        get_master_share()->data.rounds[(round+QRM_ROUND_MAX-1)%QRM_ROUND_MAX] = 0;
+        unsigned _tmp = (_shl_round+QRM_ROUND_MAX-1)%QRM_ROUND_MAX;
+        get_master_share()->data.rounds[_tmp] = 0;
     }
 
     debug_printfff(DBG__QRM_BARRIER, "qrm_barrier done\n");
@@ -157,5 +158,5 @@ void shl_barrier_shm(int b_count)
     oct_barrier_enter(name, &dummy, b_count);
     oct_barrier_leave(dummy);
 #endif
-    round = (round+1) % QRM_ROUND_MAX;
+    _shl_round = (_shl_round+1) % QRM_ROUND_MAX;
 }
