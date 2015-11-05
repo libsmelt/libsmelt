@@ -3,15 +3,12 @@
 #include "topo.h"
 
 extern "C" {
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include "ump_conf.h"
 }
     
 #include <sched.h>
 
+#include <cstdarg>
 #include <numa.h>
 
 /**
@@ -60,15 +57,6 @@ cycles_t bench_tscoverhead(void)
  * Tree operations
  * --------------------------------------------------
  */
-
-/**
- * \brief Store UMP bindings
- *
- * This is currently not clean, as it requires n^2 entries in the
- * buffer for n cores.
- */
-typedef struct ump_pair_state mp_binding;
-mp_binding* bindings[TOPO_NUM_CORES][TOPO_NUM_CORES];
 
 int
 numa_cpu_to_node(int cpu)
@@ -133,8 +121,8 @@ static void _setup_ump_chanels(int src, int dst)
     struct ump_pair_conf fwr_conf = UMP_CONF_INIT(src, dst, shm_size);
     struct ump_pair_conf rev_conf = UMP_CONF_INIT(dst, src, shm_size);
 
-    bindings[src][dst] = ump_pair_state_create(&fwr_conf);
-    bindings[dst][src] = ump_pair_state_create(&rev_conf);
+    add_binding(src, dst, ump_pair_state_create(&fwr_conf));
+    add_binding(dst, src, ump_pair_state_create(&rev_conf));
 }
 
 /**
@@ -144,9 +132,9 @@ void tree_connect(const char *qrm_my_name)
 {
     uint64_t nproc = topo_num_cores();
     
-    for (int i=0; i<nproc; i++) {
+    for (unsigned int i=0; i<nproc; i++) {
 
-        for (int j=0; j<nproc; j++) {
+        for (unsigned int j=0; j<nproc; j++) {
 
             if (topo_is_parent(i, j)) {
                 printf("setup: %d %d\n", i, j);
@@ -156,5 +144,37 @@ void tree_connect(const char *qrm_my_name)
     }
 }
 
+void mp_send_raw(mp_binding *b, uintptr_t val)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->src.queue;
+    
+    ump_enqueue_word(q, val);
+}
 
+uintptr_t mp_receive_raw(mp_binding *b)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->dst.queue;
 
+    uintptr_t r;
+    ump_dequeue_word(q, &r);
+
+    return r;
+}
+
+void debug_printf(const char *fmt, ...)
+{
+    va_list argptr;
+    char str[1024];
+    size_t len;
+
+    len = snprintf(str, sizeof(str), "\033[34m%d\033[0m: ",
+                   get_thread_id());
+    if (len < sizeof(str)) {
+        va_start(argptr, fmt);
+        vsnprintf(str + len, sizeof(str) - len, fmt, argptr);
+        va_end(argptr);
+    }
+    printf(str, sizeof(str));
+}

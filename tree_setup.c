@@ -4,6 +4,9 @@
 #include "sync.h"
 #include "topo.h"
 #include "barrier.h"
+#include "topo.h"
+
+#include "model_defs.h"
 
 enum state {
     STATE_NONE,
@@ -12,14 +15,20 @@ enum state {
 
 enum state qrm_st[Q_MAX_CORES];
 
-__thread struct sync_binding *_bindings[Q_MAX_CORES];
+
+/**
+ * \brief Store UMP bindings
+ *
+ * This is currently not clean, as it requires n^2 entries in the
+ * buffer for n cores.
+ */
+mp_binding* bindings[TOPO_NUM_CORES][TOPO_NUM_CORES];
+
 __thread uint32_t tree_num_peers;
 
 __thread int num_acks;
 
 struct shl_barrier_t tree_setup_barrier;
-
-void add_binding(struct sync_binding *b, coreid_t core);
 
 /**
  * \brief This file provides functionality to setup the tree.
@@ -208,7 +217,6 @@ int tree_init(const char *qrm_my_name)
 void tree_reset(void)
 {
     tree_num_peers = 0;
-    assert (_bindings!=NULL);
 }
 
 /* // Add a binding */
@@ -225,3 +233,113 @@ void tree_reset(void)
 /*     // Remember the binding */
 /*     _bindings[core] = b; */
 /* } */
+
+void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
+{
+    printf("Adding binding for %d, %d\n", sender, receiver);
+    bindings[sender][receiver] = b;
+}
+
+mp_binding* get_binding(coreid_t sender, coreid_t receiver)
+{
+    printf("%d Getting binding for %d, %d\n", get_thread_id(), sender, receiver);
+    return bindings[sender][receiver];
+}
+
+struct binding_lst *child_bindings = NULL;
+mp_binding **parent_bindings = NULL;
+
+/**
+ * \brief Build a broadcast tree based on the model
+ *
+ * The model is currently given as a matrix, where an integer value
+ * !=0 at position x,y represents a link in the overlay network.
+ *
+ * Parse model array. The list of children will be setup according to
+ * the numbers given in the model matrix. The neighbor with the
+ * smallest integer value will be scheduled first. Parents are encoded
+ * with number 99 in the matrix.
+ */
+void setup_tree_from_model(void)
+{
+    // Allocate memory for child and parent binding storage
+    if (!child_bindings) {
+
+        // Children
+        child_bindings = (struct binding_lst*)
+            malloc(sizeof(struct binding_lst)*topo_num_cores());
+        assert (child_bindings!=NULL);
+
+        // Parents
+        parent_bindings = (mp_binding**)
+            malloc(sizeof(mp_binding*)*topo_num_cores());
+        assert(parent_bindings!=NULL);
+    }
+    
+    // Sanity check
+    if (get_num_threads()!=topo_num_cores()) {
+        USER_PANIC("Cannot parse model. Number of cores does not match\n");
+    }
+
+    assert (is_coordinator(get_thread_id()));
+    
+    int tmp[TOPO_NUM_CORES];
+    int tmp_parent = -1;
+
+    // Find children
+    for (int s=0; s<topo_num_cores(); s++) { // foreach sender
+
+        int num = 0;
+        
+        for (int i=1; i<topo_num_cores(); i++) { // + possible outward index
+            for (int r=0; r<topo_num_cores(); r++) {
+
+                // Is this the i-th outgoing connection?
+                if (topo_get(s, r) == i) {
+
+                    tmp[num++] = r;
+                }
+
+                if (topo_is_parent_real(r, s)) {
+
+                    tmp_parent = r;
+                }
+            }
+        }
+
+        // Otherwise parent was not found
+        assert (tmp_parent >= 0 || s == SEQUENTIALIZER); 
+
+        // Create permanent list of bindings for that core
+        mp_binding **_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
+        assert (_bindings!=NULL);
+
+        // Retrieve and store bindings
+        for (int j=0; j<num; j++) {
+            _bindings[j] = get_binding(s, tmp[j]);
+            assert(_bindings[j]!=NULL);
+        }
+
+        // Remember children
+        child_bindings[s] = {
+            .num = num,
+            .b = _bindings
+        };
+
+        if (tmp_parent>=0) {
+            debug_printf("Setting parent of %d to %d\n", s, tmp_parent);
+            parent_bindings[s] = get_binding(tmp_parent, s);
+        }
+    }
+}
+
+mp_binding **mp_get_children(coreid_t c, int *num)
+{
+    *num = child_bindings[c].num;
+    return child_bindings[c].b;
+}
+
+mp_binding *mp_get_parent(coreid_t c)
+{
+    return parent_bindings[c];
+}

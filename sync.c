@@ -15,8 +15,9 @@ static int nproc;
  * for parallelism, call this only once. With processes, it has to be
  * executed on each process.
  */
-void __sync_init(void)
+void __sync_init(int _nproc)
 {
+    nproc = _nproc;
     printf("Initializing libsync .. model has %d nodes\n", topo_num_cores());
     
     // Master share allows simple barriers; needed for boot-strapping
@@ -26,6 +27,10 @@ void __sync_init(void)
     // Enable a model
     debug_printfff(DBG__INIT, "Switching topology .. \n");
     switch_topo();
+
+    // Initialize barrier
+    pthread_barrier_init(&get_master_share()->data.sync_barrier, NULL, _nproc);
+
 }
 
 /**
@@ -35,7 +40,10 @@ void __sync_init(void)
  * has to have id 0, since this causes additional initialization.
  *
  * \param _tid The id of the thread
- * \param nproc Number of participants in synchronization
+ *
+ * \param nproc Number of participants in synchronization - in shared
+ *     memory implementations, this is redundant, as already given by
+ *     __sync_init.
  */
 int __thread_init(int _tid, int _nproc)
 {
@@ -63,8 +71,11 @@ int __thread_init(int _tid, int _nproc)
         tree_reset();
         tree_connect("DUMMY");
 
+        // Build associated broadcast tree
+        setup_tree_from_model();
     }
     
+    pthread_barrier_wait(&get_master_share()->data.sync_barrier);
     return 0;
 }
 
@@ -89,4 +100,15 @@ int __thread_end(void)
 unsigned int get_num_threads(void)
 {
     return nproc;
+}
+
+/**
+ * \brief Check whether given node is the coordinator.
+ *
+ * The coordinator is exactly one arbitrarily choosen node
+ * participating in each libsync instance.
+ */
+bool is_coordinator(coreid_t c)
+{
+    return c == SEQUENTIALIZER;
 }

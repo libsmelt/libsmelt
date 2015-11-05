@@ -23,7 +23,7 @@
 // ==================================================
 // Functions
 
-void __sync_init(void);
+void __sync_init(int);
 
 int  __thread_init(int,int);
 int  __thread_end(void);
@@ -31,6 +31,7 @@ int  __thread_end(void);
 unsigned int  get_thread_id(void);
 int  get_core_id(void);
 unsigned int  get_num_threads(void);
+bool is_coordinator(coreid_t);
 
 // ==================================================
 // Defines
@@ -98,7 +99,15 @@ union quorum_share {
         // to ensure that whole frame is mapped when incrementing
         // counter after mapping.
         uint64_t __attribute__((aligned(64))) num_maps;
+
+        /**
+         * \brief Internal barrier used within libsync.
+         */
+        pthread_barrier_t sync_barrier;
     } data;
 };
+
+void add_binding(coreid_t sender, coreid_t receiver, mp_binding *mp);
+mp_binding* get_binding(coreid_t sender, coreid_t receiver);
 
 #endif /* SYNC_H */

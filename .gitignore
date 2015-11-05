@@ -1,2 +1,5 @@
 *.o
 *.out
+html/*
+latex/*
+cscope.files

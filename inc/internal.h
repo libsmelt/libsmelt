@@ -9,10 +9,25 @@
 #ifndef INTERNAL_DEBUG_H
 #define INTERNAL_DEBUG_H 1
 
-// --------------------------------------------------
-// tree_setup.c
+#include "sync.h"
+
+/**
+ * File: tree_setup.c
+ *
+ * This header should never be imported by anything outside of libsync.
+ */
 
 void tree_reset(void);
 int  tree_init(const char*);
+
+void setup_tree_from_model(void);
+
+/**
+ * List of bindings.
+ */
+struct binding_lst {
+    unsigned int num;
+    mp_binding **b;
+};
 
 #endif /* INTERNAL_DEBUG_H */

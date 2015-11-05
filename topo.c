@@ -225,7 +225,7 @@ int topos_get(int mod, int x, int y)
     return __topo_get(topo_combined[mod], x, y);
 }
 
-int topo_num_cores(void)
+unsigned int topo_num_cores(void)
 {
     return TOPO_NUM_CORES;
 }

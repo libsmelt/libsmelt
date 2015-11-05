@@ -2,7 +2,8 @@
 
 TARGET=libsync.so
 
-OBJS += $(patsubst %.c,%.o,$(wildcard *.c))
+CFILES=$(wildcard *.c)
+OBJS += $(patsubst %.c,%.o,$(CFILES))
 HEADERS=$(wildcard *.h)
 
 DEPS = $(OBJS)
@@ -46,10 +47,10 @@ LIBS += -lnuma
 CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)
 
 all: $(TARGET)
-test: test/barrier
+test: test/mp-test
 
-test/barrier: $(DEPS) $(EXTERNAL_OBJS) test/barrier.cpp
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/barrier.cpp -o $@
+test/mp-test: $(DEPS) $(EXTERNAL_OBJS) test/mp-test.cpp
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/mp-test.cpp -o $@
 
 # Build shared library
 # --------------------------------------------------
@@ -74,3 +75,11 @@ clean:
 
 debug:
 	echo $(HEADERS)
+
+.PHONY: cscope.files
+cscope.files:
+	find . $(UMPQ) -name '*.[ch]' -or -name '*.cpp' -or -name '*.hpp' > $@
+
+doc: $(HEADERS) $(CFILES)
+	doxygen
+
