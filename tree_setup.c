@@ -236,18 +236,20 @@ void tree_reset(void)
 
 void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
 {
-    printf("Adding binding for %d, %d\n", sender, receiver);
+    debug_printfff(DBG__GENERAL,
+                   "Adding binding for %d, %d\n", sender, receiver);
     bindings[sender][receiver] = b;
 }
 
 mp_binding* get_binding(coreid_t sender, coreid_t receiver)
 {
-    printf("%d Getting binding for %d, %d\n", get_thread_id(), sender, receiver);
+    debug_printfff(DBG__GENERAL,
+                   "%d Getting binding for %d, %d\n", get_thread_id(), sender, receiver);
     return bindings[sender][receiver];
 }
 
 struct binding_lst *child_bindings = NULL;
-mp_binding **parent_bindings = NULL;
+struct binding_lst *parent_bindings = NULL;
 
 /**
  * \brief Build a broadcast tree based on the model
@@ -271,8 +273,8 @@ void setup_tree_from_model(void)
         assert (child_bindings!=NULL);
 
         // Parents
-        parent_bindings = (mp_binding**)
-            malloc(sizeof(mp_binding*)*topo_num_cores());
+        parent_bindings = (struct binding_lst*)
+            malloc(sizeof(struct binding_lst)*topo_num_cores());
         assert(parent_bindings!=NULL);
     }
     
@@ -314,32 +316,59 @@ void setup_tree_from_model(void)
         mp_binding **_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
         assert (_bindings!=NULL);
 
+        // .. and core IDs
+        int *_idx = (int*) malloc(sizeof(int)*num);
+        assert (_idx!=NULL);
+
         // Retrieve and store bindings
         for (int j=0; j<num; j++) {
             _bindings[j] = get_binding(s, tmp[j]);
             assert(_bindings[j]!=NULL);
+
+            _idx[j] = tmp[j];
         }
 
         // Remember children
         child_bindings[s] = {
             .num = num,
-            .b = _bindings
+            .b = _bindings,
+            .idx = _idx
         };
 
         if (tmp_parent>=0) {
             debug_printf("Setting parent of %d to %d\n", s, tmp_parent);
-            parent_bindings[s] = get_binding(tmp_parent, s);
+
+            mp_binding **_bindings_p = (mp_binding**) malloc(sizeof(mp_binding*)*1);
+            assert (_bindings!=NULL);
+
+            int *_idx_p = (int*) malloc(sizeof(int)*1);
+            assert (_idx_p!=NULL);
+            
+            _bindings_p[0] = get_binding(tmp_parent, s);
+            _idx_p[0] = tmp_parent;
+            
+            parent_bindings[s] = (struct binding_lst) {
+                .num = 1,
+                .b = _bindings_p,
+                .idx = _idx_p
+            };
         }
     }
 }
 
-mp_binding **mp_get_children(coreid_t c, int *num)
+mp_binding **mp_get_children(coreid_t c, int *num, int **nidx)
 {
     *num = child_bindings[c].num;
+    if (nidx!=NULL) {
+        *nidx = child_bindings[c].idx;
+    }
     return child_bindings[c].b;
 }
 
-mp_binding *mp_get_parent(coreid_t c)
+mp_binding *mp_get_parent(coreid_t c, int *nidx)
 {
-    return parent_bindings[c];
+    if (nidx!=NULL) {
+        *nidx = parent_bindings[c].idx[0];
+    }
+    return parent_bindings[c].b[0];
 }

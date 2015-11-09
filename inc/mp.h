@@ -15,15 +15,20 @@
 // Generic
 uintptr_t mp_receive(coreid_t);
 void mp_send(coreid_t, uintptr_t);
+
+// Atomic broadcast
 uintptr_t mp_send_ab(uintptr_t);
 uintptr_t mp_receive_forward(uintptr_t);
+
+// Reduce
+uintptr_t mp_reduce(uintptr_t);
 
 // To be implemented by the backend
 uintptr_t mp_receive_raw(mp_binding*);
 void mp_send_raw(mp_binding*, uintptr_t);
 
 // Helpers to find bindings
-mp_binding *mp_get_parent(coreid_t);
-mp_binding **mp_get_children(coreid_t, int*);
+mp_binding *mp_get_parent(coreid_t, int*);
+mp_binding **mp_get_children(coreid_t, int*, int**);
 
 #endif

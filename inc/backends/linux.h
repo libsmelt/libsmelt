@@ -30,7 +30,7 @@ void bench_init(void);
 typedef struct ump_pair_state mp_binding;
 
 #define USER_PANIC(x) {                         \
-        printf("PANIC: #1\n");                  \
+        printf("PANIC: " x "\n");               \
         exit(1);                                \
     }
 

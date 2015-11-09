@@ -14,16 +14,7 @@ static int topo_idx = -1;
 // --------------------------------------------------
 // Functions
 
-unsigned int get_topo_idx(void);
 void init_topo(void);
-int topo_is_edge(coreid_t src, coreid_t dest);
-int topo_is_real_edge(coreid_t src, coreid_t dest);
-int topo_is_parent_real(coreid_t core, coreid_t parent);
-int topo_is_parent(coreid_t core, coreid_t parent);
-bool topo_does_mp_send(coreid_t core);
-bool topo_does_mp_receive(coreid_t core);
-bool topo_does_shm_send(coreid_t core);
-bool topo_does_shm_receive(coreid_t core);
 
 /**
  * \brief Move on to the next topo

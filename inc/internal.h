@@ -28,6 +28,7 @@ void setup_tree_from_model(void);
 struct binding_lst {
     unsigned int num;
     mp_binding **b;
+    int *idx;
 };
 
 #endif /* INTERNAL_DEBUG_H */

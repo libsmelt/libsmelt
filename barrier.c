@@ -57,7 +57,7 @@ static __thread int _shl_round = 0;
 void shl_barrier_shm(int b_count)
 {
 #if defined(QRM_DBG_ENABLED)
-    assert(round<QRM_ROUND_MAX);
+    assert(_shl_round<QRM_ROUND_MAX);
 #endif
 
 #if 0

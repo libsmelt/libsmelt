@@ -136,8 +136,8 @@ void tree_connect(const char *qrm_my_name)
 
         for (unsigned int j=0; j<nproc; j++) {
 
-            if (topo_is_parent(i, j)) {
-                printf("setup: %d %d\n", i, j);
+            if (topo_is_parent(i, j) ) {
+                debug_printfff(DBG__SWITCH_TOPO, "setup: %d %d\n", i, j);
                 _setup_ump_chanels(i, j);
             }
         }
@@ -178,3 +178,4 @@ void debug_printf(const char *fmt, ...)
     }
     printf(str, sizeof(str));
 }
+

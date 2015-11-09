@@ -7,6 +7,8 @@
 #include "mp.h"
 #include <pthread.h>
 
+#include "model_defs.h"
+
 #define NUM_THREADS 4
 void* worker1(void* a)
 {
@@ -36,48 +38,76 @@ void* worker1(void* a)
     return NULL;
 }
 
+#define NUM_EXP 1 // Tested up to 1.000.000
 void* worker2(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    if (tid == SEQUENTIALIZER) {
-        mp_send_ab(tid);
-    } else {
-        mp_receive_forward(tid);
+    for (int epoch=0; epoch<NUM_EXP; epoch++) {
+    
+        if (tid == SEQUENTIALIZER) {
+            mp_send_ab(tid);
+
+            // Wait for message from LAST_NODE
+            mp_receive(LAST_NODE);
+        
+        } else {
+            mp_receive_forward(tid);
+
+            if (get_thread_id()==LAST_NODE) {
+
+                mp_send(SEQUENTIALIZER, 0);
+            }
+        }
     }
     printf("Thread %d completed\n", tid);
     
     return NULL;
 }
 
+void* worker3(void* a)
+{
+    int tid = *((int*) a);
+    __thread_init(tid, NUM_THREADS);
+    
+    debug_printf("Reduction complete: %d\n", mp_reduce(tid));
+
+    return NULL;
+}
+
+#define NUM_EXP 3
+
 int main(int argc, char **argv)
 {
+    typedef void* (worker_func_t)(void*);
+    worker_func_t* workers[NUM_EXP] = {
+        &worker1,
+        &worker2,
+        &worker3
+    };
+
     __sync_init(NUM_THREADS);
 
     pthread_t ptds[NUM_THREADS];
     int tids[NUM_THREADS];
 
-    // Create
-    for (int i=0; i<NUM_THREADS; i++) {
-        tids[i] = i;
-        pthread_create(ptds+i, NULL, &worker1, (void*) (tids+i));
-    }
+    for (int j=0; j<NUM_EXP; j++) {
 
-    // Join
-    for (int i=0; i<NUM_THREADS; i++) {
-        pthread_join(ptds[i], NULL);
-    }
+        printf("----------------------------------------\n");
+        printf("Executing experiment %d\n", (j+1));
+        printf("----------------------------------------\n");
+        
+        // Create
+        for (int i=0; i<NUM_THREADS; i++) {
+            tids[i] = i;
+            pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
+        }
 
-    // Create
-    for (int i=0; i<NUM_THREADS; i++) {
-        tids[i] = i;
-        pthread_create(ptds+i, NULL, &worker2, (void*) (tids+i));
-    }
-
-    // Join
-    for (int i=0; i<NUM_THREADS; i++) {
-        pthread_join(ptds[i], NULL);
+        // Join
+        for (int i=0; i<NUM_THREADS; i++) {
+            pthread_join(ptds[i], NULL);
+        }
     }
     
 }

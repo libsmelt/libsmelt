@@ -42,6 +42,7 @@ bool is_coordinator(coreid_t);
 #define SEQUENTIALIZER       0 // node that acts as the sequentializer
 
 #define USE_THREADS          1 // switch threads vs. processes
+#define BACK_CHAN            1 // Backward channel from LAST_NODE to SEQUENTIALIZER
 
 // ==================================================
 // Data structures

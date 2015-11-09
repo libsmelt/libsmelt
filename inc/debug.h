@@ -20,12 +20,13 @@
 #define DBG__QRM_BARRIER   (1<<2)
 #define DBG__SHM           (1<<3)
 #define DBG__AB            (1<<4)
-#define DBG__SWITCH_TOPOS  (1<<5)
+#define DBG__SWITCH_TOPO   (1<<5)
 #define DBG__REDUCE        (1<<6)
 #define DBG__INIT          (1<<7)
 
 // Mask for selectively enabling debug output
-#define qrm_debug_mask (DBG__SWITCH_TOPOS)
+#define qrm_debug_mask (DBG__REDUCE | DBG__GENERAL | DBG__AB)
+#define QRM_DBG_ENABLED
 
 #ifdef QRM_DBG_ENABLED  /* ------------------------------*/
 #define QDBG(...)              qrm_debug(DBG__GENERAL, __VA_ARGS__)
