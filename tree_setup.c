@@ -280,6 +280,7 @@ void setup_tree_from_model(void)
     
     // Sanity check
     if (get_num_threads()!=topo_num_cores()) {
+        printf("%d/%d\n", get_num_threads(), topo_num_cores());
         USER_PANIC("Cannot parse model. Number of cores does not match\n");
     }
 

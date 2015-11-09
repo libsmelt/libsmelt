@@ -26,7 +26,7 @@
 
 // Mask for selectively enabling debug output
 #define qrm_debug_mask (DBG__REDUCE | DBG__GENERAL | DBG__AB)
-#define QRM_DBG_ENABLED
+//#define QRM_DBG_ENABLED
 
 #ifdef QRM_DBG_ENABLED  /* ------------------------------*/
 #define QDBG(...)              qrm_debug(DBG__GENERAL, __VA_ARGS__)

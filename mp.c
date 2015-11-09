@@ -124,7 +124,7 @@ uintptr_t mp_reduce(uintptr_t val)
     // --------------------------------------------------
     if (topo_does_mp_send(my_core_id)) {
 
-        debug_printf("Receiving on core %d\n", my_core_id);
+        debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
         
         // XXX In which order to receive from clients? Select? Polling
         // serveral channels is expensive.
@@ -166,4 +166,20 @@ uintptr_t mp_reduce(uintptr_t val)
     }
 
     return current_aggregate;
+}
+
+void mp_barrier(void)
+{
+    coreid_t tid = get_core_id();
+    
+    // Broadcast
+    if (tid == SEQUENTIALIZER) {
+        mp_send_ab(tid);
+        
+    } else {
+        mp_receive_forward(tid);
+    }
+
+    // Recution
+    mp_reduce(0);
 }

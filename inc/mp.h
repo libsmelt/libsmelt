@@ -22,6 +22,7 @@ uintptr_t mp_receive_forward(uintptr_t);
 
 // Reduce
 uintptr_t mp_reduce(uintptr_t);
+void mp_barrier(void);
 
 // To be implemented by the backend
 uintptr_t mp_receive_raw(mp_binding*);

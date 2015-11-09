@@ -38,13 +38,13 @@ void* worker1(void* a)
     return NULL;
 }
 
-#define NUM_EXP 1 // Tested up to 1.000.000
+#define NUM_RUNS 1000000 // Tested up to 1.000.000
 void* worker2(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    for (int epoch=0; epoch<NUM_EXP; epoch++) {
+    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
     
         if (tid == SEQUENTIALIZER) {
             mp_send_ab(tid);
@@ -76,7 +76,22 @@ void* worker3(void* a)
     return NULL;
 }
 
-#define NUM_EXP 3
+void* worker4(void* a)
+{
+    int tid = *((int*) a);
+    __thread_init(tid, NUM_THREADS);
+    
+    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+        
+        //        debug_printf("before barrier\n");
+        mp_barrier();
+        //        debug_printf("after barrier\n");
+    }
+
+    return NULL;
+}
+
+#define NUM_EXP 4
 
 int main(int argc, char **argv)
 {
@@ -84,7 +99,8 @@ int main(int argc, char **argv)
     worker_func_t* workers[NUM_EXP] = {
         &worker1,
         &worker2,
-        &worker3
+        &worker3,
+        &worker4
     };
 
     __sync_init(NUM_THREADS);
