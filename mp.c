@@ -168,18 +168,35 @@ uintptr_t mp_reduce(uintptr_t val)
     return current_aggregate;
 }
 
+static __thread uint32_t _num_barrier = 0;
 void mp_barrier(void)
 {
     coreid_t tid = get_core_id();
+
+    debug_printfff(DBG__REDUCE, "barrier enter #%d\n", ++_num_barrier);
     
-    // Broadcast
-    if (tid == SEQUENTIALIZER) {
-        mp_send_ab(tid);
-        
-    } else {
-        mp_receive_forward(tid);
-    }
+    uint32_t _num_barrier_recv = _num_barrier;
 
     // Recution
-    mp_reduce(0);
+    // --------------------------------------------------
+    
+    uint32_t _tmp = mp_reduce(_num_barrier);
+
+    // Sanity check
+    if (tid==SEQUENTIALIZER) {
+        assert (_tmp == get_num_threads()*_num_barrier);
+    }
+
+    // Broadcast
+    if (tid == SEQUENTIALIZER) {
+        mp_send_ab(_num_barrier);
+        
+    } else {
+        _num_barrier_recv = mp_receive_forward(0);
+    }
+
+    assert (_num_barrier_recv == _num_barrier);
+
+    debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
+    
 }
