@@ -32,4 +32,6 @@ void mp_send_raw(mp_binding*, uintptr_t);
 mp_binding *mp_get_parent(coreid_t, int*);
 mp_binding **mp_get_children(coreid_t, int*, int**);
 
+int mp_get_counter(const char*);
+
 #endif

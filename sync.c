@@ -4,6 +4,7 @@
 #include "sync.h"
 #include "topo.h"
 #include "internal.h"
+#include "mp.h"
 
 __thread int tid;
 static int nproc;
@@ -93,7 +94,7 @@ unsigned int get_thread_id(void)
  */
 int __thread_end(void)
 {
-    printf("Thread %d ending\n", tid);
+    printf("Thread %d ending %d\n", tid, mp_get_counter("barriers"));
     return 0;
 }
 

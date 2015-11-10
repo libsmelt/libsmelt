@@ -170,11 +170,24 @@ uintptr_t mp_reduce(uintptr_t val)
 }
 
 static __thread uint32_t _num_barrier = 0;
+int mp_get_counter(const char *ctr_name)
+{
+    if (strcmp(ctr_name, "barriers")==0) {
+
+        return _num_barrier;
+    }
+    else {
+
+        return -1;
+    }
+}
+
 void mp_barrier(void)
 {
     coreid_t tid = get_core_id();
 
-    debug_printfff(DBG__REDUCE, "barrier enter #%d\n", ++_num_barrier);
+    ++_num_barrier;
+    debug_printfff(DBG__REDUCE, "barrier enter #%d\n", _num_barrier);
     
     uint32_t _num_barrier_recv = _num_barrier;
 

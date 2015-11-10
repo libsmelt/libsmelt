@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <cinttypes>
+#include <cstring>
 
 extern "C" {
 #include "ump_conf.h"

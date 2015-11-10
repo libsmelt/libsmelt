@@ -35,6 +35,7 @@ void* worker1(void* a)
 
     printf("Thread %d completed\n", tid);
     
+    __thread_end();
     return NULL;
 }
 
@@ -63,6 +64,7 @@ void* worker2(void* a)
     }
     printf("Thread %d completed\n", tid);
     
+    __thread_end();
     return NULL;
 }
 
@@ -73,6 +75,7 @@ void* worker3(void* a)
     
     debug_printf("Reduction complete: %d\n", mp_reduce(tid));
 
+    __thread_end();
     return NULL;
 }
 
@@ -88,6 +91,7 @@ void* worker4(void* a)
         //        debug_printf("after barrier\n");
     }
 
+    __thread_end();
     return NULL;
 }
 
