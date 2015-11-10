@@ -20,7 +20,6 @@ void mp_send(coreid_t receiver, uintptr_t val)
  */
 uintptr_t mp_receive(coreid_t sender)
 {
-    debug_printfff(DBG__AB, "mp_receive on %d\n", get_thread_id());
     mp_binding *b = get_binding(sender, get_thread_id());
     if (b==NULL) {
         printf("Failed to get binding for %d %d\n", sender, get_thread_id());
@@ -93,10 +92,12 @@ uintptr_t mp_send_ab(uintptr_t payload)
  */
 uintptr_t mp_receive_forward(uintptr_t val)
 {
-    debug_printfff(DBG__AB, "Receiving from parent\n");
-    uintptr_t v = mp_receive_raw(mp_get_parent(get_thread_id(), NULL));
+    int parent_core;
+    mp_binding *b = mp_get_parent(get_thread_id(), &parent_core);
+    
+    debug_printfff(DBG__AB, "Receiving from parent %d\n", parent_core);
+    uintptr_t v = mp_receive_raw(b);
 
-    debug_printfff(DBG__AB, "Sending now .. \n");
     mp_send_ab(v + val);
 
     return v;
