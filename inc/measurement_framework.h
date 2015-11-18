@@ -18,7 +18,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define bench_tsc() rdtscp()
+#include "cycle.h"
+
+#define bench_tsc() getticks()
 
 static inline uint64_t rdtscp(void)
 {
@@ -27,6 +29,7 @@ static inline uint64_t rdtscp(void)
     return ((uint64_t)edx << 32) | eax;
 }
 
+#include "inttypes.h"
 
 static inline void cpuid(uint32_t function, uint32_t *eax, uint32_t *ebx,
                          uint32_t *ecx, uint32_t *edx)
@@ -50,6 +53,8 @@ static inline void cpuid(uint32_t function, uint32_t *eax, uint32_t *ebx,
                    : "a" (function)
                    );
 }
+
+typedef uint64_t cycles_t;
 
 
 struct sk_measurement {
@@ -104,7 +109,8 @@ inline static void sk_m_init(struct sk_measurement *m,
         rdtscp_flag = false;
     }
 
-    printf ("rdtscp_flag: %d\n", rdtscp_flag);
+    // Otherwise, we need the other tsc function (see BF's bench_tsc)
+    assert(rdtscp_flag==1);
 
     
     m->buffer = buf;

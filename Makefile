@@ -43,6 +43,10 @@ endif
 CXXFLAGS += $(OPT)
 CFLAGS += $(OPT)
 
+LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
+INC += -I$(LIBNUMABASE)
+LIBS += -L$(LIBNUMABASE)
+
 LIBS += -lnuma
 CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)
 
@@ -89,4 +93,3 @@ cscope.files:
 
 doc: $(HEADERS) $(CFILES)
 	doxygen
-
