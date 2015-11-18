@@ -49,8 +49,15 @@ CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)
 all: $(TARGET)
 test: test/mp-test
 
+# Tests
+# --------------------------------------------------
 test/mp-test: $(DEPS) $(EXTERNAL_OBJS) test/mp-test.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/mp-test.cpp -o $@
+
+# Benchmarks
+# --------------------------------------------------
+bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-bench.cpp -o $@
 
 # Build shared library
 # --------------------------------------------------
