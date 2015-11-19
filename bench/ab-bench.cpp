@@ -14,7 +14,9 @@
 __thread struct sk_measurement m;
 
 int NUM_THREADS;
-#define NUM_RUNS 30 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 100 // 10000 // Tested up to 1.000.000
+
+pthread_barrier_t ab_barrier;
 
 /**
  * \brief Message ping-pong between LAST_NODE and SEQUENTIALIZER
@@ -27,7 +29,7 @@ void* pingpong(void* a)
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "ab", buf);
+    sk_m_init(&m, NUM_RUNS, "pingpong", buf);
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
@@ -95,6 +97,8 @@ void* ab(void* a)
     return NULL;
 }
 
+extern void shl_barrier_shm(int b_count);
+
 /**
  * \brief Reduction
  */
@@ -105,7 +109,7 @@ void* reduction(void* a)
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "ab", buf);
+    sk_m_init(&m, NUM_RUNS, "reduction", buf);
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
@@ -113,7 +117,7 @@ void* reduction(void* a)
         mp_reduce(tid);
         sk_m_add(&m);
 
-        mp_barrier(NULL);
+        pthread_barrier_wait(&ab_barrier);
     }
 
     if (get_thread_id() == SEQUENTIALIZER) {
@@ -125,7 +129,41 @@ void* reduction(void* a)
     return NULL;
 }
 
-void* worker4(void* a)
+/**
+ * \brief
+ */
+void* reduction_ln(void* a)
+{
+    int tid = *((int*) a);
+    __thread_init(tid, NUM_THREADS);
+
+    // Setup buffer for measurements
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    sk_m_init(&m, NUM_RUNS, "reduction-ln", buf);
+    
+    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+
+        sk_m_restart_tsc(&m);
+        mp_reduce(tid);
+
+        if (tid==SEQUENTIALIZER) {
+            mp_send(LAST_NODE, 0);
+        } else if (tid==LAST_NODE) {
+            mp_receive(SEQUENTIALIZER);
+        }
+        sk_m_add(&m);
+    }
+
+    if (get_thread_id() == LAST_NODE) {
+        sk_m_print(&m);
+    }
+    
+
+    __thread_end();
+    return NULL;
+}
+
+void* barrier(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
@@ -136,12 +174,13 @@ void* worker4(void* a)
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
-        cycles_t r;
-        mp_barrier(&r);
-        sk_m_add_value(&m, r-m.last_tsc);
+        mp_barrier(NULL);
+        
+        if (tid==LAST_NODE) sk_m_add(&m);
     }
 
-    if (get_thread_id()==SEQUENTIALIZER) {
+    if (get_thread_id()==SEQUENTIALIZER ||
+        get_thread_id()==LAST_NODE) {
 
         sk_m_print(&m);
     }
@@ -150,24 +189,28 @@ void* worker4(void* a)
     return NULL;
 }
 
-#define NUM_EXP 4
+#define NUM_EXP 5
 
 int main(int argc, char **argv)
 {
     NUM_THREADS = sysconf(_SC_NPROCESSORS_CONF);
 
+    pthread_barrier_init(&ab_barrier, NULL, NUM_THREADS);
+    
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
         &pingpong,
         &ab,
         &reduction,
-        &worker4
+        &reduction_ln,
+        &barrier
     };
 
     const char *labels[NUM_EXP] = {
         "Ping pong",
         "Atomic broadcast",
         "Reduction",
+        "Reduction (last node)", 
         "barrier"
     };
 
@@ -181,17 +224,26 @@ int main(int argc, char **argv)
         printf("----------------------------------------\n");
         printf("Executing experiment %d - %s\n", (j+1), labels[j]);
         printf("----------------------------------------\n");
+
+        // Yield to reduce the risk of getting de-scheduled later
+        sched_yield();
         
         // Create
-        for (int i=0; i<NUM_THREADS; i++) {
+        for (int i=1; i<NUM_THREADS; i++) {
             tids[i] = i;
             pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
         }
 
+        // Master thread executes work for node 0
+        tids[0] = 0;
+        workers[j]((void*) (tids+0));
+
         // Join
-        for (int i=0; i<NUM_THREADS; i++) {
+        for (int i=1; i<NUM_THREADS; i++) {
             pthread_join(ptds[i], NULL);
         }
     }
+
+    pthread_barrier_destroy(&ab_barrier);
     
 }
