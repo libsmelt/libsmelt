@@ -28,7 +28,12 @@ void setup_tree_from_model(void);
 struct binding_lst {
     unsigned int num;
     mp_binding **b;
+    mp_binding **b_reverse;
     int *idx;
 };
+
+binding_lst *_mp_get_parent_raw(coreid_t c);
+binding_lst *_mp_get_children_raw(coreid_t c);
+
 
 #endif /* INTERNAL_DEBUG_H */

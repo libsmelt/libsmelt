@@ -93,3 +93,7 @@ cscope.files:
 
 doc: $(HEADERS) $(CFILES)
 	doxygen
+
+.PHONY: install
+install: bench/ab-bench
+	rsync -av bench/ab-bench gottardo:

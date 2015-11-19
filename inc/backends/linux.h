@@ -13,6 +13,7 @@ extern "C" {
 #include "ump_conf.h"
 #include "ump_common.h"
 }
+#include "cycle.h"
 
 typedef pthread_spinlock_t spinlock_t;
 typedef uint32_t coreid_t;
@@ -38,3 +39,14 @@ typedef struct ump_pair_state mp_binding;
 #endif
 
 void debug_printf(const char *fmt, ...);
+
+static inline uint64_t rdtscp(void)
+{
+    uint32_t eax, edx;
+    __asm volatile ("rdtscp" : "=a" (eax), "=d" (edx) :: "ecx");
+    return ((uint64_t)edx << 32) | eax;
+}
+
+#define bench_tsc() rdtscp()
+
+

@@ -19,7 +19,17 @@ static int nproc;
 void __sync_init(int _nproc)
 {
     nproc = _nproc;
-    printf("Initializing libsync .. model has %d nodes\n", topo_num_cores());
+    debug_printfff(DBG__INIT, "Initializing libsync .. model has %d nodes\n", topo_num_cores());
+
+    // Debug output
+#ifdef QRM_DBG_ENABLED
+    printf("\033[1;31mWarning:\033[0m Debug flag (QRM_DBG_ENABLED) is set "
+           "- peformace will be reduced\n");
+#endif
+#ifdef SYNC_DEBUG
+    printf("\033[1;31mWarning:\033[0m Compiler optimizations are off - "
+        "performance will suffer if  BUILDTYPE set to debug (in Makefile)\n");
+#endif
     
     // Master share allows simple barriers; needed for boot-strapping
     debug_printfff(DBG__INIT, "Initializing master share .. \n");
@@ -49,7 +59,7 @@ void __sync_init(int _nproc)
 int __thread_init(int _tid, int _nproc)
 {
     tid = _tid;
-    printf("Hello world from thread %d .. \n", tid);
+    debug_printfff(DBG__INIT, "Hello world from thread %d .. \n", tid);
 
 #if !defined(USE_THREADS)
     assert (!"NYI: do initialization in EACH process");
@@ -94,7 +104,7 @@ unsigned int get_thread_id(void)
  */
 int __thread_end(void)
 {
-    printf("Thread %d ending %d\n", tid, mp_get_counter("barriers"));
+    debug_printfff(DBG__INIT, "Thread %d ending %d\n", tid, mp_get_counter("barriers"));
     return 0;
 }
 

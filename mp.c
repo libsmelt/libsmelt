@@ -1,5 +1,11 @@
 #include "mp.h"
 #include "topo.h"
+#include "sync.h"
+#include "internal.h"
+
+#ifdef QRM_DBG_ENABLED
+extern void shl_barrier_shm(int b_count);
+#endif
 
 /**
  * \brief Send a message
@@ -49,8 +55,8 @@ uintptr_t mp_send_ab(uintptr_t payload)
 
     for (int i=0; i<mp_max; i++) {
     
-        debug_printfff(DBG__AB, "message(req%d): %d->%d\n",
-                       num_requests, get_thread_id(), nidx[i]);
+        debug_printfff(DBG__AB, "message(req%d): %d->%d - %d\n",
+                       num_requests, get_thread_id(), nidx[i], payload);
 
 #ifdef MEASURE_SEND_OVERHEAD
         sk_m_restart_tsc(&m_send_overhead);
@@ -123,47 +129,50 @@ uintptr_t mp_reduce(uintptr_t val)
     
     // Receive (this will be from several children)
     // --------------------------------------------------
-    if (topo_does_mp_send(my_core_id)) {
-
-        debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
         
-        // XXX In which order to receive from clients? Select? Polling
-        // serveral channels is expensive.
+    // XXX In which order to receive from clients? Select? Polling
+    // serveral channels is expensive.
 
-        // Decide to parents
-        for (unsigned i=0; i<topo_num_cores(); i++) {
+    struct binding_lst *blst = _mp_get_children_raw(get_thread_id());
+    int numbindings = blst->num;
 
-            if (topo_is_parent_real(my_core_id, i)) {
+    assert ((numbindings==0 && !topo_does_mp_send(my_core_id)) ||
+            (numbindings>0 && topo_does_mp_send(my_core_id)));
 
-                debug_printfff(DBG__REDUCE, "Receiving from %d\n", i);
-                uintptr_t v = mp_receive(i);
-                current_aggregate += v;
-                debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", v, i);
-            }
-        }
-
-        debug_printfff(DBG__REDUCE, "Receiving done, value is now %" PRIu64 "\n",
-                       current_aggregate);
-
-        // Received message from all channels, finishing up reduction
-        if (_mp_is_reduction_root()) {
-            debug_printff("reduction done\n");
-        }
+    if (numbindings!=0) {
+        debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
     }
+    
+    // Decide to parents
+    for (int i=0; i<numbindings; i++) {
+
+        uintptr_t v = mp_receive_raw(blst->b_reverse[i]);
+        current_aggregate += v;
+        debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", v, i);
+
+    }
+
+    debug_printfff(DBG__REDUCE, "Receiving done, value is now %" PRIu64 "\n",
+                       current_aggregate);
 
     // Send (this should only be sending one message)
     // --------------------------------------------------
-    if (topo_does_mp_receive(my_core_id)) {
 
-        int pidx;
-        mp_get_parent(get_thread_id(), &pidx);
-        
-        mp_binding *b = get_binding(get_thread_id(), pidx);
+    binding_lst *blst_parent = _mp_get_parent_raw(get_thread_id());
+    int pidx = blst_parent->idx[0];
+    
+    assert ((pidx!=-1 && topo_does_mp_receive(my_core_id)) ||
+            (pidx==-1 && !topo_does_mp_receive(my_core_id)));
 
+    assert (pidx!=-1 || my_core_id == SEQUENTIALIZER);
+    
+    if (pidx!=-1) {
+
+        mp_binding *b_parent = blst_parent->b_reverse[0];
         debug_printfff(DBG__REDUCE, "sending %" PRIu64 " to parent %d\n",
                        current_aggregate, pidx);
 
-        mp_send_raw(b, current_aggregate);
+        mp_send_raw(b_parent, current_aggregate);
     }
 
     return current_aggregate;
@@ -182,35 +191,59 @@ int mp_get_counter(const char *ctr_name)
     }
 }
 
-void mp_barrier(void)
+void mp_barrier(cycles_t *measurement)
 {
     coreid_t tid = get_core_id();
 
-    ++_num_barrier;
     debug_printfff(DBG__REDUCE, "barrier enter #%d\n", _num_barrier);
-    
-    uint32_t _num_barrier_recv = _num_barrier;
 
+#ifdef QRM_DBG_ENABLED
+    ++_num_barrier;
+    uint32_t _num_barrier_recv = _num_barrier;
+#endif    
+    
     // Recution
     // --------------------------------------------------
-    
     uint32_t _tmp = mp_reduce(_num_barrier);
 
+#ifdef QRM_DBG_ENABLED    
     // Sanity check
     if (tid==SEQUENTIALIZER) {
         assert (_tmp == get_num_threads()*_num_barrier);
     }
-
+#endif
+    
+    if (measurement)
+        *measurement = bench_tsc();
+    
     // Broadcast
+    // --------------------------------------------------
     if (tid == SEQUENTIALIZER) {
         mp_send_ab(_num_barrier);
         
     } else {
-        _num_barrier_recv = mp_receive_forward(0);
+#ifdef QRM_DBG_ENABLED
+        _num_barrier_recv =
+#endif
+            mp_receive_forward(0);
     }
 
+#ifdef QRM_DBG_ENABLED
+    if (_num_barrier_recv != _num_barrier) {
+    debug_printf("ASSERTION fail %d != %d\n", _num_barrier_recv, _num_barrier);
+    }
     assert (_num_barrier_recv == _num_barrier);
 
+    // Add a shared memory barrier to absolutely make sure that
+    // everybody finished the barrier before leaving - this simplifies
+    // debugging, as the programm will get stuck if barriers are
+    // broken, rather than some threads (wrongly) continuing and
+    // causing problems somewhere else
+#if 0 // Enable separately
+    debug_printfff(DBG_REDUCE, "finished barrier .. waiting for others\n");
+    shl_barrier_shm(get_num_threads());
+#endif
+#endif    
+
     debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
-    
 }

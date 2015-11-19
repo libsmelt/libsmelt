@@ -7,76 +7,119 @@
 #include "mp.h"
 #include "measurement_framework.h"
 #include <pthread.h>
+#include <unistd.h>
 
 #include "model_defs.h"
 
 __thread struct sk_measurement m;
 
-#define NUM_THREADS 4
-void* worker1(void* a)
+int NUM_THREADS;
+#define NUM_RUNS 30 // 10000 // Tested up to 1.000.000
+
+/**
+ * \brief Message ping-pong between LAST_NODE and SEQUENTIALIZER
+ */
+void* pingpong(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    if (tid == SEQUENTIALIZER) {
 
-        for (unsigned int i=0; i<topo_num_cores(); i++) {
-            if (topo_is_parent(get_thread_id(), i)) {
-                mp_send(i, get_thread_id());
-            }
-        }
-    }
-
-    else {
-
-        for (unsigned int i=0; i<topo_num_cores(); i++) {
-            if (i==SEQUENTIALIZER && topo_is_parent(i, get_thread_id())) {
-                assert (mp_receive(i)==i);
-            }
-        }
-    }
-
-    printf("Thread %d completed\n", tid);
+    // Setup buffer for measurements
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    sk_m_init(&m, NUM_RUNS, "ab", buf);
     
-    __thread_end();
-    return NULL;
-}
-
-#define NUM_RUNS 10000 // Tested up to 1.000.000
-void* worker2(void* a)
-{
-    int tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
-
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
-    
-        if (tid == SEQUENTIALIZER) {
-            mp_send_ab(tid);
 
-            // Wait for message from LAST_NODE
-            mp_receive(LAST_NODE);
+        sk_m_restart_tsc(&m);
         
-        } else {
-            mp_receive_forward(tid);
-
-            if (get_thread_id()==LAST_NODE) {
-
-                mp_send(SEQUENTIALIZER, 0);
-            }
+        if (get_thread_id()==LAST_NODE) {
+            mp_send(SEQUENTIALIZER, epoch);
+            mp_receive(SEQUENTIALIZER);
         }
+        else if (get_thread_id()==SEQUENTIALIZER) {
+            mp_receive(LAST_NODE);
+            mp_send(LAST_NODE, epoch);
+        }
+
+        sk_m_add(&m);
     }
-    printf("Thread %d completed\n", tid);
+
+    if (get_thread_id() == LAST_NODE ||
+        get_thread_id() == SEQUENTIALIZER) {
+
+        sk_m_print(&m);
+    }
     
+
     __thread_end();
     return NULL;
 }
 
-void* worker3(void* a)
+/**
+ * \brief Broadcast trigger by LAST_NODE until back to LAST_NODE
+ */
+void* ab(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
+
+    // Setup buffer for measurements
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    sk_m_init(&m, NUM_RUNS, "ab", buf);
     
-    debug_printf("Reduction complete: %d\n", mp_reduce(tid));
+    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+
+        sk_m_restart_tsc(&m);
+        
+        if (get_thread_id()==LAST_NODE) {
+            mp_send(SEQUENTIALIZER, 0);
+        }
+
+        if (get_thread_id()==SEQUENTIALIZER) {
+            mp_send_ab(mp_receive(LAST_NODE));
+        }
+        else {
+            mp_receive_forward(0);
+        }
+
+        sk_m_add(&m);
+    }
+
+    if (get_thread_id() == LAST_NODE) {
+        sk_m_print(&m);
+    }
+    
+
+    __thread_end();
+    return NULL;
+}
+
+/**
+ * \brief Reduction
+ */
+void* reduction(void* a)
+{
+    int tid = *((int*) a);
+    __thread_init(tid, NUM_THREADS);
+
+    // Setup buffer for measurements
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    sk_m_init(&m, NUM_RUNS, "ab", buf);
+    
+    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+
+        sk_m_restart_tsc(&m);
+        mp_reduce(tid);
+        sk_m_add(&m);
+
+        mp_barrier(NULL);
+    }
+
+    if (get_thread_id() == SEQUENTIALIZER) {
+        sk_m_print(&m);
+    }
+    
 
     __thread_end();
     return NULL;
@@ -92,9 +135,10 @@ void* worker4(void* a)
     sk_m_init(&m, NUM_RUNS, "barriers", buf);
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
-        
-        mp_barrier();
-        sk_m_add(&m);
+
+        cycles_t r;
+        mp_barrier(&r);
+        sk_m_add_value(&m, r-m.last_tsc);
     }
 
     if (get_thread_id()==SEQUENTIALIZER) {
@@ -106,16 +150,25 @@ void* worker4(void* a)
     return NULL;
 }
 
-#define NUM_EXP 1
+#define NUM_EXP 4
 
 int main(int argc, char **argv)
 {
+    NUM_THREADS = sysconf(_SC_NPROCESSORS_CONF);
+
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
-        // &worker1,
-        // &worker2,
-        // &worker3,
+        &pingpong,
+        &ab,
+        &reduction,
         &worker4
+    };
+
+    const char *labels[NUM_EXP] = {
+        "Ping pong",
+        "Atomic broadcast",
+        "Reduction",
+        "barrier"
     };
 
     __sync_init(NUM_THREADS);
@@ -126,7 +179,7 @@ int main(int argc, char **argv)
     for (int j=0; j<NUM_EXP; j++) {
 
         printf("----------------------------------------\n");
-        printf("Executing experiment %d\n", (j+1));
+        printf("Executing experiment %d - %s\n", (j+1), labels[j]);
         printf("----------------------------------------\n");
         
         // Create

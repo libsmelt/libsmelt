@@ -41,7 +41,7 @@ void _tree_register_receive_handler(struct sync_binding *)
  */
 coreid_t disp_get_core_id(void)
 {
-    return 0;
+    return get_thread_id();
 }
 
 void bench_init(void)
@@ -113,7 +113,7 @@ numa_cpu_to_node(int cpu)
  */
 static void _setup_ump_chanels(int src, int dst)
 {
-    printf("Establishing connection between %d and %d\n", src, dst);
+    debug_printfff(DBG__INIT, "Establishing connection between %d and %d\n", src, dst);
     
     // Benchmarks send 1024 messages of one cache-line(?) = 64 Bytes each
     const int shm_size = (64*1024);

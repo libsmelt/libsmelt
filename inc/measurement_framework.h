@@ -18,16 +18,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "cycle.h"
-
-#define bench_tsc() getticks()
-
-static inline uint64_t rdtscp(void)
-{
-    uint32_t eax, edx;
-    __asm volatile ("rdtscp" : "=a" (eax), "=d" (edx) :: "ecx");
-    return ((uint64_t)edx << 32) | eax;
-}
+#include "sync.h"
 
 #include "inttypes.h"
 

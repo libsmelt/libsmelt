@@ -315,7 +315,8 @@ void setup_tree_from_model(void)
 
         // Create permanent list of bindings for that core
         mp_binding **_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
-        assert (_bindings!=NULL);
+        mp_binding **_r_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
+        assert (_bindings!=NULL && _r_bindings!=NULL);
 
         // .. and core IDs
         int *_idx = (int*) malloc(sizeof(int)*num);
@@ -323,8 +324,10 @@ void setup_tree_from_model(void)
 
         // Retrieve and store bindings
         for (int j=0; j<num; j++) {
-            _bindings[j] = get_binding(s, tmp[j]);
-            assert(_bindings[j]!=NULL);
+            _bindings[j] =   get_binding(s, tmp[j]);
+            _r_bindings[j] = get_binding(tmp[j], s);
+            
+            assert(_bindings[j]!=NULL && _r_bindings[j]!=NULL);
 
             _idx[j] = tmp[j];
         }
@@ -333,26 +336,44 @@ void setup_tree_from_model(void)
         child_bindings[s] = {
             .num = num,
             .b = _bindings,
+            .b_reverse = _r_bindings,
             .idx = _idx
         };
 
         if (tmp_parent>=0) {
-            debug_printf("Setting parent of %d to %d\n", s, tmp_parent);
+            debug_printfff(DBG__INIT, "Setting parent of %d to %d\n", s, tmp_parent);
 
-            mp_binding **_bindings_p = (mp_binding**) malloc(sizeof(mp_binding*)*1);
+            mp_binding **_bindings_p = (mp_binding**) malloc(sizeof(mp_binding*)*2);
             assert (_bindings!=NULL);
 
             int *_idx_p = (int*) malloc(sizeof(int)*1);
             assert (_idx_p!=NULL);
-            
+
+            // Binding to parent in both directions
             _bindings_p[0] = get_binding(tmp_parent, s);
+            _bindings_p[1] = get_binding(s, tmp_parent);
             _idx_p[0] = tmp_parent;
             
             parent_bindings[s] = (struct binding_lst) {
                 .num = 1,
                 .b = _bindings_p,
+                .b_reverse = _bindings_p + 1,
                 .idx = _idx_p
             };
+        }
+        else {
+            int *_idx_p = (int*) malloc(sizeof(int)*1);
+            assert (_idx_p!=NULL);
+
+            _idx_p[0] = -1;
+            
+            parent_bindings[s] = (struct binding_lst) {
+                .num = 0,
+                .b = NULL,
+                .b_reverse = NULL,
+                .idx = _idx_p
+            };
+
         }
     }
 }
@@ -372,4 +393,14 @@ mp_binding *mp_get_parent(coreid_t c, int *nidx)
         *nidx = parent_bindings[c].idx[0];
     }
     return parent_bindings[c].b[0];
+}
+
+binding_lst *_mp_get_children_raw(coreid_t c)
+{
+    return child_bindings+c;
+}
+
+binding_lst *_mp_get_parent_raw(coreid_t c)
+{
+    return parent_bindings+c;
 }
