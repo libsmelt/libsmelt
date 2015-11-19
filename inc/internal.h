@@ -35,5 +35,7 @@ struct binding_lst {
 binding_lst *_mp_get_parent_raw(coreid_t c);
 binding_lst *_mp_get_children_raw(coreid_t c);
 
+void pin_thread(coreid_t);
+
 
 #endif /* INTERNAL_DEBUG_H */

@@ -179,3 +179,21 @@ void debug_printf(const char *fmt, ...)
     printf(str, sizeof(str));
 }
 
+void pin_thread(coreid_t cpu)
+{
+    debug_printfff(DBG__INIT, "Pinning thread %d to core %d\n",
+                   get_thread_id(), cpu);
+                     
+    cpu_set_t cpu_mask;
+    int err;
+
+    CPU_ZERO(&cpu_mask);
+    CPU_SET(cpu, &cpu_mask);
+
+    err = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
+    
+    if (err) {
+        perror("sched_setaffinity");
+        exit(1);
+    }
+}

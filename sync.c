@@ -58,7 +58,10 @@ void __sync_init(int _nproc)
  */
 int __thread_init(int _tid, int _nproc)
 {
+    // Store thread ID and pin to core
     tid = _tid;
+    coreid_t coreid = get_core_id();
+    pin_thread(coreid); // XXX For now .. use Shoal code for that
     debug_printfff(DBG__INIT, "Hello world from thread %d .. \n", tid);
 
 #if !defined(USE_THREADS)
