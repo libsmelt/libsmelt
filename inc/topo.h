@@ -21,6 +21,7 @@ int topo_is_edge(coreid_t, coreid_t);
 int topo_is_parent(coreid_t, coreid_t);
 int topo_is_parent_real(coreid_t, coreid_t);
 unsigned int topo_num_cores(void);
+const char* topo_get_name(void);
 
 int topo_is_real_edge(coreid_t src, coreid_t dest);
 bool topo_does_mp_send(coreid_t core);

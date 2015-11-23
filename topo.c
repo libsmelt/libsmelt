@@ -159,6 +159,11 @@ bool topo_does_mp_receive(coreid_t core)
     return false;
 }
 
+const char* topo_get_name(void)
+{
+    return topo_names[get_topo_idx()];
+}
+
 /*
 bool topo_does_shm_send(coreid_t core)
 {
