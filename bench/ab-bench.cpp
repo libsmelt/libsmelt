@@ -14,23 +14,28 @@
 __thread struct sk_measurement m;
 
 int NUM_THREADS;
-#define NUM_RUNS 100 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 50 // 10000 // Tested up to 1.000.000
 
 pthread_barrier_t ab_barrier;
+
+#define TOPO_NAME(x,y) sprintf(x, "%s_%s", y, topo_get_name());
 
 /**
  * \brief Message ping-pong between LAST_NODE and SEQUENTIALIZER
  */
 void* pingpong(void* a)
 {
-    int tid = *((int*) a);
+    char outname[1024];
+   
+     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
-
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "pingpong", buf);
     
+    TOPO_NAME(outname, "pingpong");
+    sk_m_init(&m, NUM_RUNS, outname, buf);
+     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         sk_m_restart_tsc(&m);
@@ -63,13 +68,17 @@ void* pingpong(void* a)
  */
 void* ab(void* a)
 {
-    int tid = *((int*) a);
+    char outname[1024];
+    
+   int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "ab", buf);
-    
+
+    TOPO_NAME(outname, "ab");
+    sk_m_init(&m, NUM_RUNS, outname, buf);
+     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         sk_m_restart_tsc(&m);
@@ -104,13 +113,17 @@ extern void shl_barrier_shm(int b_count);
  */
 void* reduction(void* a)
 {
+    char outname[1024];
+    
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "reduction", buf);
-    
+
+    TOPO_NAME(outname, "reduction");
+    sk_m_init(&m, NUM_RUNS, outname, buf);
+     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         sk_m_restart_tsc(&m);
@@ -134,12 +147,16 @@ void* reduction(void* a)
  */
 void* reduction_ln(void* a)
 {
+    char outname[1024];
+    
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "reduction-ln", buf);
+
+    TOPO_NAME(outname, "reduction-ln");
+    sk_m_init(&m, NUM_RUNS, outname, buf);
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
@@ -165,12 +182,16 @@ void* reduction_ln(void* a)
 
 void* barrier(void* a)
 {
+    char outname[1024];
+        
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "barriers", buf);
+    
+    TOPO_NAME(outname, "barriers");
+    sk_m_init(&m, NUM_RUNS, outname, buf);
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
@@ -219,29 +240,34 @@ int main(int argc, char **argv)
     pthread_t ptds[NUM_THREADS];
     int tids[NUM_THREADS];
 
-    for (int j=0; j<NUM_EXP; j++) {
+    for (int e=0; e<NUM_TOPOS; e++) {
+    
+        for (int j=0; j<NUM_EXP; j++) {
 
-        printf("----------------------------------------\n");
-        printf("Executing experiment %d - %s\n", (j+1), labels[j]);
-        printf("----------------------------------------\n");
+            printf("----------------------------------------\n");
+            printf("Executing experiment %d - %s\n", (j+1), labels[j]);
+            printf("----------------------------------------\n");
 
-        // Yield to reduce the risk of getting de-scheduled later
-        sched_yield();
+            // Yield to reduce the risk of getting de-scheduled later
+            sched_yield();
         
-        // Create
-        for (int i=1; i<NUM_THREADS; i++) {
-            tids[i] = i;
-            pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
+            // Create
+            for (int i=1; i<NUM_THREADS; i++) {
+                tids[i] = i;
+                pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
+            }
+
+            // Master thread executes work for node 0
+            tids[0] = 0;
+            workers[j]((void*) (tids+0));
+
+            // Join
+            for (int i=1; i<NUM_THREADS; i++) {
+                pthread_join(ptds[i], NULL);
+            }
         }
 
-        // Master thread executes work for node 0
-        tids[0] = 0;
-        workers[j]((void*) (tids+0));
-
-        // Join
-        for (int i=1; i<NUM_THREADS; i++) {
-            pthread_join(ptds[i], NULL);
-        }
+        switch_topo();
     }
 
     pthread_barrier_destroy(&ab_barrier);
