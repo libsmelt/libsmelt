@@ -111,7 +111,7 @@ numa_cpu_to_node(int cpu)
  *
  * This is borrowed from UMPQ's pt_bench_pairs_ump program.
  */
-static void _setup_ump_chanels(int src, int dst)
+void _setup_ump_chanels(int src, int dst)
 {
     debug_printfff(DBG__INIT, "Establishing connection between %d and %d\n", src, dst);
     

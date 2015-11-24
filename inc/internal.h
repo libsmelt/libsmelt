@@ -35,7 +35,6 @@ struct binding_lst {
 binding_lst *_mp_get_parent_raw(coreid_t c);
 binding_lst *_mp_get_children_raw(coreid_t c);
 
-void pin_thread(coreid_t);
-
+void _setup_ump_chanels(int src, int dst);
 
 #endif /* INTERNAL_DEBUG_H */

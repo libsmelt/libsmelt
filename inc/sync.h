@@ -111,4 +111,7 @@ union quorum_share {
 void add_binding(coreid_t sender, coreid_t receiver, mp_binding *mp);
 mp_binding* get_binding(coreid_t sender, coreid_t receiver);
 
+void pin_thread(coreid_t);
+int __lowlevel_thread_init(int tid);
+
 #endif /* SYNC_H */

@@ -50,19 +50,18 @@ void __sync_init(int _nproc)
  * Has to be executed by each thread exactly once. One of the threads
  * has to have id 0, since this causes additional initialization.
  *
+ * Internally calls __lowlevel_thread_init. In addition to that,
+ * initializes a broadcast tree from given model.
+ *
  * \param _tid The id of the thread
  *
  * \param nproc Number of participants in synchronization - in shared
  *     memory implementations, this is redundant, as already given by
  *     __sync_init.
  */
-int __thread_init(int _tid, int _nproc)
+ int __thread_init(int _tid, int _nproc)
 {
-    // Store thread ID and pin to core
-    tid = _tid;
-    coreid_t coreid = get_core_id();
-    pin_thread(coreid); // XXX For now .. use Shoal code for that
-    debug_printfff(DBG__INIT, "Hello world from thread %d .. \n", tid);
+    __lowlevel_thread_init(tid);
 
 #if !defined(USE_THREADS)
     assert (!"NYI: do initialization in EACH process");
@@ -92,6 +91,25 @@ int __thread_init(int _tid, int _nproc)
     pthread_barrier_wait(&get_master_share()->data.sync_barrier);
     return 0;
 }
+
+
+/**
+ * \brief Initialize thread for use of sync library.
+ *
+ * Setup of the bare minimum of functionality required for threads to
+ * work with message passing.
+ *
+ * \param _tid The id of the thread
+ */
+int __lowlevel_thread_init(int _tid)
+{
+    // Store thread ID and pin to core
+    tid = _tid;
+    coreid_t coreid = get_core_id();
+    pin_thread(coreid); // XXX For now .. use Shoal code for that
+    debug_printfff(DBG__INIT, "Hello world from thread %d .. \n", tid);
+}
+
 
 /**
  * \brief Return current thread's id.
