@@ -63,6 +63,9 @@ test/mp-test: $(DEPS) $(EXTERNAL_OBJS) test/mp-test.cpp
 bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-bench.cpp -o $@
 
+bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.cpp
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.cpp -o $@
+
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
