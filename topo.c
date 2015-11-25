@@ -32,9 +32,26 @@ void init_topo(void);
  */
 void switch_topo(void)
 {
-    topo_idx++;
-    assert (topo_idx<NUM_TOPOS);
+    assert (switch_topo_to_idx(topo_idx+1));
+}
 
+/**
+ * \brief Switch topology according to given index.
+ *
+ * \param idx Index of the topology to be used.  
+ *
+ * \return true if successful, false otherwise (e.g. in case of
+ * invalid index idx)
+ */
+bool switch_topo_to_idx(int idx)
+{
+    if (idx>=NUM_TOPOS) {
+
+        printw("Cannot switch topology: index %d invalid\n", idx);
+        return false;
+    }
+    
+    topo_idx = idx;
     if (get_core_id() == SEQUENTIALIZER) {
         debug_printfff(DBG__SWITCH_TOPO, "Available topos: %d out of %d\n",
                      topo_idx, NUM_TOPOS);
@@ -45,16 +62,27 @@ void switch_topo(void)
                          i, topo_combined[i], topo_names[i],
                          i==topo_idx ? 'X' : ' ' );
         }
+        
+        debug_printf("Switching topology: \033[1;36m%s\033[0m\n",
+                     topo_get_name());
     }
 
     topo = topo_combined[topo_idx];
-    debug_printfff(DBG__SWITCH_TOPO, "test-accessing topo .. %d %d\n", topo_get(0, 0),
-                 topo_get(TOPO_NUM_CORES-1, TOPO_NUM_CORES-1));
+    
+    debug_printfff(DBG__SWITCH_TOPO, "test-accessing topo .. %d %d\n",
+                   topo_get(0, 0),
+                   topo_get(TOPO_NUM_CORES-1, TOPO_NUM_CORES-1));
 
     assert(LAST_NODE!=SEQUENTIALIZER); // LAST_NODE switched with topo
+    return true;
 }
 
-unsigned int get_topo_idx(void)
+/**
+ * \brief Get the currently activated topology index
+ *
+ * \return Topology index or -1 if nothing selected
+ */
+int get_topo_idx(void)
 {
     return topo_idx;
 }

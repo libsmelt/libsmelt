@@ -19,15 +19,15 @@ static int nproc;
 void __sync_init(int _nproc)
 {
     nproc = _nproc;
-    debug_printfff(DBG__INIT, "Initializing libsync .. model has %d nodes\n", topo_num_cores());
+    debug_printfff(DBG__INIT, "Initializing libsync .. model has %d nodes\n",
+                   topo_num_cores());
 
     // Debug output
 #ifdef QRM_DBG_ENABLED
-    printf("\033[1;31mWarning:\033[0m Debug flag (QRM_DBG_ENABLED) is set "
-           "- peformace will be reduced\n");
+    printw("Debug flag (QRM_DBG_ENABLED) is set - peformace will be reduced\n");
 #endif
 #ifdef SYNC_DEBUG
-    printf("\033[1;31mWarning:\033[0m Compiler optimizations are off - "
+    printw("Compiler optimizations are off - "
         "performance will suffer if  BUILDTYPE set to debug (in Makefile)\n");
 #endif
     
@@ -35,9 +35,16 @@ void __sync_init(int _nproc)
     debug_printfff(DBG__INIT, "Initializing master share .. \n");
     init_master_share();
 
-    // Enable a model
-    debug_printfff(DBG__INIT, "Switching topology .. \n");
-    switch_topo();
+    if (get_topo_idx()<0) {
+    
+        // Enable a model
+        debug_printfff(DBG__INIT, "No topology initalized, activating default .. \n");
+        switch_topo();
+
+    } else {
+        debug_printfff(DBG__INIT, "Topology already initialized to %d\n",
+                       get_topo_idx());
+    }
 
     // Initialize barrier
     pthread_barrier_init(&get_master_share()->data.sync_barrier, NULL, _nproc);
@@ -61,7 +68,7 @@ void __sync_init(int _nproc)
  */
  int __thread_init(int _tid, int _nproc)
 {
-    __lowlevel_thread_init(tid);
+    __lowlevel_thread_init(_tid);
 
 #if !defined(USE_THREADS)
     assert (!"NYI: do initialization in EACH process");
@@ -107,7 +114,7 @@ int __lowlevel_thread_init(int _tid)
     tid = _tid;
     coreid_t coreid = get_core_id();
     pin_thread(coreid); // XXX For now .. use Shoal code for that
-    debug_printfff(DBG__INIT, "Hello world from thread %d .. \n", tid);
+    debug_printfff(DBG__INIT, "Hello world from thread %d/%d .. \n", _tid, tid);
 }
 
 

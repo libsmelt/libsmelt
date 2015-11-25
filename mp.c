@@ -3,8 +3,8 @@
 #include "sync.h"
 #include "internal.h"
 
-#ifdef QRM_DBG_ENABLED
 extern void shl_barrier_shm(int b_count);
+#ifdef QRM_DBG_ENABLED
 #endif
 
 /**
@@ -195,16 +195,19 @@ void mp_barrier(cycles_t *measurement)
 {
     coreid_t tid = get_core_id();
 
-    debug_printfff(DBG__REDUCE, "barrier enter #%d\n", _num_barrier);
-
 #ifdef QRM_DBG_ENABLED
     ++_num_barrier;
     uint32_t _num_barrier_recv = _num_barrier;
 #endif    
+
+    debug_printfff(DBG__REDUCE, "barrier enter #%d\n", _num_barrier);
     
     // Recution
     // --------------------------------------------------
-    uint32_t _tmp = mp_reduce(_num_barrier);
+#ifdef QRM_DBG_ENABLED    
+    uint32_t _tmp =
+#endif
+    mp_reduce(_num_barrier);
 
 #ifdef QRM_DBG_ENABLED    
     // Sanity check
@@ -241,9 +244,9 @@ void mp_barrier(cycles_t *measurement)
     // causing problems somewhere else
 #if 0 // Enable separately
     debug_printfff(DBG_REDUCE, "finished barrier .. waiting for others\n");
-    shl_barrier_shm(get_num_threads());
 #endif
 #endif    
+    shl_barrier_shm(get_num_threads());
 
     debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
 }

@@ -14,6 +14,7 @@
 //#include "sync/model_defs.h" // << perhaps better not globally included?
 
 void switch_topo(void);
+bool switch_topo_to_idx(int);
 int topo_get(int,int);
 int topos_get(int,int,int);
 int topo_has_edge(coreid_t);
@@ -28,6 +29,6 @@ bool topo_does_mp_send(coreid_t core);
 bool topo_does_mp_receive(coreid_t core);
 bool topo_does_shm_send(coreid_t core);
 bool topo_does_shm_receive(coreid_t core);
-unsigned int get_topo_idx(void);
+int get_topo_idx(void);
 
 #endif /* TOPO_H */
