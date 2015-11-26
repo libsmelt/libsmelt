@@ -25,11 +25,11 @@
 
 void __sync_init(int);
 
-int  __thread_init(int,int);
+int  __thread_init(coreid_t,int);
 int  __thread_end(void);
 
 unsigned int  get_thread_id(void);
-int  get_core_id(void);
+coreid_t  get_core_id(void);
 unsigned int  get_num_threads(void);
 bool is_coordinator(coreid_t);
 
@@ -42,7 +42,7 @@ bool is_coordinator(coreid_t);
 #define SEQUENTIALIZER       0 // node that acts as the sequentializer
 
 #define USE_THREADS          1 // switch threads vs. processes
-#define BACK_CHAN            1 // Backward channel from LAST_NODE to SEQUENTIALIZER
+#define BACK_CHAN            1 // Backward channel from get_last_node() to get_sequentializer()
 
 // ==================================================
 // Data structures
@@ -113,5 +113,7 @@ mp_binding* get_binding(coreid_t sender, coreid_t receiver);
 
 void pin_thread(coreid_t);
 int __lowlevel_thread_init(int tid);
+
+coreid_t get_sequentializer(void);
 
 #endif /* SYNC_H */

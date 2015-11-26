@@ -9,10 +9,10 @@
 #include <cinttypes>
 #include <cstring>
 
-extern "C" {
+
 #include "ump_conf.h"
 #include "ump_common.h"
-}
+
 #include "cycle.h"
 
 typedef pthread_spinlock_t spinlock_t;

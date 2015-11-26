@@ -52,7 +52,7 @@ bool switch_topo_to_idx(int idx)
     }
     
     topo_idx = idx;
-    if (get_core_id() == SEQUENTIALIZER) {
+    if (get_core_id() == get_sequentializer()) {
         debug_printfff(DBG__SWITCH_TOPO, "Available topos: %d out of %d\n",
                      topo_idx, NUM_TOPOS);
 
@@ -73,7 +73,7 @@ bool switch_topo_to_idx(int idx)
                    topo_get(0, 0),
                    topo_get(TOPO_NUM_CORES-1, TOPO_NUM_CORES-1));
 
-    assert(LAST_NODE!=SEQUENTIALIZER); // LAST_NODE switched with topo
+    assert(get_last_node()!=get_sequentializer()); // LAST_NODE switched with topo
     return true;
 }
 
@@ -109,7 +109,7 @@ void init_topo(void)
  * \brief Check if there is message-passing connection in the topo
  * for the given pair of cores
  *
- * Also returns true for connection LAST_NODE <-> SEQUENTIALIZER
+ * Also returns true for connection get_last_node() <-> get_sequentializer()
  */
 int topo_is_edge(coreid_t src, coreid_t dest)
 {
@@ -122,15 +122,15 @@ int topo_is_edge(coreid_t src, coreid_t dest)
 
     return (topo_get(src, dest)>0 && topo_get(src, dest)<SHM_SLAVE_START) ||
         (topo_get(src, dest)==99) ||
-        (src==SEQUENTIALIZER && dest==LAST_NODE) ||
-        (dest==SEQUENTIALIZER && src==LAST_NODE);
+        (src==get_sequentializer() && dest==get_last_node()) ||
+        (dest==get_sequentializer() && src==get_last_node());
 }
 
 /*
  * \brief Check if there is message-passing connection in the topo
  * for the given pair of cores
  *
- * Does NOT return true for connection LAST_NODE <-> SEQUENTIALIZER
+ * Does NOT return true for connection get_last_node() <-> get_sequentializer()
  */
 int topo_is_real_edge(coreid_t src, coreid_t dest)
 {
@@ -153,12 +153,12 @@ int topo_is_parent_real(coreid_t core, coreid_t parent)
 /*
  * \brief Check if parent is parent of core.
  *
- * Includes the pseudo-link between LAST_NODE and SEQUENTIALIZER as a link.
+ * Includes the pseudo-link between get_last_node() and get_sequentializer() as a link.
  */
 int topo_is_parent(coreid_t core, coreid_t parent)
 {
     return topo_is_parent_real(core,parent) ||
-        (parent==LAST_NODE && core==SEQUENTIALIZER);
+        (parent==get_last_node() && core==get_sequentializer());
 }
 
 bool topo_does_mp_send(coreid_t core)
@@ -252,4 +252,9 @@ int topos_get(int mod, int x, int y)
 unsigned int topo_num_cores(void)
 {
     return TOPO_NUM_CORES;
+}
+
+coreid_t get_sequentializer(void)
+{
+    return SEQUENTIALIZER;
 }

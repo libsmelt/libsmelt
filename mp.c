@@ -10,25 +10,36 @@ extern void shl_barrier_shm(int b_count);
 /**
  * \brief Send a message
  */
-void mp_send(coreid_t receiver, uintptr_t val)
+__thread uint64_t num_mp_send = 0;
+void mp_send(coreid_t r, uintptr_t val)
 {
-    debug_printfff(DBG__AB, "mp_send on %d\n", get_thread_id());
-    mp_binding *b = get_binding(get_thread_id(), receiver);
+    num_mp_send++;
+    debug_printfff(DBG__AB, "mp_send to %d - %d\n", r, num_mp_send);
+    
+    coreid_t s = get_thread_id();
+    mp_binding *b = get_binding(s, r);
+    
     if (b==NULL) {
-        printf("Failed to get binding for %d %d\n", get_thread_id(), receiver);
+        printf("Failed to get binding for %d %d\n", s, r);
     }
     assert (b!=NULL);
     mp_send_raw(b, val);
 }
 
 /**
- * \brief Receive a message
+ * \brief Receive a message from s
  */
-uintptr_t mp_receive(coreid_t sender)
+__thread uint64_t num_mp_receive = 0;
+uintptr_t mp_receive(coreid_t s)
 {
-    mp_binding *b = get_binding(sender, get_thread_id());
+    num_mp_receive++;
+    debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
+    
+    coreid_t r = get_thread_id();
+    mp_binding *b = get_binding(s, r);
+    
     if (b==NULL) {
-        printf("Failed to get binding for %d %d\n", sender, get_thread_id());
+        printf("Failed to get binding for %d %d\n", s, get_thread_id());
     }
     assert (b!=NULL);
     return mp_receive_raw(b);
@@ -111,7 +122,7 @@ uintptr_t mp_receive_forward(uintptr_t val)
 
 bool _mp_is_reduction_root(void)
 {
-    return get_thread_id()==SEQUENTIALIZER;
+    return get_thread_id()==get_sequentializer();
 }
 
 /**
@@ -164,7 +175,7 @@ uintptr_t mp_reduce(uintptr_t val)
     assert ((pidx!=-1 && topo_does_mp_receive(my_core_id)) ||
             (pidx==-1 && !topo_does_mp_receive(my_core_id)));
 
-    assert (pidx!=-1 || my_core_id == SEQUENTIALIZER);
+    assert (pidx!=-1 || my_core_id == get_sequentializer());
     
     if (pidx!=-1) {
 
@@ -211,7 +222,7 @@ void mp_barrier(cycles_t *measurement)
 
 #ifdef QRM_DBG_ENABLED    
     // Sanity check
-    if (tid==SEQUENTIALIZER) {
+    if (tid==get_sequentializer()) {
         assert (_tmp == get_num_threads()*_num_barrier);
     }
 #endif
@@ -221,7 +232,7 @@ void mp_barrier(cycles_t *measurement)
     
     // Broadcast
     // --------------------------------------------------
-    if (tid == SEQUENTIALIZER) {
+    if (tid == get_sequentializer()) {
         mp_send_ab(_num_barrier);
         
     } else {
@@ -244,9 +255,9 @@ void mp_barrier(cycles_t *measurement)
     // causing problems somewhere else
 #if 0 // Enable separately
     debug_printfff(DBG_REDUCE, "finished barrier .. waiting for others\n");
+    shl_barrier_shm(get_num_threads());
 #endif
 #endif    
-    shl_barrier_shm(get_num_threads());
 
     debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
 }

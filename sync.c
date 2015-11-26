@@ -66,7 +66,7 @@ void __sync_init(int _nproc)
  *     memory implementations, this is redundant, as already given by
  *     __sync_init.
  */
- int __thread_init(int _tid, int _nproc)
+ int __thread_init(coreid_t _tid, int _nproc)
 {
     __lowlevel_thread_init(_tid);
 
@@ -84,7 +84,7 @@ void __sync_init(int _nproc)
     char *_tmp = (char*) malloc(1000);
     sprintf(_tmp, "sync%d", _tid);
 
-    if (_tid == SEQUENTIALIZER) {
+    if (_tid == get_sequentializer()) {
         
         tree_init(_tmp);
 
@@ -107,6 +107,7 @@ void __sync_init(int _nproc)
  * work with message passing.
  *
  * \param _tid The id of the thread
+ * \return Always returns 0
  */
 int __lowlevel_thread_init(int _tid)
 {
@@ -115,6 +116,8 @@ int __lowlevel_thread_init(int _tid)
     coreid_t coreid = get_core_id();
     pin_thread(coreid); // XXX For now .. use Shoal code for that
     debug_printfff(DBG__INIT, "Hello world from thread %d/%d .. \n", _tid, tid);
+
+    return 0;
 }
 
 
@@ -149,5 +152,5 @@ unsigned int get_num_threads(void)
  */
 bool is_coordinator(coreid_t c)
 {
-    return c == SEQUENTIALIZER;
+    return c == get_sequentializer();
 }

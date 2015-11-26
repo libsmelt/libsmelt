@@ -236,14 +236,14 @@ void tree_reset(void)
 
 void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
 {
-    debug_printfff(DBG__GENERAL,
+    debug_printfff(DBG__BINDING,
                    "Adding binding for %d, %d\n", sender, receiver);
     bindings[sender][receiver] = b;
 }
 
 mp_binding* get_binding(coreid_t sender, coreid_t receiver)
 {
-    debug_printfff(DBG__GENERAL,
+    debug_printfff(DBG__BINDING,
                    "%d Getting binding for %d, %d\n", get_thread_id(), sender, receiver);
     return bindings[sender][receiver];
 }
@@ -280,7 +280,7 @@ void setup_tree_from_model(void)
     
     // Sanity check
     if (get_num_threads()!=topo_num_cores()) {
-        printf("%d/%d\n", get_num_threads(), topo_num_cores());
+        printf("threads: %d/ topo: %d\n", get_num_threads(), topo_num_cores());
         USER_PANIC("Cannot parse model. Number of cores does not match\n");
     }
 
@@ -290,15 +290,15 @@ void setup_tree_from_model(void)
     int tmp_parent = -1;
 
     // Find children
-    for (int s=0; s<topo_num_cores(); s++) { // foreach sender
+    for (coreid_t s=0; s<topo_num_cores(); s++) { // foreach sender
 
-        int num = 0;
+        unsigned num = 0;
         
-        for (int i=1; i<topo_num_cores(); i++) { // + possible outward index
-            for (int r=0; r<topo_num_cores(); r++) {
+        for (coreid_t i=1; i<topo_num_cores(); i++) { // + possible outward index
+            for (coreid_t r=0; r<topo_num_cores(); r++) {
 
                 // Is this the i-th outgoing connection?
-                if (topo_get(s, r) == i) {
+                if (topo_get(s, r) == (int64_t) i) {
 
                     tmp[num++] = r;
                 }
@@ -311,7 +311,7 @@ void setup_tree_from_model(void)
         }
 
         // Otherwise parent was not found
-        assert (tmp_parent >= 0 || s == SEQUENTIALIZER); 
+        assert (tmp_parent >= 0 || s == get_sequentializer()); 
 
         // Create permanent list of bindings for that core
         mp_binding **_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
@@ -323,7 +323,7 @@ void setup_tree_from_model(void)
         assert (_idx!=NULL);
 
         // Retrieve and store bindings
-        for (int j=0; j<num; j++) {
+        for (unsigned j=0; j<num; j++) {
             _bindings[j] =   get_binding(s, tmp[j]);
             _r_bindings[j] = get_binding(tmp[j], s);
             

@@ -14,46 +14,61 @@
 __thread struct sk_measurement m;
 
 int NUM_THREADS;
-#define NUM_RUNS 50 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 1000000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RESULTS 1000
 
 pthread_barrier_t ab_barrier;
 
 #define TOPO_NAME(x,y) sprintf(x, "%s_%s", y, topo_get_name());
 
 /**
- * \brief Message ping-pong between LAST_NODE and SEQUENTIALIZER
+ * \brief Message ping-pong between get_last_node() and get_sequentializer()
  */
+extern __thread uint64_t ump_num_acks_sent;
 void* pingpong(void* a)
 {
     char outname[1024];
    
-     int tid = *((int*) a);
+     coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     
     TOPO_NAME(outname, "pingpong");
-    sk_m_init(&m, NUM_RUNS, outname, buf);
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
      
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+    for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
 
+        // assert (ump_num_acks_sent==0); // We should NEVER have to sent
+        //                                // ACKs in this benchmark, as
+        //                                // they should get piggy-backed
+        //                                // with the response.
+        
         sk_m_restart_tsc(&m);
         
-        if (get_thread_id()==LAST_NODE) {
-            mp_send(SEQUENTIALIZER, epoch);
-            mp_receive(SEQUENTIALIZER);
+        if (get_thread_id()==get_last_node()) {
+
+            debug_printff("send %d\n", epoch);
+            mp_send(get_sequentializer(), epoch);
+
+            debug_printff("receive %d\n", epoch);
+            assert(mp_receive(get_sequentializer())==epoch);
         }
-        else if (get_thread_id()==SEQUENTIALIZER) {
-            mp_receive(LAST_NODE);
-            mp_send(LAST_NODE, epoch);
+        else if (get_thread_id()==get_sequentializer()) {
+
+            debug_printff("receive %d\n", epoch);
+            assert(mp_receive(get_last_node())==epoch);
+
+            debug_printff("send %d\n", epoch);
+            mp_send(get_last_node(), epoch);
         }
 
         sk_m_add(&m);
     }
 
-    if (get_thread_id() == LAST_NODE ||
-        get_thread_id() == SEQUENTIALIZER) {
+    if (get_thread_id() == get_last_node() ||
+        get_thread_id() == get_sequentializer()) {
 
         sk_m_print(&m);
     }
@@ -64,31 +79,31 @@ void* pingpong(void* a)
 }
 
 /**
- * \brief Broadcast trigger by LAST_NODE until back to LAST_NODE
+ * \brief Broadcast trigger by get_last_node() until back to LAST_NODE
  */
 void* ab(void* a)
 {
     char outname[1024];
     
-   int tid = *((int*) a);
+   coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
 
     TOPO_NAME(outname, "ab");
-    sk_m_init(&m, NUM_RUNS, outname, buf);
-     
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         sk_m_restart_tsc(&m);
         
-        if (get_thread_id()==LAST_NODE) {
-            mp_send(SEQUENTIALIZER, 0);
+        if (get_thread_id()==get_last_node()) {
+            mp_send(get_sequentializer(), 0);
         }
 
-        if (get_thread_id()==SEQUENTIALIZER) {
-            mp_send_ab(mp_receive(LAST_NODE));
+        if (get_thread_id()==get_sequentializer()) {
+            mp_send_ab(mp_receive(get_last_node()));
         }
         else {
             mp_receive_forward(0);
@@ -97,7 +112,7 @@ void* ab(void* a)
         sk_m_add(&m);
     }
 
-    if (get_thread_id() == LAST_NODE) {
+    if (get_thread_id() == get_last_node()) {
         sk_m_print(&m);
     }
     
@@ -115,14 +130,14 @@ void* reduction(void* a)
 {
     char outname[1024];
     
-    int tid = *((int*) a);
+    coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
 
     TOPO_NAME(outname, "reduction");
-    sk_m_init(&m, NUM_RUNS, outname, buf);
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
      
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
@@ -133,7 +148,7 @@ void* reduction(void* a)
         pthread_barrier_wait(&ab_barrier);
     }
 
-    if (get_thread_id() == SEQUENTIALIZER) {
+    if (get_thread_id() == get_sequentializer()) {
         sk_m_print(&m);
     }
     
@@ -149,29 +164,29 @@ void* reduction_ln(void* a)
 {
     char outname[1024];
     
-    int tid = *((int*) a);
+    coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
 
     TOPO_NAME(outname, "reduction-ln");
-    sk_m_init(&m, NUM_RUNS, outname, buf);
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         sk_m_restart_tsc(&m);
         mp_reduce(tid);
 
-        if (tid==SEQUENTIALIZER) {
-            mp_send(LAST_NODE, 0);
-        } else if (tid==LAST_NODE) {
-            mp_receive(SEQUENTIALIZER);
+        if (tid==get_sequentializer()) {
+            mp_send(get_last_node(), 0);
+        } else if (tid==get_last_node()) {
+            mp_receive(get_sequentializer());
         }
         sk_m_add(&m);
     }
 
-    if (get_thread_id() == LAST_NODE) {
+    if (get_thread_id() == get_last_node()) {
         sk_m_print(&m);
     }
     
@@ -184,24 +199,24 @@ void* barrier(void* a)
 {
     char outname[1024];
         
-    int tid = *((int*) a);
+    coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     
     TOPO_NAME(outname, "barriers");
-    sk_m_init(&m, NUM_RUNS, outname, buf);
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
     
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         mp_barrier(NULL);
         
-        if (tid==LAST_NODE) sk_m_add(&m);
+        if (tid==get_last_node()) sk_m_add(&m);
     }
 
-    if (get_thread_id()==SEQUENTIALIZER ||
-        get_thread_id()==LAST_NODE) {
+    if (get_thread_id()==get_sequentializer() ||
+        get_thread_id()==get_last_node()) {
 
         sk_m_print(&m);
     }
@@ -210,7 +225,7 @@ void* barrier(void* a)
     return NULL;
 }
 
-#define NUM_EXP 5
+#define NUM_EXP 1
 
 int main(int argc, char **argv)
 {
@@ -221,18 +236,18 @@ int main(int argc, char **argv)
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
         &pingpong,
-        &ab,
-        &reduction,
-        &reduction_ln,
-        &barrier
+        // &ab,
+        // //        &reduction,
+        // &reduction_ln,
+        // &barrier
     };
 
     const char *labels[NUM_EXP] = {
         "Ping pong",
-        "Atomic broadcast",
-        "Reduction",
-        "Reduction (last node)", 
-        "barrier"
+        // "Atomic broadcast",
+        // //        "Reduction",
+        // "Reduction (last node)", 
+        // "barrier"
     };
 
     __sync_init(NUM_THREADS);
@@ -267,7 +282,7 @@ int main(int argc, char **argv)
             }
         }
 
-        switch_topo();
+        if( e<NUM_TOPOS-1) switch_topo();
     }
 
     pthread_barrier_destroy(&ab_barrier);

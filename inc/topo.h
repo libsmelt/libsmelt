@@ -10,8 +10,7 @@
 #ifndef TOPO_H
 #define TOPO_H 1
 
-// Include the pre-generated model
-//#include "sync/model_defs.h" // << perhaps better not globally included?
+#include "model_defs.h"
 
 void switch_topo(void);
 bool switch_topo_to_idx(int);
@@ -30,5 +29,10 @@ bool topo_does_mp_receive(coreid_t core);
 bool topo_does_shm_send(coreid_t core);
 bool topo_does_shm_receive(coreid_t core);
 int get_topo_idx(void);
+
+inline coreid_t get_last_node(void)
+{
+    return (coreid_t) ALL_LAST_NODES[get_topo_idx()];
+}
 
 #endif /* TOPO_H */

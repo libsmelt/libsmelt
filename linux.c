@@ -2,9 +2,7 @@
 #include "model_defs.h"
 #include "topo.h"
 
-extern "C" {
 #include "ump_conf.h"
-}
     
 #include <sched.h>
 
@@ -16,7 +14,7 @@ extern "C" {
  *
  * Assumption: On Linux, the core_id equals the thread_id
  */
-int get_core_id(void)
+coreid_t get_core_id(void)
 {
     return get_thread_id();
 }
@@ -115,8 +113,14 @@ void _setup_ump_chanels(int src, int dst)
 {
     debug_printfff(DBG__INIT, "Establishing connection between %d and %d\n", src, dst);
     
-    // Benchmarks send 1024 messages of one cache-line(?) = 64 Bytes each
-    const int shm_size = (64*1024);
+    const int shm_size = (64*10);
+
+    /* struct ump_pair_conf fwr_conf = UMP_CONF_INIT(src, dst, shm_size); */
+    /* struct ump_pair_state *fwr = ump_pair_state_create(&fwr_conf); */
+    /* struct ump_pair_state rev = { */
+    /*     .src = fwr->dst, */
+    /*     .dst = fwr->src */
+    /* }; */
 
     struct ump_pair_conf fwr_conf = UMP_CONF_INIT(src, dst, shm_size);
     struct ump_pair_conf rev_conf = UMP_CONF_INIT(dst, src, shm_size);
@@ -148,7 +152,48 @@ void mp_send_raw(mp_binding *b, uintptr_t val)
 {
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
     struct ump_queue *q = &ups->src.queue;
-    
+
+    //    struct ump_chan *c = q->chan;
+
+    // Check if we can send. We cannot send if the channel is full. In
+    // that case, we need to wait for messages on the reverse
+    // channel. But we cannot receive them, since we need to have them
+    // available later on, where they are expected, and cannot just
+    // dequeue them here.
+    //
+    // Just peeking at the head is also no solution, because we can
+    // still get stuck if the head we already peeked on will never be
+    // dequeue.
+    /* if (!ump_chan_can_send(c)) { */
+
+    /*     // Find reverse channel */
+    /*     struct ump_chan *crev = ups->dst.queue.chan; */
+
+    /*     // Wait until we can receive something form the channel */
+    /*     while (!ump_chan_can_recv(crev)) ; */
+
+    /*     struct ump_rxchan *crx = ; */
+
+    /*     union ump_control ctrl; */
+    /*     struct ump_message *msg; */
+        
+    /*     ctrl.raw = crev->buf[crev->pos].control.raw; */
+    /*     assert(ctrl.x.epoch != crev->epoch); // Otherwise can_recv should not have returned? */
+
+    /*     msg = &crev->buf[crev->pos]; */
+
+    /*     crev->ack_id = msg->control.x.header & UMP_INDEX_MASK; */
+    /*     msgtag = msg->control.x.header >> UMP_INDEX_BITS; */
+    /*     c->seq_id++; // what does this do? */
+
+    /*     assert (msgtype == UMP_ACK_MSGTAG); // Otherwise we are */
+    /*                                         // screwed, since we don't */
+    /*                                         // know what to do with */
+    /*                                         // the message */
+
+        
+    /* } */
+
     ump_enqueue_word(q, val);
 }
 

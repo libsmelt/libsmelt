@@ -35,9 +35,9 @@ CFLAGS += -std=c99 $(COMMONFLAGS)
 INC += -I inc -I $(UMPQ)
 
 ifeq ($(BUILDTYPE),debug)
-	OPT=-ggdb -O0 -pg -DSYNC_DEBUG
+	OPT=-ggdb -O2 -pg -DSYNC_DEBUG
 else
-	OPT=-O3
+	OPT=-O3 -ggdb
 endif
 
 CXXFLAGS += $(OPT)
@@ -78,7 +78,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 
 # UMPQ code is C, not C++
 ../umpq/%.o: ../umpq/%.c
-	$(CC) $(CFLAGS) $(INC) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
 %.o : %.c
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@

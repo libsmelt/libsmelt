@@ -18,7 +18,7 @@ void* worker1(void* a)
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    if (tid == SEQUENTIALIZER) {
+    if (tid == get_sequentializer()) {
 
         for (unsigned int i=0; i<topo_num_cores(); i++) {
             if (topo_is_parent(get_thread_id(), i)) {
@@ -30,7 +30,7 @@ void* worker1(void* a)
     else {
 
         for (unsigned int i=0; i<topo_num_cores(); i++) {
-            if (i==SEQUENTIALIZER && topo_is_parent(i, get_thread_id())) {
+            if (i==get_sequentializer() && topo_is_parent(i, get_thread_id())) {
                 assert (mp_receive(i)==i);
             }
         }
@@ -50,18 +50,18 @@ void* worker2(void* a)
 
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
     
-        if (tid == SEQUENTIALIZER) {
+        if (tid == get_sequentializer()) {
             mp_send_ab(tid);
 
-            // Wait for message from LAST_NODE
-            mp_receive(LAST_NODE);
+            // Wait for message from get_last_node()
+            mp_receive(get_last_node());
         
         } else {
             mp_receive_forward(tid);
 
-            if (get_thread_id()==LAST_NODE) {
+            if (get_thread_id()==get_last_node()) {
 
-                mp_send(SEQUENTIALIZER, 0);
+                mp_send(get_sequentializer(), 0);
             }
         }
     }
@@ -112,7 +112,7 @@ void* worker4(void* a)
         
     }
 
-    if (get_thread_id()==SEQUENTIALIZER) {
+    if (get_thread_id()==get_sequentializer()) {
 
         sk_m_print(&m);
     }

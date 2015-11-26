@@ -140,7 +140,7 @@ void shl_barrier_shm(int b_count)
     // Everyone passed the barrier, and is working on the next
     // one. Access to this barriers counter is save now to the
     // coordinator, which can reset it's value to 0.
-    if (get_thread_id()==SEQUENTIALIZER) {
+    if (get_thread_id()==get_sequentializer()) {
         unsigned _tmp = (_shl_round+QRM_ROUND_MAX-1)%QRM_ROUND_MAX;
         get_master_share()->data.rounds[_tmp] = 0;
     }

@@ -3,3 +3,7 @@
 html/*
 latex/*
 cscope.files
+bench/ab-bench
+bench/pairwise
+test/mp-test
+*.so
