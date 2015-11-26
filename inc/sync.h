@@ -24,6 +24,7 @@
 // Functions
 
 void __sync_init(int);
+void __sys_init(void);
 
 int  __thread_init(coreid_t,int);
 int  __thread_end(void);

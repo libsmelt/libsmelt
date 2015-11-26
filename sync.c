@@ -18,6 +18,8 @@ static int nproc;
  */
 void __sync_init(int _nproc)
 {
+    __sys_init();
+    
     nproc = _nproc;
     debug_printfff(DBG__INIT, "Initializing libsync .. model has %d nodes\n",
                    topo_num_cores());

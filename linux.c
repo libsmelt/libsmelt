@@ -242,3 +242,13 @@ void pin_thread(coreid_t cpu)
         exit(1);
     }
 }
+
+void __sys_init(void)
+{
+#ifdef UMP_ENABLE_SLEEP
+    printf("\033[1;31mWarning:\033[0m UMP sleep is enabled - this is buggy\n");
+#else
+    printf("UMP sleep disabled\n");
+#endif  
+
+}
