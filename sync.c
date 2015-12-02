@@ -21,8 +21,9 @@ void __sync_init(int _nproc)
     __sys_init();
     
     nproc = _nproc;
-    debug_printfff(DBG__INIT, "Initializing libsync .. model has %d nodes\n",
-                   topo_num_cores());
+    debug_printf("Initializing libsync: model: %d nodes, %d threads\n",
+                 topo_num_cores(), nproc);
+    assert (topo_num_cores()==nproc);
 
     // Debug output
 #ifdef QRM_DBG_ENABLED
