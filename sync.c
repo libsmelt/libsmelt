@@ -114,11 +114,14 @@ void __sync_init(int _nproc)
  */
 int __lowlevel_thread_init(int _tid)
 {
+    __backend_thread_start();
+    
     // Store thread ID and pin to core
     tid = _tid;
     coreid_t coreid = get_core_id();
     pin_thread(coreid); // XXX For now .. use Shoal code for that
-    debug_printfff(DBG__INIT, "Hello world from thread %d/%d .. \n", _tid, tid);
+    debug_printfff(DBG__INIT, "Hello world from thread %d on core %d \n",
+                   tid, coreid);
 
     return 0;
 }
@@ -138,6 +141,8 @@ unsigned int get_thread_id(void)
  */
 int __thread_end(void)
 {
+    __backend_thread_end();
+    
     debug_printfff(DBG__INIT, "Thread %d ending %d\n", tid, mp_get_counter("barriers"));
     return 0;
 }

@@ -2,6 +2,7 @@
 #include "model_defs.h"
 #include "topo.h"
 
+#include "debug.h"
 #include "ump_conf.h"
     
 #include <sched.h>
@@ -153,47 +154,6 @@ void mp_send_raw(mp_binding *b, uintptr_t val)
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
     struct ump_queue *q = &ups->src.queue;
 
-    //    struct ump_chan *c = q->chan;
-
-    // Check if we can send. We cannot send if the channel is full. In
-    // that case, we need to wait for messages on the reverse
-    // channel. But we cannot receive them, since we need to have them
-    // available later on, where they are expected, and cannot just
-    // dequeue them here.
-    //
-    // Just peeking at the head is also no solution, because we can
-    // still get stuck if the head we already peeked on will never be
-    // dequeue.
-    /* if (!ump_chan_can_send(c)) { */
-
-    /*     // Find reverse channel */
-    /*     struct ump_chan *crev = ups->dst.queue.chan; */
-
-    /*     // Wait until we can receive something form the channel */
-    /*     while (!ump_chan_can_recv(crev)) ; */
-
-    /*     struct ump_rxchan *crx = ; */
-
-    /*     union ump_control ctrl; */
-    /*     struct ump_message *msg; */
-        
-    /*     ctrl.raw = crev->buf[crev->pos].control.raw; */
-    /*     assert(ctrl.x.epoch != crev->epoch); // Otherwise can_recv should not have returned? */
-
-    /*     msg = &crev->buf[crev->pos]; */
-
-    /*     crev->ack_id = msg->control.x.header & UMP_INDEX_MASK; */
-    /*     msgtag = msg->control.x.header >> UMP_INDEX_BITS; */
-    /*     c->seq_id++; // what does this do? */
-
-    /*     assert (msgtype == UMP_ACK_MSGTAG); // Otherwise we are */
-    /*                                         // screwed, since we don't */
-    /*                                         // know what to do with */
-    /*                                         // the message */
-
-        
-    /* } */
-
     ump_enqueue_word(q, val);
 }
 
@@ -250,5 +210,19 @@ void __sys_init(void)
 #else
     printf("UMP sleep disabled\n");
 #endif  
+}
 
+int __backend_thread_start(void)
+{
+#ifdef UMP_DBG_COUNT
+    ump_start();
+#endif
+}
+
+int __backend_thread_end(void)
+{
+#ifdef UMP_DBG_COUNT
+    ump_end();
+#endif
+    return 0;
 }

@@ -29,6 +29,9 @@ void __sys_init(void);
 int  __thread_init(coreid_t,int);
 int  __thread_end(void);
 
+int  __backend_thread_end(void);
+int  __backend_thread_start(void);
+
 unsigned int  get_thread_id(void);
 coreid_t  get_core_id(void);
 unsigned int  get_num_threads(void);

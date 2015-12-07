@@ -66,6 +66,9 @@ bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
 bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.cpp -o $@
 
+bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.cpp
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise_raw.cpp -o $@
+
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
