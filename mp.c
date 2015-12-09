@@ -110,6 +110,7 @@ uintptr_t mp_send_ab(uintptr_t payload)
 uintptr_t mp_receive_forward(uintptr_t val)
 {
     int parent_core;
+
     mp_binding *b = mp_get_parent(get_thread_id(), &parent_core);
     
     debug_printfff(DBG__AB, "Receiving from parent %d\n", parent_core);
@@ -141,14 +142,12 @@ uintptr_t mp_reduce(uintptr_t val)
     // Receive (this will be from several children)
     // --------------------------------------------------
         
-    // XXX In which order to receive from clients? Select? Polling
-    // serveral channels is expensive.
-
+    // Determine child bindings
     struct binding_lst *blst = _mp_get_children_raw(get_thread_id());
     int numbindings = blst->num;
 
-    assert ((numbindings==0 && !topo_does_mp_send(my_core_id)) ||
-            (numbindings>0 && topo_does_mp_send(my_core_id)));
+    assert ((numbindings==0 && !topo_does_mp_send(my_core_id, false)) ||
+            (numbindings>0 && topo_does_mp_send(my_core_id, false)));
 
     if (numbindings!=0) {
         debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
@@ -172,8 +171,8 @@ uintptr_t mp_reduce(uintptr_t val)
     binding_lst *blst_parent = _mp_get_parent_raw(get_thread_id());
     int pidx = blst_parent->idx[0];
     
-    assert ((pidx!=-1 && topo_does_mp_receive(my_core_id)) ||
-            (pidx==-1 && !topo_does_mp_receive(my_core_id)));
+    assert ((pidx!=-1 && topo_does_mp_receive(my_core_id, false)) ||
+            (pidx==-1 && !topo_does_mp_receive(my_core_id, false)));
 
     assert (pidx!=-1 || my_core_id == get_sequentializer());
     

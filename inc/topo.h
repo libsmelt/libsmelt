@@ -16,16 +16,16 @@ void switch_topo(void);
 bool switch_topo_to_idx(int);
 int topo_get(int,int);
 int topos_get(int,int,int);
-int topo_has_edge(coreid_t);
-int topo_is_edge(coreid_t, coreid_t);
+bool topo_is_leaf_node(coreid_t);
+bool topo_is_child(coreid_t, coreid_t);
 int topo_is_parent(coreid_t, coreid_t);
 int topo_is_parent_real(coreid_t, coreid_t);
 unsigned int topo_num_cores(void);
+
 const char* topo_get_name(void);
 
-int topo_is_real_edge(coreid_t src, coreid_t dest);
-bool topo_does_mp_send(coreid_t core);
-bool topo_does_mp_receive(coreid_t core);
+bool topo_does_mp_send(coreid_t, bool);
+bool topo_does_mp_receive(coreid_t, bool);
 bool topo_does_shm_send(coreid_t core);
 bool topo_does_shm_receive(coreid_t core);
 int get_topo_idx(void);

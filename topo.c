@@ -4,6 +4,9 @@
 // Include the pre-generated model
 #include "model.h"
 
+#include <vector>
+#include <algorithm>
+
 // --------------------------------------------------
 // Data structures - shared
 
@@ -105,68 +108,59 @@ void init_topo(void)
 #endif
 }
 
-/*
- * \brief Check if there is message-passing connection in the topo
- * for the given pair of cores
+/**
+ * \brief Determine if a node is a leaf node in the current model.
  *
- * Also returns true for connection get_last_node() <-> get_sequentializer()
+ * Warning: Iterates C++ vectors, might be slow.
  */
-int topo_is_edge(coreid_t src, coreid_t dest)
+bool topo_is_leaf_node(coreid_t core)
 {
-    assert(src<get_num_threads());
-    assert(dest<get_num_threads());
+    // Leaf nodes of current model
+    std::vector<int> *leafs = all_leaf_nodes[topo_idx];
 
-    // For MP: Node s -> r implies node r -> s
-    assert(topo_get(src, dest) == 0 || topo_get(src, dest)>=SHM_SLAVE_START || topo_get(dest, src)>0);
-    assert(topo_get(dest, src) == 0 || topo_get(dest, src)>=SHM_SLAVE_START || topo_get(src, dest)>0);
-
-    return (topo_get(src, dest)>0 && topo_get(src, dest)<SHM_SLAVE_START) ||
-        (topo_get(src, dest)==99) ||
-        (src==get_sequentializer() && dest==get_last_node()) ||
-        (dest==get_sequentializer() && src==get_last_node());
+    return std::find(leafs->begin(), leafs->end(), core) != leafs->end();
 }
 
-/*
- * \brief Check if there is message-passing connection in the topo
- * for the given pair of cores
+/**
+ * \brief Determine if node2 is a child of node1
  *
- * Does NOT return true for connection get_last_node() <-> get_sequentializer()
+ * Is there an edge node1 -> node2
  */
-int topo_is_real_edge(coreid_t src, coreid_t dest)
+bool topo_is_child(coreid_t node1, coreid_t node2)
 {
-    assert(src<get_num_threads());
-    assert(dest<get_num_threads());
-
-    // For MP: Node s -> r implies node r -> s
-    assert(topo_get(src, dest) == 0 || topo_get(src, dest)>=SHM_SLAVE_START || topo_get(dest, src)>0);
-    assert(topo_get(dest, src) == 0 || topo_get(dest, src)>=SHM_SLAVE_START || topo_get(src, dest)>0);
-
-    return (topo_get(src, dest)>0 && topo_get(src, dest)<SHM_SLAVE_START) ||
-        (topo_get(src, dest)==99);
+    return (topo_get(node1, node2)>0 && topo_get(node1, node2)<SHM_SLAVE_START);
 }
+
 
 int topo_is_parent_real(coreid_t core, coreid_t parent)
 {
-    return topo_get(parent, core) == 99;
+    bool is_parent = topo_get(parent, core) == 99;
+    
+    // Sanity check for model consistency
+    assert (!is_parent || topo_is_child(core, parent));
+    
+    return is_parent;
 }
 
-/*
- * \brief Check if parent is parent of core.
+
+/**
+ * \brief Check whether a node sends messages according to the current
+ * model.
  *
- * Includes the pseudo-link between get_last_node() and get_sequentializer() as a link.
+ * \param include_leafs Consider communication from leaf nodes to
+ * sequentializer as message passing links
  */
-int topo_is_parent(coreid_t core, coreid_t parent)
+bool topo_does_mp_send(coreid_t core, bool include_leafs)
 {
-    return topo_is_parent_real(core,parent) ||
-        (parent==get_last_node() && core==get_sequentializer());
-}
+    // All last nodes will send messages
+    if (topo_is_leaf_node(core) && include_leafs) {
+        return true;
+    }
 
-bool topo_does_mp_send(coreid_t core)
-{
+    // Is the node a parent of any other node?
     for (int i=0; i<TOPO_NUM_CORES; i++) {
 
-        if (topo_is_real_edge(core, i) && topo_is_parent(core, i)) {
-
+        if (topo_is_parent_real(core, i)) {
             return true;
         }
     }
@@ -174,11 +168,24 @@ bool topo_does_mp_send(coreid_t core)
     return false;
 }
 
-bool topo_does_mp_receive(coreid_t core)
+/**
+ * \brief Check whether a node receives messages according to the
+ * current model.
+ *
+ * \param include_leafs Consider communication from leaf nodes to
+ * sequentializer as message passing links
+ */
+bool topo_does_mp_receive(coreid_t core, bool include_leafs)
 {
+    // The sequentializer has to receive messages
+    if (core == get_sequentializer() && include_leafs) {
+        return true;
+    }
+
+    // Is the node receiving from any other node
     for (int i=0; i<TOPO_NUM_CORES; i++) {
 
-        if (topo_is_real_edge(core, i) && !topo_is_parent(core, i)) {
+        if (topo_is_child(i, core)) {
 
             return true;
         }
@@ -223,15 +230,6 @@ bool topo_does_shm_receive(coreid_t core)
     return false;
 }
 */
-
-/*
- * \brief Check if there is an edge in the topo to the given core
- *
- */
-int topo_has_edge(coreid_t dest)
-{
-    return topo_is_edge(get_core_id(), dest);
-}
 
 static int __topo_get(int* mod, int x, int y)
 {
