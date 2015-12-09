@@ -36,8 +36,8 @@ scp $BENCH $MACHINE:
 # Run and log ..
 TMP=$(mktemp)
 ssh $MACHINE killall -s KILL $(basename $BENCH)
-ssh $MACHINE "./$(basename $BENCH) > log"
-scp $MACHINE:log $TMP
+ssh $MACHINE "./$(basename $BENCH) > /tmp/log"
+scp $MACHINE:/tmp/log $TMP
 cat $TMP | log_wrapper
 rm $TMP
 

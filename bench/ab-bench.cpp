@@ -8,10 +8,12 @@
 #include "measurement_framework.h"
 #include <pthread.h>
 #include <unistd.h>
+#include <vector>
 
 #include "model_defs.h"
 
 __thread struct sk_measurement m;
+__thread struct sk_measurement m2;
 
 int NUM_THREADS;
 #define NUM_RUNS 1000000 //50 // 10000 // Tested up to 1.000.000
@@ -28,49 +30,65 @@ extern __thread uint64_t ump_num_acks_sent;
 void* pingpong(void* a)
 {
     char outname[1024];
+    char outname2[1024];
    
      coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    cycles_t *buf2 = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     
     TOPO_NAME(outname, "pingpong");
+    TOPO_NAME(outname2, "pingpong_receive");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
+    sk_m_init(&m2, NUM_RESULTS, outname2, buf2);
      
-    for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
 
-        // assert (ump_num_acks_sent==0); // We should NEVER have to sent
-        //                                // ACKs in this benchmark, as
-        //                                // they should get piggy-backed
-        //                                // with the response.
-        
-        sk_m_restart_tsc(&m);
-        
-        if (get_thread_id()==get_last_node()) {
+    if (get_thread_id()==get_last_node()) {
 
+        mp_binding *b = get_binding(get_sequentializer(), get_thread_id());
+        
+        for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
+            sk_m_restart_tsc(&m);
             debug_printff("send %d\n", epoch);
+            mp_send(get_sequentializer(), epoch);
             mp_send(get_sequentializer(), epoch);
 
             debug_printff("receive %d\n", epoch);
-            assert(mp_receive(get_sequentializer())==epoch);
+            sk_m_restart_tsc(&m2);
+            assert(mp_receive_raw(b)==epoch);
+            assert(mp_receive_raw(b)==epoch);
+            sk_m_add(&m2);
+            sk_m_add(&m);
         }
-        else if (get_thread_id()==get_sequentializer()) {
 
+    }
+    if (get_thread_id()==get_sequentializer()) {
+
+        for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
+            mp_binding *b = get_binding(get_last_node(), get_thread_id());
+            
             debug_printff("receive %d\n", epoch);
-            assert(mp_receive(get_last_node())==epoch);
+            sk_m_restart_tsc(&m);
+            sk_m_restart_tsc(&m2);
+            assert(mp_receive_raw(b)==epoch);
+            assert(mp_receive_raw(b)==epoch);
+            sk_m_add(&m2);
 
             debug_printff("send %d\n", epoch);
             mp_send(get_last_node(), epoch);
+            mp_send(get_last_node(), epoch);
+            sk_m_add(&m);
         }
-
-        sk_m_add(&m);
     }
+
 
     if (get_thread_id() == get_last_node() ||
         get_thread_id() == get_sequentializer()) {
 
         sk_m_print(&m);
+        sk_m_print(&m2);
     }
     
 
@@ -81,6 +99,7 @@ void* pingpong(void* a)
 /**
  * \brief Broadcast trigger by get_last_node() until back to LAST_NODE
  */
+extern std::vector<int> *all_leaf_nodes[];
 void* ab(void* a)
 {
     char outname[1024];
@@ -94,28 +113,35 @@ void* ab(void* a)
     TOPO_NAME(outname, "ab");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+    std::vector<int> *leafs = all_leaf_nodes[0];
 
-        sk_m_restart_tsc(&m);
+    for (std::vector<int>::iterator i=leafs->begin(); i!=leafs->end(); ++i) {
+
+        coreid_t last_node = (coreid_t) *i;
+        sk_m_reset(&m);
         
-        if (get_thread_id()==get_last_node()) {
-            mp_send(get_sequentializer(), 0);
+        for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+
+            sk_m_restart_tsc(&m);
+        
+            if (get_thread_id()==last_node) {
+                mp_send(get_sequentializer(), 0);
+            }
+
+            if (get_thread_id()==get_sequentializer()) {
+                mp_send_ab(mp_receive(last_node));
+            }
+            else {
+                mp_receive_forward(0);
+            }
+
+            sk_m_add(&m);
         }
 
-        if (get_thread_id()==get_sequentializer()) {
-            mp_send_ab(mp_receive(get_last_node()));
+        if (get_thread_id() == last_node) {
+            sk_m_print(&m);
         }
-        else {
-            mp_receive_forward(0);
-        }
-
-        sk_m_add(&m);
     }
-
-    if (get_thread_id() == get_last_node()) {
-        sk_m_print(&m);
-    }
-    
 
     __thread_end();
     return NULL;
@@ -123,8 +149,9 @@ void* ab(void* a)
 
 extern void shl_barrier_shm(int b_count);
 
+
 /**
- * \brief Reduction
+ * \brief
  */
 void* reduction(void* a)
 {
@@ -138,58 +165,32 @@ void* reduction(void* a)
 
     TOPO_NAME(outname, "reduction");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
-     
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
-        sk_m_restart_tsc(&m);
-        mp_reduce(tid);
-        sk_m_add(&m);
+    std::vector<int> *leafs = all_leaf_nodes[0];
 
-        pthread_barrier_wait(&ab_barrier);
-    }
+    for (std::vector<int>::iterator i=leafs->begin(); i!=leafs->end(); ++i) {
 
-    if (get_thread_id() == get_sequentializer()) {
-        sk_m_print(&m);
-    }
+        coreid_t last_node = (coreid_t) *i;
+        sk_m_reset(&m);
     
+        for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
-    __thread_end();
-    return NULL;
-}
+            sk_m_restart_tsc(&m);
+            mp_reduce(tid);
 
-/**
- * \brief
- */
-void* reduction_ln(void* a)
-{
-    char outname[1024];
-    
-    coreid_t tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
-
-    // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
-
-    TOPO_NAME(outname, "reduction-ln");
-    sk_m_init(&m, NUM_RESULTS, outname, buf);
-    
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
-
-        sk_m_restart_tsc(&m);
-        mp_reduce(tid);
-
-        if (tid==get_sequentializer()) {
-            mp_send(get_last_node(), 0);
-        } else if (tid==get_last_node()) {
-            mp_receive(get_sequentializer());
+            if (tid==get_sequentializer()) {
+                mp_send(last_node, 0);
+            } else if (tid==last_node) {
+                mp_receive(get_sequentializer());
+                sk_m_add(&m);
+            }
         }
-        sk_m_add(&m);
-    }
 
-    if (get_thread_id() == get_last_node()) {
-        sk_m_print(&m);
+        if (get_thread_id() == last_node) {
+            sk_m_print(&m);
+        }
+
     }
-    
 
     __thread_end();
     return NULL;
@@ -225,7 +226,7 @@ void* barrier(void* a)
     return NULL;
 }
 
-#define NUM_EXP 1
+#define NUM_EXP 4
 
 int main(int argc, char **argv)
 {
@@ -236,18 +237,16 @@ int main(int argc, char **argv)
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
         &pingpong,
-        // &ab,
-        // //        &reduction,
-        // &reduction_ln,
-        // &barrier
+        &ab,
+        &reduction,
+        &barrier
     };
 
     const char *labels[NUM_EXP] = {
         "Ping pong",
-        // "Atomic broadcast",
-        // //        "Reduction",
-        // "Reduction (last node)", 
-        // "barrier"
+        "Atomic broadcast",
+        "Reduction", 
+        "barrier"
     };
 
     __sync_init(NUM_THREADS);
