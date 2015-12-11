@@ -24,24 +24,30 @@
         snprintf(_str_buf, 1024, "%s-%d-%d", func, sender, receiver);   \
         sk_m_init(&m, NUM_EXP, _str_buf, _buf);
 
+/**
+ * \brief Busy wait for message.
+ *
+ * Receiving thread will not sleep. This will be bad for machines
+ * using hyper-threads.
+ */
 uintptr_t raw_receive(mp_binding *b, sk_measurement *_m)
 {
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
     struct ump_queue *q = &ups->dst.queue;
 
     uintptr_t ret;
-    
     bool success;
-    struct ump_chan *chan = q->chan;
 
+    assert (q!=NULL || !"Invalid channel given - check channel setup");
+    
     do {
 
-    sk_m_restart_tsc(_m);
-    
+        if (_m) sk_m_restart_tsc(_m);
         success = ump_dequeue_word_nonblock(q, &ret);
+        
     } while(!success);
 
-    sk_m_add(_m);
+    if (_m) sk_m_add(_m);
 
     return ret;
 }
@@ -67,7 +73,7 @@ void* thr_sender(void* a)
         mp_send_raw(bsend, i);
         sk_m_add(&m);
         
-        mp_receive_raw(brecv);
+        raw_receive(brecv, NULL);
     }
 
     sk_m_print(&m);
@@ -87,7 +93,7 @@ void* thr_receiver(void* a)
     mp_binding *bsend = get_binding(get_thread_id(), arg->s);
     mp_binding *brecv = get_binding(arg->s, get_thread_id());
     
-    for (int i=0; i<NUM_EXP; i++) {
+    for (unsigned i=0; i<NUM_EXP; i++) {
 
         assert(raw_receive(brecv, &m)==i);
         mp_send_raw(bsend, i);
@@ -103,6 +109,7 @@ void* thr_receiver(void* a)
 int main(int argc, char **argv)
 {
     coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF);
+    printf("Running with %d cores\n", num_cores);
         
     for (coreid_t s=0; s<num_cores; s++) {
         for (coreid_t r=0; r<num_cores; r++) {
