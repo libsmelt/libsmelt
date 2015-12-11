@@ -31,24 +31,24 @@ void* pingpong(void* a)
 {
     char outname[1024];
     char outname2[1024];
-   
+
      coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     cycles_t *buf2 = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
-    
+
     TOPO_NAME(outname, "pingpong");
     TOPO_NAME(outname2, "pingpong_receive");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
     sk_m_init(&m2, NUM_RESULTS, outname2, buf2);
-     
+
 
     if (get_thread_id()==get_last_node()) {
 
         mp_binding *b = get_binding(get_sequentializer(), get_thread_id());
-        
+
         for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
             sk_m_restart_tsc(&m);
             debug_printff("send %d\n", epoch);
@@ -68,7 +68,7 @@ void* pingpong(void* a)
 
         for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
             mp_binding *b = get_binding(get_last_node(), get_thread_id());
-            
+
             debug_printff("receive %d\n", epoch);
             sk_m_restart_tsc(&m);
             sk_m_restart_tsc(&m2);
@@ -90,7 +90,7 @@ void* pingpong(void* a)
         sk_m_print(&m);
         sk_m_print(&m2);
     }
-    
+
 
     __thread_end();
     return NULL;
@@ -103,7 +103,7 @@ extern std::vector<int> *all_leaf_nodes[];
 void* ab(void* a)
 {
     char outname[1024];
-    
+
    coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
@@ -119,11 +119,11 @@ void* ab(void* a)
 
         coreid_t last_node = (coreid_t) *i;
         sk_m_reset(&m);
-        
+
         for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
             sk_m_restart_tsc(&m);
-        
+
             if (get_thread_id()==last_node) {
                 mp_send(get_sequentializer(), 0);
             }
@@ -156,7 +156,7 @@ extern void shl_barrier_shm(int b_count);
 void* reduction(void* a)
 {
     char outname[1024];
-    
+
     coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
@@ -172,7 +172,7 @@ void* reduction(void* a)
 
         coreid_t last_node = (coreid_t) *i;
         sk_m_reset(&m);
-    
+
         for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
             sk_m_restart_tsc(&m);
@@ -199,20 +199,20 @@ void* reduction(void* a)
 void* barrier(void* a)
 {
     char outname[1024];
-        
+
     coreid_t tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
-    
+
     TOPO_NAME(outname, "barriers");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
-    
+
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         mp_barrier(NULL);
-        
+
         if (tid==get_last_node()) sk_m_add(&m);
     }
 
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
     NUM_THREADS = sysconf(_SC_NPROCESSORS_CONF);
 
     pthread_barrier_init(&ab_barrier, NULL, NUM_THREADS);
-    
+
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
         &pingpong,
@@ -245,17 +245,17 @@ int main(int argc, char **argv)
     const char *labels[NUM_EXP] = {
         "Ping pong",
         "Atomic broadcast",
-        "Reduction", 
+        "Reduction",
         "barrier"
     };
 
-    __sync_init(NUM_THREADS);
+    __sync_init(NUM_THREADS, true);
 
     pthread_t ptds[NUM_THREADS];
     int tids[NUM_THREADS];
 
     for (int e=0; e<NUM_TOPOS; e++) {
-    
+
         for (int j=0; j<NUM_EXP; j++) {
 
             printf("----------------------------------------\n");
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
 
             // Yield to reduce the risk of getting de-scheduled later
             sched_yield();
-        
+
             // Create
             for (int i=1; i<NUM_THREADS; i++) {
                 tids[i] = i;
@@ -285,5 +285,5 @@ int main(int argc, char **argv)
     }
 
     pthread_barrier_destroy(&ab_barrier);
-    
+
 }

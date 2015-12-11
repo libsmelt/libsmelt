@@ -39,12 +39,12 @@ uintptr_t raw_receive(mp_binding *b, sk_measurement *_m)
     bool success;
 
     assert (q!=NULL || !"Invalid channel given - check channel setup");
-    
+
     do {
 
         if (_m) sk_m_restart_tsc(_m);
         success = ump_dequeue_word_nonblock(q, &ret);
-        
+
     } while(!success);
 
     if (_m) sk_m_add(_m);
@@ -66,13 +66,13 @@ void* thr_sender(void* a)
 
     mp_binding *bsend = get_binding(get_thread_id(), arg->r);
     mp_binding *brecv = get_binding(arg->r, get_thread_id());
-    
+
     for (int i=0; i<NUM_EXP; i++) {
 
         sk_m_restart_tsc(&m);
         mp_send_raw(bsend, i);
         sk_m_add(&m);
-        
+
         raw_receive(brecv, NULL);
     }
 
@@ -89,10 +89,10 @@ void* thr_receiver(void* a)
     __lowlevel_thread_init(arg->r);
 
     INIT_SKM("receive", arg->s, arg->r);
-    
+
     mp_binding *bsend = get_binding(get_thread_id(), arg->s);
     mp_binding *brecv = get_binding(arg->s, get_thread_id());
-    
+
     for (unsigned i=0; i<NUM_EXP; i++) {
 
         assert(raw_receive(brecv, &m)==i);
@@ -110,7 +110,9 @@ int main(int argc, char **argv)
 {
     coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF);
     printf("Running with %d cores\n", num_cores);
-        
+
+    __sync_init(num_cores, false);
+
     for (coreid_t s=0; s<num_cores; s++) {
         for (coreid_t r=0; r<num_cores; r++) {
 
@@ -122,7 +124,7 @@ int main(int argc, char **argv)
                 .s = s,
                 .r = r
             };
-            
+
             _setup_ump_chanels(s, r);
 
             // Thread for the sender
@@ -135,7 +137,7 @@ int main(int argc, char **argv)
             // benchmark, or their hyper-threads, which seems like a
             // hassle.
             thr_receiver((void*) &arg);
-            
+
             // Wait for sender to complete
             pthread_join(ptd1, NULL);
 

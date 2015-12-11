@@ -43,9 +43,12 @@ endif
 CXXFLAGS += $(OPT)
 CFLAGS += $(OPT)
 
+# Should a custom libnuma be used?
+ifdef OVERRIDENUMA
 LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
 INC += -I$(LIBNUMABASE)
 LIBS += -L$(LIBNUMABASE)
+endif
 
 LIBS += -lnuma
 CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)

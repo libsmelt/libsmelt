@@ -18,10 +18,10 @@
         char _str_buf[1024];                                            \
         cycles_t _buf[NUM_EXP];                                         \
         struct sk_measurement m;                                        \
-        snprintf(_str_buf, 1024, "%s-%d-%d", func, sender, receiver);   \ 
+        snprintf(_str_buf, 1024, "%s-%d-%d", func, sender, receiver);   \
         sk_m_init(&m, NUM_EXP, _str_buf, _buf);                         \
                                                                         \
-        
+
 
 struct thr_args {
     coreid_t s;
@@ -40,7 +40,7 @@ void* thr_sender(void* a)
         sk_m_restart_tsc(&m);
         mp_send(arg->r, i);
         sk_m_add(&m);
-        
+
         mp_receive(arg->r);
     }
 
@@ -56,13 +56,13 @@ void* thr_receiver(void* a)
     __lowlevel_thread_init(arg->r);
 
     INIT_SKM("receive", arg->s, arg->r);
-    
+
     for (int i=0; i<NUM_EXP; i++) {
 
         sk_m_restart_tsc(&m);
         mp_receive(arg->s);
         sk_m_add(&m);
-        
+
         mp_send(arg->s, i);
     }
 
@@ -75,7 +75,9 @@ void* thr_receiver(void* a)
 int main(int argc, char **argv)
 {
     coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF);
-        
+
+    __sync_init(num_cores, false);
+
     for (coreid_t s=0; s<num_cores; s++) {
         for (coreid_t r=0; r<num_cores; r++) {
 
@@ -87,7 +89,7 @@ int main(int argc, char **argv)
                 .s = s,
                 .r = r
             };
-            
+
             _setup_ump_chanels(s, r);
 
             // Thread for the sender
@@ -100,7 +102,7 @@ int main(int argc, char **argv)
             // benchmark, or their hyper-threads, which seems like a
             // hassle.
             thr_receiver((void*) &arg);
-            
+
             // Wait for sender to complete
             pthread_join(ptd1, NULL);
 

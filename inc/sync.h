@@ -23,7 +23,7 @@
 // ==================================================
 // Functions
 
-void __sync_init(int);
+void __sync_init(int, bool);
 void __sys_init(void);
 
 int  __thread_init(coreid_t,int);

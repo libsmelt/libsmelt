@@ -37,7 +37,7 @@ void* worker1(void* a)
     }
 
     printf("Thread %d completed\n", tid);
-    
+
     __thread_end();
     return NULL;
 }
@@ -49,13 +49,13 @@ void* worker2(void* a)
     __thread_init(tid, NUM_THREADS);
 
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
-    
+
         if (tid == get_sequentializer()) {
             mp_send_ab(tid);
 
             // Wait for message from get_last_node()
             mp_receive(get_last_node());
-        
+
         } else {
             mp_receive_forward(tid);
 
@@ -66,7 +66,7 @@ void* worker2(void* a)
         }
     }
     printf("Thread %d completed\n", tid);
-    
+
     __thread_end();
     return NULL;
 }
@@ -75,7 +75,7 @@ void* worker3(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
-    
+
     debug_printf("Reduction complete: %d\n", mp_reduce(tid));
 
     __thread_end();
@@ -92,14 +92,14 @@ void* worker4(void* a)
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
     sk_m_init(&m, NUM_RUNS, "barriers", buf);
-    
+
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
         mp_barrier(NULL);
         barrier_rounds[tid] = epoch;
 
         mp_barrier(NULL);
-        
+
         // Verify that every thread is in the same round
         for (int j=0; j<NUM_THREADS; j++) {
 
@@ -109,7 +109,7 @@ void* worker4(void* a)
             }
             assert (barrier_rounds[j] == epoch);
         }
-        
+
     }
 
     if (get_thread_id()==get_sequentializer()) {
@@ -119,7 +119,7 @@ void* worker4(void* a)
 
 
     debug_printf("All done :-)\n");
-    
+
     __thread_end();
     return NULL;
 }
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
         &worker4
     };
 
-    __sync_init(NUM_THREADS);
+    __sync_init(NUM_THREADS, true);
 
     pthread_t ptds[NUM_THREADS];
     int tids[NUM_THREADS];
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
         printf("----------------------------------------\n");
         printf("Executing experiment %d\n", (j+1));
         printf("----------------------------------------\n");
-        
+
         // Create
         for (int i=0; i<NUM_THREADS; i++) {
             tids[i] = i;
@@ -158,5 +158,5 @@ int main(int argc, char **argv)
             pthread_join(ptds[i], NULL);
         }
     }
-    
+
 }

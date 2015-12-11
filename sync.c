@@ -15,15 +15,18 @@ static int nproc;
  * This has to be executed once per address space. If threads are used
  * for parallelism, call this only once. With processes, it has to be
  * executed on each process.
+ *
+ * \param _nproc Number of prcesses participating in the synchronization
+ *
+ * \param init_model Should the model be initalized?
  */
-void __sync_init(int _nproc)
+void __sync_init(int _nproc, bool init_model)
 {
     __sys_init();
-    
+
     nproc = _nproc;
     debug_printf("Initializing libsync: model: %d nodes, %d threads\n",
                  topo_num_cores(), nproc);
-    assert (topo_num_cores()==nproc);
 
     // Debug output
 #ifdef QRM_DBG_ENABLED
@@ -33,20 +36,24 @@ void __sync_init(int _nproc)
     printw("Compiler optimizations are off - "
         "performance will suffer if  BUILDTYPE set to debug (in Makefile)\n");
 #endif
-    
+
     // Master share allows simple barriers; needed for boot-strapping
     debug_printfff(DBG__INIT, "Initializing master share .. \n");
     init_master_share();
 
-    if (get_topo_idx()<0) {
-    
-        // Enable a model
-        debug_printfff(DBG__INIT, "No topology initalized, activating default .. \n");
-        switch_topo();
+    // Initialize model
+    if (init_model) {
+        assert (topo_num_cores()==nproc);
+        if (get_topo_idx()<0) {
 
-    } else {
-        debug_printfff(DBG__INIT, "Topology already initialized to %d\n",
-                       get_topo_idx());
+            // Enable a model
+            debug_printfff(DBG__INIT, "No topology initalized, activating default .. \n");
+            switch_topo();
+
+        } else {
+            debug_printfff(DBG__INIT, "Topology already initialized to %d\n",
+                           get_topo_idx());
+        }
     }
 
     // Initialize barrier
@@ -88,7 +95,7 @@ void __sync_init(int _nproc)
     sprintf(_tmp, "sync%d", _tid);
 
     if (_tid == get_sequentializer()) {
-        
+
         tree_init(_tmp);
 
         tree_reset();
@@ -97,7 +104,7 @@ void __sync_init(int _nproc)
         // Build associated broadcast tree
         setup_tree_from_model();
     }
-    
+
     pthread_barrier_wait(&get_master_share()->data.sync_barrier);
     return 0;
 }
@@ -115,7 +122,7 @@ void __sync_init(int _nproc)
 int __lowlevel_thread_init(int _tid)
 {
     __backend_thread_start();
-    
+
     // Store thread ID and pin to core
     tid = _tid;
     coreid_t coreid = get_core_id();
@@ -142,7 +149,7 @@ unsigned int get_thread_id(void)
 int __thread_end(void)
 {
     __backend_thread_end();
-    
+
     debug_printfff(DBG__INIT, "Thread %d ending %d\n", tid, mp_get_counter("barriers"));
     return 0;
 }

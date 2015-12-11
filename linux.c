@@ -4,8 +4,9 @@
 
 #include "debug.h"
 #include "ump_conf.h"
-    
+
 #include <sched.h>
+#include <errno.h>
 
 #include <cstdarg>
 #include <numa.h>
@@ -63,13 +64,16 @@ numa_cpu_to_node(int cpu)
     int ret    = -1;
     int ncpus  = numa_num_possible_cpus();
     int node_max = numa_max_node();
-    struct bitmask *cpus = numa_bitmask_alloc(ncpus);
+    struct bitmask *cpus = numa_allocate_cpumask();
 
     for (int node=0; node <= node_max; node++) {
         numa_bitmask_clearall(cpus);
         if (numa_node_to_cpus(node, cpus) < 0) {
             perror("numa_node_to_cpus");
             fprintf(stderr, "numa_node_to_cpus() failed for node %d\n", node);
+            if (errno== ERANGE) {
+                fprintf(stderr, "Given range is too small\n");
+            }
             abort();
         }
 
@@ -78,7 +82,8 @@ numa_cpu_to_node(int cpu)
         }
     }
 
-    numa_bitmask_free(cpus);
+    numa_free_cpumask(cpus);
+
     if (ret == -1) {
         fprintf(stderr, "%s failed to find node for cpu %d\n",
                 __FUNCTION__, cpu);
@@ -106,14 +111,14 @@ numa_cpu_to_node(int cpu)
 }
 
 /**
- * \brief Setup a pair of UMP channels. 
+ * \brief Setup a pair of UMP channels.
  *
  * This is borrowed from UMPQ's pt_bench_pairs_ump program.
  */
 void _setup_ump_chanels(int src, int dst)
 {
     debug_printfff(DBG__INIT, "Establishing connection between %d and %d\n", src, dst);
-    
+
     const int shm_size = (64*10);
 
     /* struct ump_pair_conf fwr_conf = UMP_CONF_INIT(src, dst, shm_size); */
@@ -136,7 +141,7 @@ void _setup_ump_chanels(int src, int dst)
 void tree_connect(const char *qrm_my_name)
 {
     uint64_t nproc = topo_num_cores();
-    
+
     for (unsigned int i=0; i<nproc; i++) {
 
         for (unsigned int j=0; j<nproc; j++) {
@@ -188,7 +193,7 @@ void pin_thread(coreid_t cpu)
 {
     debug_printfff(DBG__INIT, "Pinning thread %d to core %d\n",
                    get_thread_id(), cpu);
-                     
+
     cpu_set_t cpu_mask;
     int err;
 
@@ -196,7 +201,7 @@ void pin_thread(coreid_t cpu)
     CPU_SET(cpu, &cpu_mask);
 
     err = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
-    
+
     if (err) {
         perror("sched_setaffinity");
         exit(1);
@@ -209,7 +214,9 @@ void __sys_init(void)
     printf("\033[1;31mWarning:\033[0m UMP sleep is enabled - this is buggy\n");
 #else
     printf("UMP sleep disabled\n");
-#endif  
+#endif
+    assert (numa_available()==0);
+
 }
 
 int __backend_thread_start(void)
