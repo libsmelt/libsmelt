@@ -23,19 +23,24 @@
 #define DBG__SWITCH_TOPO   (1<<5)
 #define DBG__REDUCE        (1<<6)
 #define DBG__INIT          (1<<7)
+#define DBG__BINDING       (1<<8)
+#define DBG__UMP           (1<<9)
 
 // Mask for selectively enabling debug output
 #define qrm_debug_mask (DBG__REDUCE | DBG__GENERAL | DBG__AB)
 //#define QRM_DBG_ENABLED
+
+// Debug UMP interconnect
+//#define UMP_DBG_COUNT 1
 
 #ifdef QRM_DBG_ENABLED  /* ------------------------------*/
 #define QDBG(...)              qrm_debug(DBG__GENERAL, __VA_ARGS__)
 #define debug_printff(...)     qrm_debug(DBG__GENERAL, __VA_ARGS__)
 #define debug_printfff(x, ...) qrm_debug(x,            __VA_ARGS__)
 #else /* QRM_DBG_ENABLED --------------------------------*/
-#define QDBG(...) ;
-#define debug_printff(...) ;
-#define debug_printfff(...) ;
+#define QDBG(...) void()
+#define debug_printff(...) void()
+#define debug_printfff(...) void()
 #endif /* QRM_DBG_ENABLED -------------------------------*/
 
 #define qrm_debug(_subs, _fmt, ...) \
@@ -43,5 +48,8 @@
         if (((_subs) & qrm_debug_mask) )                                \
             debug_printf(_fmt, ## __VA_ARGS__);                         \
     } while(0)
+
+
+void printw(const char *fmt, ...);
 
 #endif /* SYNC_DEBUG_H */
