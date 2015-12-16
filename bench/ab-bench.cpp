@@ -226,7 +226,74 @@ void* barrier(void* a)
     return NULL;
 }
 
-#define NUM_EXP 4
+void* agreement(void* a)
+{
+    char outname[1024];
+
+    coreid_t tid = *((int*) a);
+    __thread_init(tid, NUM_THREADS);
+
+    // Setup buffer for measurements
+    if (tid == get_sequentializer()) {
+        cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+
+        TOPO_NAME(outname, "agreement");
+        sk_m_init(&m, NUM_RESULTS, outname, buf);
+    }
+
+    uintptr_t payload = 7;
+
+    for (int epoch =0; epoch < NUM_RUNS; epoch++) {
+        
+        /*
+         * Phase one of 2PC is a broadcast followed by
+         * a reduction
+         */ 
+
+        //Broadcast to all
+        uintptr_t val = 0;
+        if (tid == get_sequentializer()) {
+            sk_m_restart_tsc(&m);
+            mp_send_ab(payload);
+        } else {
+            val = mp_receive_forward(0);
+        }
+    
+        // Reduction 
+
+        mp_reduce(val);
+        /*
+         * Phase two of 2PC is a broadcast to inform the
+         * of the commit
+         */ 
+        //Broadcast to all
+        if (tid == get_sequentializer()) {
+            mp_send_ab(payload);
+        } else {
+            val = mp_receive_forward(0);
+        }
+
+        /* can print as soon as sequentialzer
+         * is finished since we don't need to wait
+         * for the broadcast to finish
+         */
+        if (tid == get_sequentializer()) {
+            sk_m_add(&m);
+        }
+    
+    }
+
+
+    if (tid == get_sequentializer()) {
+            sk_m_print(&m);
+    }
+
+    __thread_end();
+    return NULL;
+}
+
+
+#define NUM_EXP 5
 
 int main(int argc, char **argv)
 {
@@ -236,17 +303,19 @@ int main(int argc, char **argv)
 
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
+        &agreement,
         &pingpong,
         &ab,
         &reduction,
-        &barrier
+        &barrier,
     };
 
     const char *labels[NUM_EXP] = {
+        "Agreement",
         "Ping pong",
         "Atomic broadcast",
         "Reduction",
-        "barrier"
+        "barrier",
     };
 
     __sync_init(NUM_THREADS, true);
