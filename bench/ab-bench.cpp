@@ -234,60 +234,62 @@ void* agreement(void* a)
     __thread_init(tid, NUM_THREADS);
 
     // Setup buffer for measurements
-    if (tid == get_sequentializer()) {
-        cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
 
-        TOPO_NAME(outname, "agreement");
-        sk_m_init(&m, NUM_RESULTS, outname, buf);
-    }
+    TOPO_NAME(outname, "agreement");
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
 
     uintptr_t payload = 7;
 
-    for (int epoch =0; epoch < NUM_RUNS; epoch++) {
-        
-        /*
-         * Phase one of 2PC is a broadcast followed by
-         * a reduction
-         */ 
+    std::vector<int> *leafs = all_leaf_nodes[0];
 
-        //Broadcast to all
-        uintptr_t val = 0;
-        if (tid == get_sequentializer()) {
+    for (std::vector<int>::iterator i=leafs->begin(); i!=leafs->end(); ++i) {
+
+        coreid_t last_node = (coreid_t) *i;
+        sk_m_reset(&m);
+
+        for (int epoch =0; epoch < NUM_RUNS; epoch++) {
+            /*
+             * Phase one of 2PC is a broadcast followed by
+             * a reduction
+             */ 
+
+            //Broadcast to all
+            mp_barrier(NULL);
             sk_m_restart_tsc(&m);
-            mp_send_ab(payload);
-        } else {
-            val = mp_receive_forward(0);
-        }
+
+            uintptr_t val = 0;
+            if (tid == get_sequentializer()) {
+                mp_send_ab(payload);
+            } else {
+                val = mp_receive_forward(0);
+            }
     
-        // Reduction 
+            // Reduction 
 
-        mp_reduce(val);
-        /*
-         * Phase two of 2PC is a broadcast to inform the
-         * of the commit
-         */ 
-        //Broadcast to all
-        if (tid == get_sequentializer()) {
-            mp_send_ab(payload);
-        } else {
-            val = mp_receive_forward(0);
-        }
+            mp_reduce(val);
+            /*
+             * Phase two of 2PC is a broadcast to inform the
+             * of the commit
+             */ 
+            if (get_thread_id() == last_node) {
+               mp_send(get_sequentializer(), 0);
+            }        
 
-        /* can print as soon as sequentialzer
-         * is finished since we don't need to wait
-         * for the broadcast to finish
-         */
-        if (tid == get_sequentializer()) {
+            //Broadcast to all
+            if (tid == get_sequentializer()) {
+                mp_send_ab(mp_receive(last_node));
+            } else {
+                val = mp_receive_forward(0);
+            }
+
             sk_m_add(&m);
-        }
     
-    }
-
-
-    if (tid == get_sequentializer()) {
+        }
+        if (get_thread_id() == last_node) {
             sk_m_print(&m);
+        }
     }
-
     __thread_end();
     return NULL;
 }
