@@ -2,7 +2,7 @@
 #include "topo.h"
 
 // Include the pre-generated model
-#include "inc/models/sgs-r815-03-model.h"
+#include "model.h"
 
 #include <vector>
 #include <algorithm>
