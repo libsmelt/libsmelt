@@ -19,6 +19,8 @@ int NUM_THREADS;
 #define NUM_RUNS 1000000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 
+#define SEND7
+
 pthread_barrier_t ab_barrier;
 
 #define TOPO_NAME(x,y) sprintf(x, "%s_%s", y, topo_get_name());
@@ -52,13 +54,50 @@ void* pingpong(void* a)
         for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
             sk_m_restart_tsc(&m);
             debug_printff("send %d\n", epoch);
+#ifdef SEND7
+            mp_send7(get_sequentializer(), epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch);
+            mp_send7(get_sequentializer(), epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch);
+#else
             mp_send(get_sequentializer(), epoch);
             mp_send(get_sequentializer(), epoch);
-
+#endif
             debug_printff("receive %d\n", epoch);
             sk_m_restart_tsc(&m2);
+#ifdef SEND7
+            uintptr_t* v;
+            v = mp_receive_raw7(b);
+            assert(v[0]==epoch);
+            assert(v[1]==epoch);
+            assert(v[2]==epoch);
+            assert(v[3]==epoch);
+            assert(v[4]==epoch);
+            assert(v[5]==epoch);
+            assert(v[6]==epoch);
+
+            v = mp_receive_raw7(b);
+            assert(v[0]==epoch);
+            assert(v[1]==epoch);
+            assert(v[2]==epoch);
+            assert(v[3]==epoch);
+            assert(v[4]==epoch);
+            assert(v[5]==epoch);
+            assert(v[6]==epoch);
+#else
             assert(mp_receive_raw(b)==epoch);
             assert(mp_receive_raw(b)==epoch);
+#endif
             sk_m_add(&m2);
             sk_m_add(&m);
         }
@@ -72,13 +111,51 @@ void* pingpong(void* a)
             debug_printff("receive %d\n", epoch);
             sk_m_restart_tsc(&m);
             sk_m_restart_tsc(&m2);
+#ifdef SEN7
+            uintptr_t* v;
+            v = mp_receive_raw7(b);
+            assert(v[0]==epoch);
+            assert(v[1]==epoch);
+            assert(v[2]==epoch);
+            assert(v[3]==epoch);
+            assert(v[4]==epoch);
+            assert(v[5]==epoch);
+            assert(v[6]==epoch);
+
+            v = mp_receive_raw7(b);
+            assert(v[0]==epoch);
+            assert(v[1]==epoch);
+            assert(v[2]==epoch);
+            assert(v[3]==epoch);
+            assert(v[4]==epoch);
+            assert(v[5]==epoch);
+            assert(v[6]==epoch);
+#else
             assert(mp_receive_raw(b)==epoch);
             assert(mp_receive_raw(b)==epoch);
+#endif
             sk_m_add(&m2);
 
             debug_printff("send %d\n", epoch);
+#ifdef SEND7
+            mp_send7(get_last_node(), epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch);
+            mp_send7(get_last_node(), epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch,
+                    epoch);
+#else
             mp_send(get_last_node(), epoch);
             mp_send(get_last_node(), epoch);
+#endif
             sk_m_add(&m);
         }
     }
@@ -259,7 +336,7 @@ void* agreement(void* a)
             //Synchronize 
             uintptr_t val = 0;
             if (get_thread_id() == last_node) {
-               mp_send(get_sequentializer(), val);
+               mp_send(get_sequentializer(), payload);
             }        
 
             // broadcast to all

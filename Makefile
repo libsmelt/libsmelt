@@ -9,7 +9,7 @@ HEADERS=$(wildcard *.h)
 DEPS = $(OBJS)
 DEPS += $(HEADERS)
 
-UMPQ=../umpq/
+UMPQ=../pairwise-memory-latency/
 UMP_OBJS += $(UMPQ)/ump_chan.c \
 	$(UMPQ)/ump_conf.c \
 	$(UMPQ)/ump_queue.c \

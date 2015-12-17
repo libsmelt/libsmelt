@@ -162,6 +162,23 @@ void mp_send_raw(mp_binding *b, uintptr_t val)
     ump_enqueue_word(q, val);
 }
 
+void mp_send_raw7(mp_binding *b, 
+                  uintptr_t val1,
+                  uintptr_t val2,
+                  uintptr_t val3,
+                  uintptr_t val4,
+                  uintptr_t val5,
+                  uintptr_t val6,
+                  uintptr_t val7)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->src.queue;
+
+    ump_enqueue(q, val1, val2, val3, val4,
+                val5, val6, val7);
+}
+
+
 uintptr_t mp_receive_raw(mp_binding *b)
 {
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
@@ -169,6 +186,17 @@ uintptr_t mp_receive_raw(mp_binding *b)
 
     uintptr_t r;
     ump_dequeue_word(q, &r);
+
+    return r;
+}
+
+uintptr_t* mp_receive_raw7(mp_binding *b)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->dst.queue;
+
+    uintptr_t* r;
+    ump_dequeue(q, &r);
 
     return r;
 }
