@@ -14,11 +14,11 @@ lookup = {
     'binarytree': 'bintree'
     }
 
-def parse_simulator_output(s):
+def parse_simulator_output(s, output=True):
     """Parse Simulator output from given stream <s>
 
     """
-   
+
     curr_top = None
     for l in fileinput.input(s):
 
@@ -33,27 +33,32 @@ def parse_simulator_output(s):
             sim[curr_top] = (int(m.group(2)), int(m.group(3)))
             curr_top = None
 
-    print sim
+    if output:
+        print sim
+
     return sim
-            
-    
+
+
 
 def parse_log(s=sys.stdin, output=True):
-    print 'Parsing raw output from stdin for sk_m data'
+    if output:
+        print 'Parsing raw output from stdin for sk_m data'
+
     d = parse_sk_m_input(s)
 
     all_res = []
-    
+
     for t in [ 'ab', 'reduction', 'barriers' ]:
 
-        print
-        print '------------------------------'
-        print t
-        print '------------------------------'
-        print
+        if output:
+            print
+            print '------------------------------'
+            print t
+            print '------------------------------'
+            print
 
         res = {}
-            
+
         for ((core, title), values) in d.items():
 
             # XXX store with respect to topo
@@ -66,7 +71,7 @@ def parse_log(s=sys.stdin, output=True):
 
 
         res_t = []
-                
+
         # Output
         for (topo, data) in res.items():
             data = sorted(data, key=lambda x: x[1], reverse=True)
@@ -79,16 +84,16 @@ def parse_log(s=sys.stdin, output=True):
                 key = lookup[topo] if topo in lookup else topo
                 (pred, pred_ln) = sim[key]
 
-            res_t.append((topo, m, e, pred_ln))
-                
+            res_t.append((topo, m, e, pred))
+
             if output:
                 print '%-20s %5d %2d %8.2f     %3d %5d %6.2f' % \
                     (topo, m, c, e, pred_ln, pred, float(pred)/m )
 
         all_res.append((t, res_t))
-                
+
     return all_res
-            
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Help')
@@ -97,4 +102,3 @@ if __name__ == "__main__":
 
     parse_simulator_output(args.sim)
     parse_log()
-
