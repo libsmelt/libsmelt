@@ -1,0 +1,3 @@
+[submodule "contrib/stabilizer"]
+	path = contrib/stabilizer
+	url = git://github.com/ccurtsinger/stabilizer.git
