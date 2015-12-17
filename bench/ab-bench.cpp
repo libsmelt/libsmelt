@@ -259,7 +259,7 @@ void* agreement(void* a)
             //Synchronize 
             uintptr_t val = 0;
             if (get_thread_id() == last_node) {
-               mp_send(get_sequentializer(), val);
+               mp_send(get_sequentializer(), payload);
             }        
 
             // broadcast to all
