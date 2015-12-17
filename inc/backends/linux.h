@@ -9,9 +9,22 @@
 #include <cinttypes>
 #include <cstring>
 
+#define FF // <<<< Use FastFoward instead of UMP
 
+#ifdef FF
+
+#include "ff_queue.h"
+#include "ffq_conf.h"
+
+typedef struct ffq_pair_state mp_binding;
+
+#else // UMP
 #include "ump_conf.h"
 #include "ump_common.h"
+
+typedef struct ump_pair_state mp_binding;
+
+#endif
 
 #include "cycle.h"
 
@@ -29,8 +42,6 @@ void bench_init(void);
 
 #define BASE_PAGE_SIZE 4096U
 #define UMP_QUEUE_SIZE 1000U
-
-typedef struct ump_pair_state mp_binding;
 
 #define USER_PANIC(x) {                         \
         printf("PANIC: " x "\n");               \

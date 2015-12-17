@@ -54,12 +54,16 @@ LIBS += -lnuma
 CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)
 
 all: $(TARGET)
+
 test: test/mp-test
 
 # Tests
 # --------------------------------------------------
 test/mp-test: $(DEPS) $(EXTERNAL_OBJS) test/mp-test.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/mp-test.cpp -o $@
+
+test/ping-pong: $(DEPS) $(EXTERNAL_OBJS) test/ping-pong.cpp
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/ping-pong.cpp -o $@
 
 # Benchmarks
 # --------------------------------------------------

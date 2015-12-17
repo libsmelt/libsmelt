@@ -125,7 +125,7 @@ int main(int argc, char **argv)
                 .r = r
             };
 
-            _setup_ump_chanels(s, r);
+            _setup_chanels(s, r);
 
             // Thread for the sender
             pthread_create(&ptd1, NULL, thr_sender, (void*) &arg);

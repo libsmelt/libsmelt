@@ -13,35 +13,6 @@
 __thread struct sk_measurement m;
 
 #define NUM_THREADS 4
-void* worker1(void* a)
-{
-    int tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
-
-    if (tid == get_sequentializer()) {
-
-        for (unsigned int i=0; i<topo_num_cores(); i++) {
-            if (topo_is_parent(get_thread_id(), i)) {
-                mp_send(i, get_thread_id());
-            }
-        }
-    }
-
-    else {
-
-        for (unsigned int i=0; i<topo_num_cores(); i++) {
-            if (i==get_sequentializer() && topo_is_parent(i, get_thread_id())) {
-                assert (mp_receive(i)==i);
-            }
-        }
-    }
-
-    printf("Thread %d completed\n", tid);
-
-    __thread_end();
-    return NULL;
-}
-
 #define NUM_RUNS 10000 // Tested up to 1.000.000
 void* worker2(void* a)
 {
@@ -124,13 +95,13 @@ void* worker4(void* a)
     return NULL;
 }
 
-#define NUM_EXP 4
+#define NUM_EXP 3
 
 int main(int argc, char **argv)
 {
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
-        &worker1,
+        //        &worker1,
         &worker2,
         &worker3,
         &worker4

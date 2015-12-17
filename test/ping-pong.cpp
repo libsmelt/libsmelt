@@ -78,34 +78,29 @@ int main(int argc, char **argv)
 
     __sync_init(num_cores, false);
 
-    for (coreid_t s=0; s<num_cores; s++) {
-        for (coreid_t r=0; r<num_cores; r++) {
+    coreid_t s = 0;
+    coreid_t r = 1;
+    
+    pthread_t ptd1;
+    struct thr_args arg = {
+        .s = s,
+        .r = r
+    };
 
-            // Measurement does not make sense if sender == receiver
-            if (s==r) continue;
+    _setup_chanels(s, r);
 
-            pthread_t ptd1;
-            struct thr_args arg = {
-                .s = s,
-                .r = r
-            };
+    // Thread for the sender
+    pthread_create(&ptd1, NULL, thr_sender, (void*) &arg);
 
-            _setup_chanels(s, r);
+    // Receive on THIS thread: we don't want another thread
+    // for this, as the master would then busy-wait for both
+    // to complete, and we would have to guarantee that it
+    // does not do so on any of the cores involved in the
+    // benchmark, or their hyper-threads, which seems like a
+    // hassle.
+    thr_receiver((void*) &arg);
 
-            // Thread for the sender
-            pthread_create(&ptd1, NULL, thr_sender, (void*) &arg);
+    // Wait for sender to complete
+    pthread_join(ptd1, NULL);
 
-            // Receive on THIS thread: we don't want another thread
-            // for this, as the master would then busy-wait for both
-            // to complete, and we would have to guarantee that it
-            // does not do so on any of the cores involved in the
-            // benchmark, or their hyper-threads, which seems like a
-            // hassle.
-            thr_receiver((void*) &arg);
-
-            // Wait for sender to complete
-            pthread_join(ptd1, NULL);
-
-        }
-    }
 }

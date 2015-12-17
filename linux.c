@@ -3,7 +3,12 @@
 #include "topo.h"
 
 #include "debug.h"
+
+#ifdef FF
+
+#else
 #include "ump_conf.h"
+#endif
 
 #include <sched.h>
 #include <errno.h>
@@ -94,6 +99,36 @@ numa_cpu_to_node(int cpu)
 }
 
 
+#ifdef FF
+// --------------------------------------------------
+
+/**
+ * \brief Establish connections as given by the model.
+ */
+void tree_connect(const char *qrm_my_name)
+{
+}
+/**
+ * \brief Setup a pair of UMP channels.
+ *
+ * This is borrowed from UMPQ's pt_bench_pairs_ump program.
+ */
+void _setup_chanels(int src, int dst)
+{
+}
+
+void mp_send_raw(mp_binding *b, uintptr_t val)
+{
+}
+
+uintptr_t mp_receive_raw(mp_binding *b)
+{
+    return 0;
+}
+
+#else // UMP
+// --------------------------------------------------
+
 #define UMP_CONF_INIT(src_, dst_, shm_size_)      \
 {                                                 \
     .src = {                                      \
@@ -115,7 +150,7 @@ numa_cpu_to_node(int cpu)
  *
  * This is borrowed from UMPQ's pt_bench_pairs_ump program.
  */
-void _setup_ump_chanels(int src, int dst)
+void _setup_chanels(int src, int dst)
 {
     debug_printfff(DBG__INIT, "Establishing connection between %d and %d\n",
                    src, dst);
@@ -142,7 +177,7 @@ void tree_connect(const char *qrm_my_name)
 
             if (topo_is_parent_real(i, j) || j==get_sequentializer()) {
                 debug_printfff(DBG__SWITCH_TOPO, "setup: %d %d\n", i, j);
-                _setup_ump_chanels(i, j);
+                _setup_chanels(i, j);
             }
         }
     }
@@ -166,6 +201,8 @@ uintptr_t mp_receive_raw(mp_binding *b)
 
     return r;
 }
+
+#endif 
 
 void debug_printf(const char *fmt, ...)
 {
@@ -216,14 +253,20 @@ void __sys_init(void)
 int __backend_thread_start(void)
 {
 #ifdef UMP_DBG_COUNT
+#ifdef FF
+#else    
     ump_start();
+#endif    
 #endif
 }
 
 int __backend_thread_end(void)
 {
 #ifdef UMP_DBG_COUNT
+#ifdef FF
+#else
     ump_end();
+#endif    
 #endif
     return 0;
 }

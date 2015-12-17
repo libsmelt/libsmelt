@@ -27,7 +27,7 @@
 #define DBG__UMP           (1<<9)
 
 // Mask for selectively enabling debug output
-#define qrm_debug_mask (DBG__REDUCE | DBG__GENERAL | DBG__AB)
+#define qrm_debug_mask (DBG__GENERAL | DBG__INIT)
 //#define QRM_DBG_ENABLED
 
 // Debug UMP interconnect
