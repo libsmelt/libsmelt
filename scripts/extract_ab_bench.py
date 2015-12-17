@@ -48,7 +48,7 @@ def parse_log(s=sys.stdin, output=True):
 
     all_res = []
 
-    for t in [ 'ab', 'reduction', 'barriers' ]:
+    for t in [ 'ab', 'reduction', 'barriers', 'agreement' ]:
 
         if output:
             print

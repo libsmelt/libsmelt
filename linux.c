@@ -117,16 +117,10 @@ numa_cpu_to_node(int cpu)
  */
 void _setup_ump_chanels(int src, int dst)
 {
-    debug_printfff(DBG__INIT, "Establishing connection between %d and %d\n", src, dst);
+    debug_printfff(DBG__INIT, "Establishing connection between %d and %d\n",
+                   src, dst);
 
-    const int shm_size = (64*10);
-
-    /* struct ump_pair_conf fwr_conf = UMP_CONF_INIT(src, dst, shm_size); */
-    /* struct ump_pair_state *fwr = ump_pair_state_create(&fwr_conf); */
-    /* struct ump_pair_state rev = { */
-    /*     .src = fwr->dst, */
-    /*     .dst = fwr->src */
-    /* }; */
+    const int shm_size = (64*UMP_QUEUE_SIZE);
 
     struct ump_pair_conf fwr_conf = UMP_CONF_INIT(src, dst, shm_size);
     struct ump_pair_conf rev_conf = UMP_CONF_INIT(dst, src, shm_size);

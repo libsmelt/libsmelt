@@ -198,6 +198,8 @@ void* reduction(void* a)
 
 void* barrier(void* a)
 {
+    // XXX Perhaps we also want all leaf nodes here?
+    
     char outname[1024];
 
     coreid_t tid = *((int*) a);
