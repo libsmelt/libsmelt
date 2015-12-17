@@ -249,36 +249,36 @@ void* agreement(void* a)
         sk_m_reset(&m);
 
         for (int epoch =0; epoch < NUM_RUNS; epoch++) {
+
             /*
              * Phase one of 2PC is a broadcast followed by
              * a reduction
              */ 
-
-            //Broadcast to all
-            mp_barrier(NULL);
             sk_m_restart_tsc(&m);
 
+            //Synchronize 
             uintptr_t val = 0;
+            if (get_thread_id() == last_node) {
+               mp_send(get_sequentializer(), val);
+            }        
+
+            // broadcast to all
             if (tid == get_sequentializer()) {
-                mp_send_ab(payload);
+                mp_send_ab(mp_receive(last_node));
             } else {
                 val = mp_receive_forward(0);
             }
     
             // Reduction 
-
             mp_reduce(val);
+
             /*
-             * Phase two of 2PC is a broadcast to inform the
+             * Phase two of 2PC is a broadcast to inform
              * of the commit
              */ 
-            if (get_thread_id() == last_node) {
-               mp_send(get_sequentializer(), 0);
-            }        
-
             //Broadcast to all
             if (tid == get_sequentializer()) {
-                mp_send_ab(mp_receive(last_node));
+                mp_send_ab(val);
             } else {
                 val = mp_receive_forward(0);
             }
