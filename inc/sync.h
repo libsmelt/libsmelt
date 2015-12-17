@@ -88,9 +88,6 @@ union quorum_share {
         // was ever used. I am going to remove the remaining one to
         // save some space.
 
-        // one ump_message should be 64 bytes.
-        struct ump_message __attribute__((aligned(64))) fifo0[SHM_Q_MAX];
-
         // shared memory for reduction
         uint64_t __attribute__((aligned(64))) reduction_aggregate;
 
