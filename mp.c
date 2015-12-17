@@ -303,11 +303,29 @@ uintptr_t mp_reduce(uintptr_t val)
     return current_aggregate;
 }
 
-uintptr_t* mp_reduce7(uintptr_t val)
+/*
+ * Only reduceds the first value !
+ *
+ * If the node is a leaf, the node dose not receive
+ * anything but will send val1 - val7 up the tree
+ *
+ * If the node is not a leaf, the node will 
+ * aggregate the val1, and send the values received
+ * up the tree 
+ * 
+ * 
+ */
+static __thread uintptr_t vals[7];
+uintptr_t* mp_reduce7(uintptr_t val1,
+                      uintptr_t val2,
+                      uintptr_t val3,
+                      uintptr_t val4,
+                      uintptr_t val5,
+                      uintptr_t val6,
+                      uintptr_t val7)
 {
     coreid_t my_core_id = get_thread_id();
-    uintptr_t current_aggregate = val;
-    
+    uintptr_t current_aggregate = val1;
     // Receive (this will be from several children)
     // --------------------------------------------------
         
@@ -329,7 +347,23 @@ uintptr_t* mp_reduce7(uintptr_t val)
         v = mp_receive_raw7(blst->b_reverse[i]);
         current_aggregate += v[0];
         debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", v, i);
-
+        if (i == 0) {
+            vals[1] = v[1];
+            vals[2] = v[2];
+            vals[3] = v[3];
+            vals[4] = v[4];
+            vals[5] = v[5];
+            vals[6] = v[6];
+        }   
+    }
+    
+    if (numbindings == 0) {
+        vals[1] = val2;
+        vals[2] = val3;
+        vals[3] = val4;
+        vals[4] = val5;
+        vals[5] = val6;
+        vals[6] = val7;
     }
 
     debug_printfff(DBG__REDUCE, "Receiving done, value is now %" PRIu64 "\n",
@@ -351,19 +385,13 @@ uintptr_t* mp_reduce7(uintptr_t val)
         mp_binding *b_parent = blst_parent->b_reverse[0];
         debug_printfff(DBG__REDUCE, "sending %" PRIu64 " to parent %d\n",
                        current_aggregate, pidx);
-
         mp_send_raw7(b_parent, current_aggregate, 
-                     v[1],
-                     v[2],
-                     v[3],
-                     v[4],
-                     v[5],
-                     v[6]);
+			             vals[1], vals[2], vals[3], vals[4], vals[5],
+			             vals[6]);
     }
 
-    v[0] = current_aggregate;
-
-    return v;
+    vals[0] = current_aggregate;
+    return vals;
 }
 
 static __thread uint32_t _num_barrier = 0;

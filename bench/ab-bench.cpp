@@ -12,14 +12,16 @@
 
 #include "model_defs.h"
 
+
+#define SEND7
+
 __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
 int NUM_THREADS;
-#define NUM_RUNS 1000000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 1000000//50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 
-#define SEND7
 
 pthread_barrier_t ab_barrier;
 
@@ -46,7 +48,6 @@ void* pingpong(void* a)
     sk_m_init(&m, NUM_RESULTS, outname, buf);
     sk_m_init(&m2, NUM_RESULTS, outname2, buf2);
 
-
     if (get_thread_id()==get_last_node()) {
 
         mp_binding *b = get_binding(get_sequentializer(), get_thread_id());
@@ -55,20 +56,11 @@ void* pingpong(void* a)
             sk_m_restart_tsc(&m);
             debug_printff("send %d\n", epoch);
 #ifdef SEND7
-            mp_send7(get_sequentializer(), epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch);
-            mp_send7(get_sequentializer(), epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch);
+            mp_send7(get_sequentializer(), epoch, 1, 2, 3, 4,
+             	     5, 6);
+
+            mp_send7(get_sequentializer(), epoch, 1, 2, 3, 4,
+             	     5, 6);
 #else
             mp_send(get_sequentializer(), epoch);
             mp_send(get_sequentializer(), epoch);
@@ -79,21 +71,21 @@ void* pingpong(void* a)
             uintptr_t* v;
             v = mp_receive_raw7(b);
             assert(v[0]==epoch);
-            assert(v[1]==epoch);
-            assert(v[2]==epoch);
-            assert(v[3]==epoch);
-            assert(v[4]==epoch);
-            assert(v[5]==epoch);
-            assert(v[6]==epoch);
+            assert(v[1]==1);
+            assert(v[2]==2);
+            assert(v[3]==3);
+            assert(v[4]==4);
+            assert(v[5]==5);
+            assert(v[6]==6);
 
             v = mp_receive_raw7(b);
             assert(v[0]==epoch);
-            assert(v[1]==epoch);
-            assert(v[2]==epoch);
-            assert(v[3]==epoch);
-            assert(v[4]==epoch);
-            assert(v[5]==epoch);
-            assert(v[6]==epoch);
+            assert(v[1]==1);
+            assert(v[2]==2);
+            assert(v[3]==3);
+            assert(v[4]==4);
+            assert(v[5]==5);
+            assert(v[6]==6);
 #else
             assert(mp_receive_raw(b)==epoch);
             assert(mp_receive_raw(b)==epoch);
@@ -115,21 +107,21 @@ void* pingpong(void* a)
             uintptr_t* v;
             v = mp_receive_raw7(b);
             assert(v[0]==epoch);
-            assert(v[1]==epoch);
-            assert(v[2]==epoch);
-            assert(v[3]==epoch);
-            assert(v[4]==epoch);
-            assert(v[5]==epoch);
-            assert(v[6]==epoch);
+            assert(v[1]==1);
+            assert(v[2]==2);
+            assert(v[3]==3);
+            assert(v[4]==4);
+            assert(v[5]==5);
+            assert(v[6]==6);
 
             v = mp_receive_raw7(b);
             assert(v[0]==epoch);
-            assert(v[1]==epoch);
-            assert(v[2]==epoch);
-            assert(v[3]==epoch);
-            assert(v[4]==epoch);
-            assert(v[5]==epoch);
-            assert(v[6]==epoch);
+            assert(v[1]==1);
+            assert(v[2]==2);
+            assert(v[3]==3);
+            assert(v[4]==4);
+            assert(v[5]==5);
+            assert(v[6]==6);
 #else
             assert(mp_receive_raw(b)==epoch);
             assert(mp_receive_raw(b)==epoch);
@@ -139,19 +131,19 @@ void* pingpong(void* a)
             debug_printff("send %d\n", epoch);
 #ifdef SEND7
             mp_send7(get_last_node(), epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch);
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6);
             mp_send7(get_last_node(), epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch,
-                    epoch);
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6);
 #else
             mp_send(get_last_node(), epoch);
             mp_send(get_last_node(), epoch);
@@ -202,17 +194,36 @@ void* ab(void* a)
             sk_m_restart_tsc(&m);
 
             if (get_thread_id()==last_node) {
+#ifdef SEND7
+                mp_send7(get_sequentializer(), 1, 2, 3, 4, 5, 6, 7);
+#else
                 mp_send(get_sequentializer(), 0);
+#endif
             }
 
             if (get_thread_id()==get_sequentializer()) {
+#ifdef SEND7
+		        uintptr_t* v = mp_receive7(last_node);
+		        mp_send_ab7(v[0], v[1], v[2], v[3], v[4],
+			                v[5], v[6]);
+#else
                 mp_send_ab(mp_receive(last_node));
+#endif
             }
             else {
+#ifdef SEND7
+                mp_receive_forward7(0);
+#else
                 mp_receive_forward(0);
+#endif
             }
 
             sk_m_add(&m);
+/*
+            if (get_thread_id() == last_node) {
+                printf("Round %d finished \n", epoch);
+            }
+*/
         }
 
         if (get_thread_id() == last_node) {
@@ -253,12 +264,24 @@ void* reduction(void* a)
         for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
             sk_m_restart_tsc(&m);
+#ifdef SEND7
+            mp_reduce7(tid, 0, 0, 0, 0, 0, 0);
+#else
             mp_reduce(tid);
+#endif
 
             if (tid==get_sequentializer()) {
+#ifdef SEND7
+                mp_send7(last_node, 0, 1, 2, 3, 4, 5, 6);
+#else
                 mp_send(last_node, 0);
+#endif
             } else if (tid==last_node) {
+#ifdef SEND7
+                mp_receive7(get_sequentializer());
+#else
                 mp_receive(get_sequentializer());
+#endif
                 sk_m_add(&m);
             }
         }
@@ -334,20 +357,43 @@ void* agreement(void* a)
             sk_m_restart_tsc(&m);
 
             //Synchronize 
+
+#ifdef SEND7
+            uintptr_t* v;
+#else
             uintptr_t val = 0;
+#endif
             if (get_thread_id() == last_node) {
+#ifdef SEND7
+               mp_send7(get_sequentializer(), 0, 0, 0, 0, 0, 0, payload);
+#else
                mp_send(get_sequentializer(), payload);
+#endif
             }        
 
             // broadcast to all
+
             if (tid == get_sequentializer()) {
+#ifdef SEND7
+                v = mp_receive7(last_node);
+                mp_send_ab7(v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
+#else
                 mp_send_ab(mp_receive(last_node));
+#endif
             } else {
+#ifdef SEND7
+                v = mp_receive_forward7(0);
+#else
                 val = mp_receive_forward(0);
+#endif
             }
     
             // Reduction 
+#ifdef SEND7
+            mp_reduce7(1, v[1], v[2], v[3], v[4], v[5], v[6]);
+#else
             mp_reduce(val);
+#endif
 
             /*
              * Phase two of 2PC is a broadcast to inform
@@ -355,9 +401,17 @@ void* agreement(void* a)
              */ 
             //Broadcast to all
             if (tid == get_sequentializer()) {
+#ifdef SEND7
+                mp_send_ab7(0, 0, 0, 0, 0, 0, payload);
+#else
                 mp_send_ab(val);
+#endif
             } else {
+#ifdef SEND7
+                v = mp_receive_forward7(0);
+#else
                 val = mp_receive_forward(0);
+#endif
             }
 
             sk_m_add(&m);
@@ -382,19 +436,19 @@ int main(int argc, char **argv)
 
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
-        &agreement,
         &pingpong,
         &ab,
         &reduction,
         &barrier,
+        &agreement,
     };
 
     const char *labels[NUM_EXP] = {
-        "Agreement",
         "Ping pong",
         "Atomic broadcast",
         "Reduction",
         "barrier",
+        "Agreement",
     };
 
     __sync_init(NUM_THREADS, true);

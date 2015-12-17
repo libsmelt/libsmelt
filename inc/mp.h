@@ -14,6 +14,7 @@
 
 // Generic
 uintptr_t mp_receive(coreid_t);
+uintptr_t* mp_receive7(coreid_t);
 void mp_send(coreid_t, uintptr_t);
 void mp_send7(coreid_t, 
               uintptr_t,
@@ -31,12 +32,19 @@ uintptr_t mp_send_ab7(uintptr_t,
                       uintptr_t,
                       uintptr_t,
                       uintptr_t,
-                      uintptr_t);
+                      uintptr_t,
+		      uintptr_t);
 uintptr_t mp_receive_forward(uintptr_t);
 uintptr_t* mp_receive_forward7(uintptr_t);
 // Reduce
 uintptr_t mp_reduce(uintptr_t);
-uintptr_t* mp_reduce7(uintptr_t);
+uintptr_t* mp_reduce7(uintptr_t,
+                      uintptr_t,
+                      uintptr_t,
+                      uintptr_t,
+                      uintptr_t,
+                      uintptr_t,
+                      uintptr_t);
 void mp_barrier(cycles_t*);
 
 // To be implemented by the backend
