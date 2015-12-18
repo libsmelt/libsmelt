@@ -9,8 +9,6 @@
 #include <cinttypes>
 #include <cstring>
 
-#define FF // <<<< Use FastFoward instead of UMP
-
 #ifdef FF
 
 #include "ff_queue.h"

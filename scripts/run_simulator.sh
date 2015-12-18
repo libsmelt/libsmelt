@@ -35,7 +35,11 @@ fi
 DATE=$(date +"%Y-%m-%d-%H-%M")
 FILE="$HOME/projects/phd/thesis/measurements/mp/sim_${MACHINE}_$DATE"
 echo "Writing Simulator output to: $FILE"
-./simulator.py $M $SIMARGS &> tee "$FILE"; RC=$?
+./simulator.py $M $SIMARGS &> "$FILE"; RC=$?
+
+if [[ $RC -ne 0 ]]; then
+	cat $FILE
+fi 
 
 popd
 

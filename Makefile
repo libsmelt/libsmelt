@@ -9,6 +9,12 @@ HEADERS=$(wildcard *.h)
 DEPS = $(OBJS)
 DEPS += $(HEADERS)
 
+# Fast Forward
+# --------------------------------------------------
+# Use Fast-Foward as a Linux message passing backend rather than
+# UMPQ.
+USE_FFQ=1
+
 UMPQ=../umpq/
 UMP_OBJS += $(UMPQ)/ump_chan.c \
 	$(UMPQ)/ump_conf.c \
@@ -18,8 +24,10 @@ UMP_OBJS += $(UMPQ)/ump_chan.c \
 	$(UMPQ)/lxaffnuma.c \
 	$(UMPQ)/parse_int.c
 
-DEPS += $(UMP_OBJS)
-OBJS += $(patsubst %.c,%.o,$(UMP_OBJS))
+FFQ_OBJS += $(UMPQ)/ffq_conf.c \
+	$(UMPQ)/ff_queue.c \
+	$(UMPQ)/lxaffnuma.c \
+	$(UMPQ)/parse_int.c
 
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 
@@ -48,6 +56,15 @@ ifdef OVERRIDENUMA
 LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
 INC += -I$(LIBNUMABASE)
 LIBS += -L$(LIBNUMABASE)
+endif
+
+ifdef USE_FFQ
+	CXXFLAGS += -DFF
+	DEPS += $(FFQ_OBJS)
+	OBJS += $(patsubst %.c,%.o,$(FFQ_OBJS))
+else
+	DEPS += $(UMP_OBJS)
+	OBJS += $(patsubst %.c,%.o,$(UMP_OBJS))
 endif
 
 LIBS += -lnuma

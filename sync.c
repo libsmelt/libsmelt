@@ -7,7 +7,7 @@
 #include "mp.h"
 
 __thread int tid;
-static int nproc;
+static coreid_t nproc;
 
 /**
  * \brief Initialization of sync library.

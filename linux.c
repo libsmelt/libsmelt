@@ -67,7 +67,6 @@ int
 numa_cpu_to_node(int cpu)
 {
     int ret    = -1;
-    int ncpus  = numa_num_possible_cpus();
     int node_max = numa_max_node();
     struct bitmask *cpus = numa_allocate_cpumask();
 
@@ -102,12 +101,28 @@ numa_cpu_to_node(int cpu)
 #ifdef FF
 // --------------------------------------------------
 
+#define FF_CONF_INIT(src_, dst_)                        \
+    {                                                   \
+        .src = {                                        \
+            .core_id = src_,                            \
+            .delay = 0,                                 \
+        },                                              \
+        .dst = {                                        \
+            .core_id = dst_,                            \
+            .delay = 0                                  \
+        },                                              \
+        .next = NULL,                                   \
+        .qsize = UMP_QUEUE_SIZE,                        \
+        .shm_numa_node = -1                             \
+    }
+ 
 /**
  * \brief Establish connections as given by the model.
  */
 void tree_connect(const char *qrm_my_name)
 {
 }
+
 /**
  * \brief Setup a pair of UMP channels.
  *
@@ -115,15 +130,31 @@ void tree_connect(const char *qrm_my_name)
  */
 void _setup_chanels(int src, int dst)
 {
+    debug_printfff(DBG__INIT, "FF: setting up channel between %d and %d\n",
+                   src, dst);
+    
+    struct ffq_pair_conf ffpc = FF_CONF_INIT(src, dst);
+    struct ffq_pair_state *ffps = ffq_pair_state_create(&ffpc);
+
+    add_binding(src, dst, ffps);
+
+    struct ffq_pair_conf ffpc_r = FF_CONF_INIT(dst, src);
+    struct ffq_pair_state *ffps_r = ffq_pair_state_create(&ffpc_r);
+    
+    add_binding(dst, src, ffps_r);
 }
 
 void mp_send_raw(mp_binding *b, uintptr_t val)
 {
+    ffq_enqueue(&b->src, val);
 }
 
 uintptr_t mp_receive_raw(mp_binding *b)
 {
-    return 0;
+    uintptr_t r;
+    ffq_dequeue(&b->dst, &r);
+
+    return r;
 }
 
 #else // UMP
@@ -258,6 +289,7 @@ int __backend_thread_start(void)
     ump_start();
 #endif    
 #endif
+    return 0;
 }
 
 int __backend_thread_end(void)

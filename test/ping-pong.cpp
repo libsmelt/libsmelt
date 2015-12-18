@@ -35,13 +35,13 @@ void* thr_sender(void* a)
 
     INIT_SKM("send", arg->s, arg->r);
 
-    for (int i=0; i<NUM_EXP; i++) {
+    for (unsigned i=0; i<NUM_EXP; i++) {
 
         sk_m_restart_tsc(&m);
         mp_send(arg->r, i);
         sk_m_add(&m);
 
-        mp_receive(arg->r);
+        assert (mp_receive(arg->r)==i);
     }
 
     sk_m_print(&m);
@@ -57,10 +57,10 @@ void* thr_receiver(void* a)
 
     INIT_SKM("receive", arg->s, arg->r);
 
-    for (int i=0; i<NUM_EXP; i++) {
+    for (unsigned i=0; i<NUM_EXP; i++) {
 
         sk_m_restart_tsc(&m);
-        mp_receive(arg->s);
+        assert (mp_receive(arg->s)==i);
         sk_m_add(&m);
 
         mp_send(arg->s, i);
