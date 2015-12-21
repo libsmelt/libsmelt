@@ -24,13 +24,13 @@ void* worker2(void* a)
         if (tid == get_sequentializer()) {
             mp_send_ab(tid);
 
-            // Wait for message from get_last_node()
-            mp_receive(get_last_node());
+            // Wait for message from topo_last_node()
+            mp_receive(topo_last_node());
 
         } else {
             mp_receive_forward(tid);
 
-            if (get_thread_id()==get_last_node()) {
+            if (get_thread_id()==topo_last_node()) {
 
                 mp_send(get_sequentializer(), 0);
             }

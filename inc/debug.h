@@ -25,6 +25,9 @@
 #define DBG__INIT          (1<<7)
 #define DBG__BINDING       (1<<8)
 #define DBG__UMP           (1<<9)
+#define DBG__FFQ          (1<<10)
+
+#define DBG__BARRIER      (DBG__AB | DBG__REDUCE)
 
 // Mask for selectively enabling debug output
 #define qrm_debug_mask (DBG__GENERAL | DBG__INIT)

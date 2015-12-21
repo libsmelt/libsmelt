@@ -24,7 +24,7 @@ pthread_barrier_t ab_barrier;
 #define TOPO_NAME(x,y) sprintf(x, "%s_%s", y, topo_get_name());
 
 /**
- * \brief Message ping-pong between get_last_node() and get_sequentializer()
+ * \brief Message ping-pong between topo_last_node() and get_sequentializer()
  */
 extern __thread uint64_t ump_num_acks_sent;
 void* pingpong(void* a)
@@ -45,7 +45,7 @@ void* pingpong(void* a)
     sk_m_init(&m2, NUM_RESULTS, outname2, buf2);
 
 
-    if (get_thread_id()==get_last_node()) {
+    if (get_thread_id()==topo_last_node()) {
 
         mp_binding *b = get_binding(get_sequentializer(), get_thread_id());
 
@@ -67,7 +67,7 @@ void* pingpong(void* a)
     if (get_thread_id()==get_sequentializer()) {
 
         for (unsigned epoch=0; epoch<NUM_RUNS; epoch++) {
-            mp_binding *b = get_binding(get_last_node(), get_thread_id());
+            mp_binding *b = get_binding(topo_last_node(), get_thread_id());
 
             debug_printff("receive %d\n", epoch);
             sk_m_restart_tsc(&m);
@@ -77,14 +77,14 @@ void* pingpong(void* a)
             sk_m_add(&m2);
 
             debug_printff("send %d\n", epoch);
-            mp_send(get_last_node(), epoch);
-            mp_send(get_last_node(), epoch);
+            mp_send(topo_last_node(), epoch);
+            mp_send(topo_last_node(), epoch);
             sk_m_add(&m);
         }
     }
 
 
-    if (get_thread_id() == get_last_node() ||
+    if (get_thread_id() == topo_last_node() ||
         get_thread_id() == get_sequentializer()) {
 
         sk_m_print(&m);
@@ -97,7 +97,7 @@ void* pingpong(void* a)
 }
 
 /**
- * \brief Broadcast trigger by get_last_node() until back to LAST_NODE
+ * \brief Broadcast trigger by topo_last_node() until back to LAST_NODE
  */
 extern std::vector<int> *all_leaf_nodes[];
 void* ab(void* a)
@@ -215,11 +215,11 @@ void* barrier(void* a)
 
         mp_barrier(NULL);
 
-        if (tid==get_last_node()) sk_m_add(&m);
+        if (tid==topo_last_node()) sk_m_add(&m);
     }
 
     if (get_thread_id()==get_sequentializer() ||
-        get_thread_id()==get_last_node()) {
+        get_thread_id()==topo_last_node()) {
 
         sk_m_print(&m);
     }

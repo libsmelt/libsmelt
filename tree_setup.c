@@ -286,9 +286,11 @@ void setup_tree_from_model(void)
 
     assert (is_coordinator(get_thread_id()));
     
-    int tmp[TOPO_NUM_CORES];
+    int* tmp = new int[topo_num_cores()];
     int tmp_parent = -1;
-
+    
+    debug_printfff(DBG__BINDING, "tree setup: start ------------------------------\n");
+  
     // Find children
     for (coreid_t s=0; s<topo_num_cores(); s++) { // foreach sender
 
@@ -299,6 +301,11 @@ void setup_tree_from_model(void)
 
                 // Is this the i-th outgoing connection?
                 if (topo_get(s, r) == (int64_t) i) {
+
+                    assert (r>=0);
+                    debug_printfff(DBG__BINDING,
+                                   "tree setup: found binding(%d) %d->%d with %d\n",
+                                   num, s, r, i);
 
                     tmp[num++] = r;
                 }
@@ -324,9 +331,14 @@ void setup_tree_from_model(void)
 
         // Retrieve and store bindings
         for (unsigned j=0; j<num; j++) {
+            
+            debug_printfff(DBG__BINDING,
+                           "tree setup: adding binding(%d) %d->%d\n",
+                           j, s, tmp[j]);
+            
             _bindings[j] =   get_binding(s, tmp[j]);
             _r_bindings[j] = get_binding(tmp[j], s);
-            
+
             assert(_bindings[j]!=NULL && _r_bindings[j]!=NULL);
 
             _idx[j] = tmp[j];
@@ -376,6 +388,8 @@ void setup_tree_from_model(void)
 
         }
     }
+    debug_printfff(DBG__BINDING, "tree setup: end --------------------\n");
+    delete[] tmp;
 }
 
 mp_binding **mp_get_children(coreid_t c, int *num, int **nidx)

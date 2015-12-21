@@ -12,7 +12,7 @@
 
 int *topo = NULL;
 static int topo_idx = -1;
-
+static int model_generated = 0;
 
 // --------------------------------------------------
 // Functions
@@ -38,6 +38,87 @@ void switch_topo(void)
     assert (switch_topo_to_idx(topo_idx+1));
 }
 
+static void _debug_print_curr_model(void)
+{
+    printf("Model start:");
+    for (unsigned i=0; i<topo_num_cores(); i++) {
+        for (unsigned j=0; j<topo_num_cores(); j++) {
+            if (j==0)
+                printf("\n");
+            printf("%2d ", topo_get(i, j));
+        }
+    }
+    printf("\nModel end\n");
+
+}
+
+/**
+ * \brief Build a binary tree model for the current machine.
+ *
+ */
+static void _build_model(coreid_t num_threads)
+{
+    int *_topo = (int*) (malloc(sizeof(int)*(num_threads*num_threads)));
+
+    printw("No model given, building a binary tree for machine\n");
+
+    assert (_topo!=NULL);
+    memset(_topo, 0, sizeof(int)*num_threads*num_threads);
+    
+    // Fill model
+    for (unsigned i=0; i<num_threads; i++) {
+
+        coreid_t id1 = 2*i+1;
+        coreid_t id2 = 2*i+2;
+
+        if (id1<=num_threads)
+            _topo[i*num_threads + id1] = 1;
+        if (id2<=num_threads)
+            _topo[i*num_threads + id2] = 2;
+
+        debug_printfff(DBG__SWITCH_TOPO,
+                       "Node %d sending to %d and %d\n", i, id1, id2);
+
+        coreid_t parent = (i-1) / 2;
+        debug_printfff(DBG__SWITCH_TOPO,
+                       "Parent of %d is %d\n", i, parent);
+        
+        if (i!=0) {
+
+            _topo[i*num_threads + parent] = 99;
+        }
+    }
+
+    // Debug output of model
+    printf("Model start:");
+    for (unsigned i=0; i<num_threads; i++) {
+        for (unsigned j=0; j<num_threads; j++) {
+            if (j==0)
+                printf("\n");
+            printf("%2d ", _topo[i*num_threads + j]);
+        }
+    }
+    printf("\nModel end\n");
+
+    // Topology names
+    topo_names = new char*[1];
+    topo_names[0] = "binary (auto-generated)";
+
+    topo_combined = (int**) (malloc(sizeof(int*)));
+    assert (topo_combined!=NULL);
+    topo_combined[0] = _topo;
+    
+    std::vector<int> *_leaf_nodes = new std::vector<int>();
+    _leaf_nodes->push_back(num_threads-1);
+
+    all_leaf_nodes = new std::vector<int>* [1];
+    all_leaf_nodes[0] = _leaf_nodes;
+
+    last_nodes.push_back(num_threads-1);
+
+    model_generated = 1;
+}
+
 /**
  * \brief Switch topology according to given index.
  *
@@ -48,7 +129,14 @@ void switch_topo(void)
  */
 bool switch_topo_to_idx(int idx)
 {
-    if (idx>=NUM_TOPOS) {
+    // Build model if non is configured
+    if (NUM_TOPOS==0) {
+
+        _build_model(get_num_threads());
+    }
+
+    
+    if ((unsigned) idx>=topo_num_topos()) {
 
         printw("Cannot switch topology: index %d invalid\n", idx);
         return false;
@@ -72,11 +160,15 @@ bool switch_topo_to_idx(int idx)
 
     topo = topo_combined[topo_idx];
     
+#ifdef QRM_DBG_ENABLED    
+    _debug_print_curr_model();
+#endif
+    
     debug_printfff(DBG__SWITCH_TOPO, "test-accessing topo .. %d %d\n",
                    topo_get(0, 0),
-                   topo_get(TOPO_NUM_CORES-1, TOPO_NUM_CORES-1));
+                   topo_get(topo_num_cores()-1, topo_num_cores()-1));
 
-    assert(get_last_node()!=get_sequentializer()); // LAST_NODE switched with topo
+    assert(topo_last_node()!=get_sequentializer()); // LAST_NODE switched with topo
     return true;
 }
 
@@ -158,7 +250,7 @@ bool topo_does_mp_send(coreid_t core, bool include_leafs)
     }
 
     // Is the node a parent of any other node?
-    for (int i=0; i<TOPO_NUM_CORES; i++) {
+    for (unsigned i=0; i<topo_num_cores(); i++) {
 
         if (topo_is_parent_real(core, i)) {
             return true;
@@ -183,7 +275,7 @@ bool topo_does_mp_receive(coreid_t core, bool include_leafs)
     }
 
     // Is the node receiving from any other node
-    for (int i=0; i<TOPO_NUM_CORES; i++) {
+    for (int i=0; i<topo_num_cores(); i++) {
 
         if (topo_is_child(i, core)) {
 
@@ -202,7 +294,7 @@ const char* topo_get_name(void)
 /*
 bool topo_does_shm_send(coreid_t core)
 {
-    for (int i=0; i<TOPO_NUM_CORES; i++) {
+    for (int i=0; i<topo_num_cores(); i++) {
 
         if (topo_get(core, i)>=SHM_MASTER_START &&
             topo_get(core, i)<SHM_MASTER_MAX) {
@@ -217,7 +309,7 @@ bool topo_does_shm_send(coreid_t core)
 
 bool topo_does_shm_receive(coreid_t core)
 {
-    for (int i=0; i<TOPO_NUM_CORES; i++) {
+    for (int i=0; i<topo_num_cores(); i++) {
 
         if (topo_get(core, i)>=SHM_SLAVE_START &&
             topo_get(core, i)<SHM_SLAVE_MAX) {
@@ -233,7 +325,7 @@ bool topo_does_shm_receive(coreid_t core)
 
 static int __topo_get(int* mod, int x, int y)
 {
-    return mod[x*TOPO_NUM_CORES+y];
+    return mod[x*topo_num_cores()+y];
 }
 
 int topo_get(int x, int y)
@@ -249,10 +341,20 @@ int topos_get(int mod, int x, int y)
 
 unsigned int topo_num_cores(void)
 {
-    return TOPO_NUM_CORES;
+    return model_generated ? get_num_threads() : TOPO_NUM_CORES;
+}
+
+unsigned int topo_num_topos(void)
+{
+    return model_generated ? 1 : NUM_TOPOS;
 }
 
 coreid_t get_sequentializer(void)
 {
     return SEQUENTIALIZER;
+}
+
+coreid_t topo_last_node(void)
+{
+    return last_nodes[get_topo_idx()];
 }

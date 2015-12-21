@@ -115,13 +115,6 @@ numa_cpu_to_node(int cpu)
         .qsize = UMP_QUEUE_SIZE,                        \
         .shm_numa_node = -1                             \
     }
- 
-/**
- * \brief Establish connections as given by the model.
- */
-void tree_connect(const char *qrm_my_name)
-{
-}
 
 /**
  * \brief Setup a pair of UMP channels.
@@ -195,25 +188,6 @@ void _setup_chanels(int src, int dst)
     add_binding(dst, src, ump_pair_state_create(&rev_conf));
 }
 
-/**
- * \brief Establish connections as given by the model.
- */
-void tree_connect(const char *qrm_my_name)
-{
-    uint64_t nproc = topo_num_cores();
-
-    for (unsigned int i=0; i<nproc; i++) {
-
-        for (unsigned int j=0; j<nproc; j++) {
-
-            if (topo_is_parent_real(i, j) || j==get_sequentializer()) {
-                debug_printfff(DBG__SWITCH_TOPO, "setup: %d %d\n", i, j);
-                _setup_chanels(i, j);
-            }
-        }
-    }
-}
-
 void mp_send_raw(mp_binding *b, uintptr_t val)
 {
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
@@ -234,6 +208,26 @@ uintptr_t mp_receive_raw(mp_binding *b)
 }
 
 #endif 
+
+/**
+ * \brief Establish connections as given by the model.
+ */
+void tree_connect(const char *qrm_my_name)
+{
+    uint64_t nproc = topo_num_cores();
+
+    for (unsigned int i=0; i<nproc; i++) {
+
+        for (unsigned int j=0; j<nproc; j++) {
+
+            if (topo_is_parent_real(i, j) || j==get_sequentializer()) {
+                debug_printfff(DBG__SWITCH_TOPO, "setup: %d %d\n", i, j);
+                _setup_chanels(i, j);
+            }
+        }
+    }
+}
+
 
 void debug_printf(const char *fmt, ...)
 {

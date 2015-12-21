@@ -43,7 +43,7 @@ void __sync_init(int _nproc, bool init_model)
 
     // Initialize model
     if (init_model) {
-        assert (topo_num_cores()==nproc);
+        assert (topo_num_cores()==nproc || topo_num_cores()==0);
         if (get_topo_idx()<0) {
 
             // Enable a model

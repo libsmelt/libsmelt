@@ -21,6 +21,7 @@ bool topo_is_child(coreid_t, coreid_t);
 int topo_is_parent(coreid_t, coreid_t);
 int topo_is_parent_real(coreid_t, coreid_t);
 unsigned int topo_num_cores(void);
+unsigned int topo_num_topos(void);
 
 const char* topo_get_name(void);
 
@@ -29,10 +30,6 @@ bool topo_does_mp_receive(coreid_t, bool);
 bool topo_does_shm_send(coreid_t core);
 bool topo_does_shm_receive(coreid_t core);
 int get_topo_idx(void);
-
-inline coreid_t get_last_node(void)
-{
-    return (coreid_t) ALL_LAST_NODES[get_topo_idx()];
-}
+coreid_t topo_last_node(void);
 
 #endif /* TOPO_H */
