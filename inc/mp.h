@@ -12,9 +12,14 @@
 
 #include "sync.h"
 
+// Connection setup
+void mp_connect(coreid_t src, coreid_t dst);
+bool mp_can_dequeue(coreid_t core);
+
 // Generic
 uintptr_t mp_receive(coreid_t);
 uintptr_t* mp_receive7(coreid_t);
+bool mp_can_receive(coreid_t);
 void mp_send(coreid_t, uintptr_t);
 void mp_send7(coreid_t, 
               uintptr_t,
@@ -60,6 +65,9 @@ void mp_send_raw7(mp_binding*,
                  uintptr_t,
                  uintptr_t,
                  uintptr_t);
+
+bool mp_can_receive_raw(mp_binding*);
+
 
 // Helpers to find bindings
 mp_binding *mp_get_parent(coreid_t, int*);

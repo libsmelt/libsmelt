@@ -201,6 +201,14 @@ uintptr_t* mp_receive_raw7(mp_binding *b)
     return r;
 }
 
+bool mp_can_receive_raw(mp_binding *b)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->dst.queue;
+    return ump_can_dequeue(q);
+}
+
+
 void debug_printf(const char *fmt, ...)
 {
     va_list argptr;

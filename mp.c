@@ -8,6 +8,15 @@ extern void shl_barrier_shm(int b_count);
 #endif
 
 /**
+ * \brief Connect two nodes
+ */
+void mp_connect(coreid_t src, coreid_t dst)
+{
+    _setup_ump_chanels(src, dst);
+}
+
+
+/**
  * \brief Send a message
  */
 __thread uint64_t num_mp_send = 0;
@@ -38,7 +47,7 @@ void mp_send7(coreid_t r,
     num_mp_send++;
     debug_printfff(DBG__AB, "mp_send to %d - %d\n", r, num_mp_send);
     
-    coreid_t s = get_thread_id();
+    coreid_t s = sched_getcpu();
     mp_binding *b = get_binding(s, r);
     
     if (b==NULL) {
@@ -74,7 +83,8 @@ uintptr_t* mp_receive7(coreid_t s)
     num_mp_receive++;
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
     
-    coreid_t r = get_thread_id();
+    // TODO back to get thread_id
+    coreid_t r = sched_getcpu();
     mp_binding *b = get_binding(s, r);
     
     if (b==NULL) {
@@ -84,6 +94,18 @@ uintptr_t* mp_receive7(coreid_t s)
     return mp_receive_raw7(b);
 }
 
+bool mp_can_receive(coreid_t s)
+{
+    coreid_t r = sched_getcpu();
+    mp_binding *b = get_binding(s, r);
+
+    if (b==NULL) {
+        return false;
+    }
+
+    return mp_can_receive_raw(b);
+
+}
 
 /**
  * \brief Send a multicast
