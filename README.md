@@ -1,3 +1,12 @@
+# Configuration
+
+Our Makefile supports several configurations given as environment
+variables. Here is a list of them:
+
+- `USE_FFQ`: Use FastForward rather than UMP
+- `BUILDTYPE`: Supported values are `release` and `debug`. The default
+  is release-mode.
+
 # Pairwise
 
 This is how to generate pairwise measurements on Linux.

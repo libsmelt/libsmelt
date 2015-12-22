@@ -13,7 +13,7 @@ DEPS += $(HEADERS)
 # --------------------------------------------------
 # Use Fast-Foward as a Linux message passing backend rather than
 # UMPQ.
-USE_FFQ=1
+#USE_FFQ=1
 
 UMPQ=../umpq/
 UMP_OBJS += $(UMPQ)/ump_chan.c \
@@ -59,7 +59,7 @@ LIBS += -L$(LIBNUMABASE)
 endif
 
 ifdef USE_FFQ
-	CXXFLAGS += -DFF
+	CXXFLAGS += -DFFQ
 	DEPS += $(FFQ_OBJS)
 	OBJS += $(patsubst %.c,%.o,$(FFQ_OBJS))
 else

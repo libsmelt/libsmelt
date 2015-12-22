@@ -27,6 +27,14 @@ void __sync_init(int _nproc, bool init_model)
     nproc = _nproc;
     debug_printf("Initializing libsync: model: %d nodes, %d threads\n",
                  topo_num_cores(), nproc);
+    char *ic_driver = "UMPQ";
+#ifdef FFQ
+    ic_driver = "FFQ";
+#endif
+
+    debug_printf("Sequentializer is: %d\n", get_sequentializer());
+    debug_printf("Interconnect driver is: %s\n", ic_driver);
+    debug_printf("Buffer size (#entries): %d\n", UMP_QUEUE_SIZE);
 
     // Debug output
 #ifdef QRM_DBG_ENABLED

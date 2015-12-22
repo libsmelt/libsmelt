@@ -156,6 +156,7 @@ bool switch_topo_to_idx(int idx)
         
         debug_printf("Switching topology: \033[1;36m%s\033[0m\n",
                      topo_get_name());
+        debug_printf("last node is: %d\n", topo_last_node());
     }
 
     topo = topo_combined[topo_idx];

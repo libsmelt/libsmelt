@@ -9,7 +9,7 @@
 #include <cinttypes>
 #include <cstring>
 
-#ifdef FF
+#ifdef FFQ
 
 #include "ff_queue.h"
 #include "ffq_conf.h"

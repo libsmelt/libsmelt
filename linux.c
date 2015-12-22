@@ -4,7 +4,7 @@
 
 #include "debug.h"
 
-#ifdef FF
+#ifdef FFQ
 
 #else
 #include "ump_conf.h"
@@ -98,7 +98,7 @@ numa_cpu_to_node(int cpu)
 }
 
 
-#ifdef FF
+#ifdef FFQ
 // --------------------------------------------------
 
 #define FF_CONF_INIT(src_, dst_)                        \
@@ -220,7 +220,7 @@ void tree_connect(const char *qrm_my_name)
 
         for (unsigned int j=0; j<nproc; j++) {
 
-            if (topo_is_parent_real(i, j) || j==get_sequentializer()) {
+            if (topo_is_parent_real(i, j) || (j==get_sequentializer() && i!=j)) {
                 debug_printfff(DBG__SWITCH_TOPO, "setup: %d %d\n", i, j);
                 _setup_chanels(i, j);
             }
@@ -278,7 +278,7 @@ void __sys_init(void)
 int __backend_thread_start(void)
 {
 #ifdef UMP_DBG_COUNT
-#ifdef FF
+#ifdef FFQ
 #else    
     ump_start();
 #endif    
@@ -289,7 +289,7 @@ int __backend_thread_start(void)
 int __backend_thread_end(void)
 {
 #ifdef UMP_DBG_COUNT
-#ifdef FF
+#ifdef FFQ
 #else
     ump_end();
 #endif    

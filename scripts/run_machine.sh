@@ -55,22 +55,23 @@ fi
 make clean || exit 1
 make $BENCH || error "Compilation failed"
 
-echo "Assuming machine to be $1" # This might not work in the future, grep from model then
+echo "Assuming machine to be $MACHINE" # This might not work in the future, grep from model then
 
 set +x
 
 # Copy executable
+ssh $MACHINE killall -s KILL $(basename $BENCH) &>/dev/null
 scp $BENCH $MACHINE:  || error "Failed to copy program"
 
 # Run and log ..
 TMP=$(mktemp)
 ssh $MACHINE killall -s KILL $(basename $BENCH) &>/dev/null
 echo "Running benchmark .."
-ssh $MACHINE "./$(basename $BENCH) > /tmp/log"; RC=$?
+ssh -t $MACHINE "./$(basename $BENCH)" | tee /tmp/log; RC=${PIPESTATUS[0]}
 
 [[ $RC -eq 0 ]] || exit $RC
 
-scp $MACHINE:/tmp/log $TMP
+cp /tmp/log $TMP
 cat $TMP | log_wrapper
 rm $TMP
 
