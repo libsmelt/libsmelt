@@ -43,7 +43,7 @@ CFLAGS += -std=c99 $(COMMONFLAGS)
 INC += -I inc -I $(UMPQ)
 
 ifeq ($(BUILDTYPE),debug)
-	OPT=-ggdb -O2 -pg -DSYNC_DEBUG
+	OPT=-ggdb -O0 -pg -DSYNC_DEBUG -gdwarf-2
 else
 	OPT=-O3 -ggdb
 endif

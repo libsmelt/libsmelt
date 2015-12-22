@@ -40,6 +40,8 @@ void switch_topo(void)
 
 static void _debug_print_curr_model(void)
 {
+#ifdef QRM_DBG_ENABLED    
+
     printf("Model start:");
     for (unsigned i=0; i<topo_num_cores(); i++) {
         for (unsigned j=0; j<topo_num_cores(); j++) {
@@ -50,6 +52,7 @@ static void _debug_print_curr_model(void)
     }
     printf("\nModel end\n");
 
+#endif
 }
 
 /**
@@ -102,7 +105,7 @@ static void _build_model(coreid_t num_threads)
 
     // Topology names
     topo_names = new char*[1];
-    topo_names[0] = "binary (auto-generated)";
+    topo_names[0] = const_cast<char*>("binary (auto-generated)");
 
     topo_combined = (int**) (malloc(sizeof(int*)));
     assert (topo_combined!=NULL);
@@ -160,10 +163,7 @@ bool switch_topo_to_idx(int idx)
     }
 
     topo = topo_combined[topo_idx];
-    
-#ifdef QRM_DBG_ENABLED    
     _debug_print_curr_model();
-#endif
     
     debug_printfff(DBG__SWITCH_TOPO, "test-accessing topo .. %d %d\n",
                    topo_get(0, 0),
@@ -276,7 +276,7 @@ bool topo_does_mp_receive(coreid_t core, bool include_leafs)
     }
 
     // Is the node receiving from any other node
-    for (int i=0; i<topo_num_cores(); i++) {
+    for (unsigned i=0; i<topo_num_cores(); i++) {
 
         if (topo_is_child(i, core)) {
 
@@ -326,6 +326,9 @@ bool topo_does_shm_receive(coreid_t core)
 
 static int __topo_get(int* mod, int x, int y)
 {
+#ifdef QRM_DBG_ENABLED    
+    assert ((x*topo_num_cores()+y)<(topo_num_cores()*topo_num_cores()));
+#endif    
     return mod[x*topo_num_cores()+y];
 }
 

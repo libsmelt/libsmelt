@@ -27,9 +27,9 @@ void __sync_init(int _nproc, bool init_model)
     nproc = _nproc;
     debug_printf("Initializing libsync: model: %d nodes, %d threads\n",
                  topo_num_cores(), nproc);
-    char *ic_driver = "UMPQ";
+    char *ic_driver = const_cast<char*>("UMPQ");
 #ifdef FFQ
-    ic_driver = "FFQ";
+    ic_driver = const_cast<char*>("FFQ");
 #endif
 
     debug_printf("Sequentializer is: %d\n", get_sequentializer());
