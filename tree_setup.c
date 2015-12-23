@@ -22,7 +22,7 @@ enum state qrm_st[Q_MAX_CORES];
  * This is currently not clean, as it requires n^2 entries in the
  * buffer for n cores.
  */
-mp_binding* bindings[TOPO_NUM_CORES][TOPO_NUM_CORES];
+mp_binding** bindings = NULL;
 
 __thread uint32_t tree_num_peers;
 
@@ -236,16 +236,24 @@ void tree_reset(void)
 
 void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
 {
+    if (bindings==NULL) {
+
+        debug_printf("Allocating memory for bindings\n");
+        bindings = (mp_binding**) malloc(sizeof(mp_binding*)*
+                                          topo_num_cores()*topo_num_cores());
+        assert (bindings!=NULL);
+    }
+    
     debug_printfff(DBG__BINDING,
                    "Adding binding for %d, %d\n", sender, receiver);
-    bindings[sender][receiver] = b;
+    bindings[sender*topo_num_cores()+receiver] = b;
 }
 
 mp_binding* get_binding(coreid_t sender, coreid_t receiver)
 {
     debug_printfff(DBG__BINDING,
                    "%d Getting binding for %d, %d\n", get_thread_id(), sender, receiver);
-    return bindings[sender][receiver];
+    return bindings[sender*topo_num_cores()+receiver];
 }
 
 struct binding_lst *child_bindings = NULL;
