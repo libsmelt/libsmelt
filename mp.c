@@ -47,7 +47,7 @@ void mp_send7(coreid_t r,
     num_mp_send++;
     debug_printfff(DBG__AB, "mp_send to %d - %d\n", r, num_mp_send);
     
-    coreid_t s = sched_getcpu();
+    coreid_t s = get_thread_id();
     mp_binding *b = get_binding(s, r);
     
     if (b==NULL) {
@@ -84,7 +84,7 @@ uintptr_t* mp_receive7(coreid_t s)
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
     
     // TODO back to get thread_id
-    coreid_t r = sched_getcpu();
+    coreid_t r = get_thread_id();
     mp_binding *b = get_binding(s, r);
     
     if (b==NULL) {
@@ -96,7 +96,7 @@ uintptr_t* mp_receive7(coreid_t s)
 
 bool mp_can_receive(coreid_t s)
 {
-    coreid_t r = sched_getcpu();
+    coreid_t r = get_thread_id();
     mp_binding *b = get_binding(s, r);
 
     if (b==NULL) {
