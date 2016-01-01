@@ -12,7 +12,10 @@ extern void shl_barrier_shm(int b_count);
  */
 void mp_connect(coreid_t src, coreid_t dst)
 {
-    _setup_ump_chanels(src, dst);
+    mp_binding *b = get_binding(src, dst);
+    if (b == NULL) {
+        _setup_ump_chanels(src, dst);
+    } 
 }
 
 
@@ -51,6 +54,7 @@ void mp_send7(coreid_t r,
     mp_binding *b = get_binding(s, r);
     
     if (b==NULL) {
+        printf("%lx \n", val1);
         printf("Failed to get binding for %d %d\n", s, r);
     }
     assert (b!=NULL);
@@ -354,10 +358,10 @@ uintptr_t* mp_reduce7(uintptr_t val1,
     // Determine child bindings
     struct binding_lst *blst = _mp_get_children_raw(get_thread_id());
     int numbindings = blst->num;
-
+/*
     assert ((numbindings==0 && !topo_does_mp_send(my_core_id, false)) ||
             (numbindings>0 && topo_does_mp_send(my_core_id, false)));
-
+*/
     if (numbindings!=0) {
         debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
     }
@@ -380,6 +384,7 @@ uintptr_t* mp_reduce7(uintptr_t val1,
     }
     
     if (numbindings == 0) {
+        vals[0] = val1;
         vals[1] = val2;
         vals[2] = val3;
         vals[3] = val4;
