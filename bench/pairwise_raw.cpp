@@ -16,6 +16,7 @@
 #include "ump_common.h"
 
 #define NUM_EXP 100
+#define NUM_PIPELINE 100
 
 #define INIT_SKM(func, sender, receiver)                                \
         char _str_buf[1024];                                            \
@@ -30,7 +31,7 @@
  * Receiving thread will not sleep. This will be bad for machines
  * using hyper-threads.
  */
-uintptr_t raw_receive(mp_binding *b, sk_measurement *_m)
+static inline uintptr_t raw_receive(mp_binding *b, sk_measurement *_m, bool restart_tsc)
 {
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
     struct ump_queue *q = &ups->dst.queue;
@@ -42,12 +43,10 @@ uintptr_t raw_receive(mp_binding *b, sk_measurement *_m)
 
     do {
 
-        if (_m) sk_m_restart_tsc(_m);
+        if (_m && restart_tsc) sk_m_restart_tsc(_m);
         success = ump_dequeue_word_nonblock(q, &ret);
 
     } while(!success);
-
-    if (_m) sk_m_add(_m);
 
     return ret;
 }
@@ -70,10 +69,14 @@ void* thr_sender(void* a)
     for (int i=0; i<NUM_EXP; i++) {
 
         sk_m_restart_tsc(&m);
-        mp_send_raw(bsend, i);
+        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+            mp_send_raw(bsend, i);
+        }
         sk_m_add(&m);
 
-        raw_receive(brecv, NULL);
+        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+            raw_receive(brecv, NULL, 0);
+        }
     }
 
     sk_m_print(&m);
@@ -95,8 +98,14 @@ void* thr_receiver(void* a)
 
     for (unsigned i=0; i<NUM_EXP; i++) {
 
-        assert(raw_receive(brecv, &m)==i);
-        mp_send_raw(bsend, i);
+        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+            uintptr_t result = raw_receive(brecv, &m, j == 0);
+            assert(result == i);
+        }
+        sk_m_add(&m);
+        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+            mp_send_raw(bsend, i);
+        }
     }
 
     sk_m_print(&m);
