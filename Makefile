@@ -111,7 +111,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f *.o test/*.o $(TARGET)
+	rm -f *.o test/*.o $(TARGET) test/mp-test
 	$(MAKE) -C $(UMPQ) clean
 
 debug:

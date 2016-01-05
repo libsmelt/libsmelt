@@ -110,15 +110,19 @@ static void _build_model(coreid_t num_threads)
     topo_combined = (int**) (malloc(sizeof(int*)));
     assert (topo_combined!=NULL);
     topo_combined[0] = _topo;
-    
-    std::vector<int> *_leaf_nodes = new std::vector<int>();
+
+    // Leaf nodes
+    std::vector<int> *_leaf_nodes = new std::vector<int>;
     _leaf_nodes->push_back(num_threads-1);
 
-    all_leaf_nodes = new std::vector<int>* [1];
+    all_leaf_nodes = (std::vector<int>**) malloc(sizeof(std::vector<int>*));
+    assert (all_leaf_nodes!=NULL);
+    
     all_leaf_nodes[0] = _leaf_nodes;
 
+    // Last node
     last_nodes.push_back(num_threads-1);
-
+    
     model_generated = 1;
 }
 
@@ -150,7 +154,7 @@ bool switch_topo_to_idx(int idx)
         debug_printfff(DBG__SWITCH_TOPO, "Available topos: %d out of %d\n",
                      topo_idx, NUM_TOPOS);
 
-        for (int i=0; i<NUM_TOPOS; i++) {
+        for (unsigned i=0; i<topo_num_topos(); i++) {
 
             debug_printfff(DBG__SWITCH_TOPO, "topo %d %p %s [%c]\n",
                          i, topo_combined[i], topo_names[i],
@@ -240,6 +244,9 @@ int topo_is_parent_real(coreid_t core, coreid_t parent)
  * \brief Check whether a node sends messages according to the current
  * model.
  *
+ * If <core> does an mp_send, there is at least one other node that
+ * has <core> as a parent.
+ *
  * \param include_leafs Consider communication from leaf nodes to
  * sequentializer as message passing links
  */
@@ -253,7 +260,7 @@ bool topo_does_mp_send(coreid_t core, bool include_leafs)
     // Is the node a parent of any other node?
     for (unsigned i=0; i<topo_num_cores(); i++) {
 
-        if (topo_is_parent_real(core, i)) {
+        if (topo_is_child(core, i)) {
             return true;
         }
     }
@@ -361,4 +368,9 @@ coreid_t get_sequentializer(void)
 coreid_t topo_last_node(void)
 {
     return last_nodes[get_topo_idx()];
+}
+
+std::vector<int> **topo_all_leaf_nodes(void)
+{
+    return all_leaf_nodes;
 }

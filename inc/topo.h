@@ -11,6 +11,7 @@
 #define TOPO_H 1
 
 #include "model_defs.h"
+#include <vector>
 
 void switch_topo(void);
 bool switch_topo_to_idx(int);
@@ -31,5 +32,6 @@ bool topo_does_shm_send(coreid_t core);
 bool topo_does_shm_receive(coreid_t core);
 int get_topo_idx(void);
 coreid_t topo_last_node(void);
+std::vector<int> **topo_all_leaf_nodes(void);
 
 #endif /* TOPO_H */
