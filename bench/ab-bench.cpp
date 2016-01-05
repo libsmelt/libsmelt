@@ -27,7 +27,7 @@ pthread_barrier_t ab_barrier;
  * \brief Message ping-pong between topo_last_node() and get_sequentializer()
  */
 extern __thread uint64_t ump_num_acks_sent;
-void* pingpong(void* a)
+static void* pingpong(void* a)
 {
     char outname[1024];
     char outname2[1024];
@@ -99,7 +99,7 @@ void* pingpong(void* a)
 /**
  * \brief Broadcast trigger by topo_last_node() until back to LAST_NODE
  */
-void* ab(void* a)
+static void* ab(void* a)
 {
     char outname[1024];
 
@@ -152,7 +152,7 @@ extern void shl_barrier_shm(int b_count);
 /**
  * \brief
  */
-void* reduction(void* a)
+static void* reduction(void* a)
 {
     char outname[1024];
 
@@ -195,10 +195,10 @@ void* reduction(void* a)
     return NULL;
 }
 
-void* barrier(void* a)
+static void* barrier(void* a)
 {
     // XXX Perhaps we also want all leaf nodes here?
-    
+
     char outname[1024];
 
     coreid_t tid = *((int*) a);
@@ -227,7 +227,7 @@ void* barrier(void* a)
     return NULL;
 }
 
-void* agreement(void* a)
+static void* agreement(void* a)
 {
     char outname[1024];
 
@@ -249,7 +249,7 @@ void* agreement(void* a)
 
         coreid_t last_node = (coreid_t) *i;
         assert (last_node>=0 && last_node<=num_threads);
-        
+
         sk_m_reset(&m);
 
         for (int epoch =0; epoch < NUM_RUNS; epoch++) {
@@ -257,14 +257,14 @@ void* agreement(void* a)
             /*
              * Phase one of 2PC is a broadcast followed by
              * a reduction
-             */ 
+             */
             sk_m_restart_tsc(&m);
 
-            //Synchronize 
+            //Synchronize
             uintptr_t val = 0;
             if (get_thread_id() == last_node) {
                mp_send(get_sequentializer(), payload);
-            }        
+            }
 
             // broadcast to all
             if (tid == get_sequentializer()) {
@@ -272,14 +272,14 @@ void* agreement(void* a)
             } else {
                 val = mp_receive_forward(0);
             }
-    
-            // Reduction 
+
+            // Reduction
             mp_reduce(val);
 
             /*
              * Phase two of 2PC is a broadcast to inform
              * of the commit
-             */ 
+             */
             //Broadcast to all
             if (tid == get_sequentializer()) {
                 mp_send_ab(val);
@@ -288,7 +288,7 @@ void* agreement(void* a)
             }
 
             sk_m_add(&m);
-    
+
         }
         if (get_thread_id() == last_node) {
             sk_m_print(&m);
@@ -337,8 +337,12 @@ int main(int argc, char **argv)
             printf("Executing experiment %d - %s\n", (j+1), labels[j]);
             printf("----------------------------------------\n");
 
+#ifdef BARRELFISH
+            thread_yield();
+#else
             // Yield to reduce the risk of getting de-scheduled later
             sched_yield();
+#endif
 
             // Create
             for (unsigned i=1; i<num_threads; i++) {
