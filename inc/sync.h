@@ -11,6 +11,8 @@
 #ifndef SYNC_H
 #define SYNC_H 1
 
+#include <pthread.h>
+
 #ifdef __linux__
 #include "backends/linux.h"
 #else
