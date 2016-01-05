@@ -19,6 +19,7 @@
 
 void tree_reset(void);
 int  tree_init(const char*);
+void tree_init_bindings(void);
 
 void setup_tree_from_model(void);
 

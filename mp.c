@@ -87,7 +87,6 @@ uintptr_t* mp_receive7(coreid_t s)
     num_mp_receive++;
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
     
-    // TODO back to get thread_id
     coreid_t r = get_thread_id();
     mp_binding *b = get_binding(s, r);
     
@@ -342,7 +341,7 @@ uintptr_t mp_reduce(uintptr_t val)
  * up the tree 
  * 
  * 
- */
+ * */
 static __thread uintptr_t vals[7];
 uintptr_t* mp_reduce7(uintptr_t val1,
                       uintptr_t val2,

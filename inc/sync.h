@@ -26,6 +26,7 @@
 // Functions
 
 void __sync_init(int, bool);
+void __sync_init_no_tree(int);
 void __sys_init(void);
 
 int  __thread_init(coreid_t,int);

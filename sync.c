@@ -22,6 +22,7 @@ static coreid_t nproc;
  */
 void __sync_init(int _nproc, bool init_model)
 {
+/*
     __sys_init();
 
     nproc = _nproc;
@@ -66,7 +67,26 @@ void __sync_init(int _nproc, bool init_model)
 
     // Initialize barrier
     pthread_barrier_init(&get_master_share()->data.sync_barrier, NULL, _nproc);
+*/
+    __sync_init_no_tree(_nproc);
+}
 
+
+/**
+ * \brief Initialization of sync library without tree setup in order to
+ *        use mp_send etc.
+ *
+ * This has to be executed once per address space. If threads are used
+ * for parallelism, call this only once. With processes, it has to be
+ * executed on each process.
+ *
+ * \param _nproc Number of prcesses participating 
+ */
+
+void __sync_init_no_tree(int _nproc)
+{   printf("WTF \n");
+    nproc = _nproc;
+    tree_init_bindings();
 }
 
 /**
