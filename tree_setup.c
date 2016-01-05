@@ -238,7 +238,7 @@ void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
 {
     if (bindings==NULL) {
 
-        debug_printf("Allocating memory for bindings\n");
+        debug_printfff(DBG__BINDING, "Allocating memory for bindings\n");
         bindings = (mp_binding**) malloc(sizeof(mp_binding*)*
                                           topo_num_cores()*topo_num_cores());
         assert (bindings!=NULL);

@@ -15,7 +15,7 @@
 __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
-int NUM_THREADS;
+unsigned num_threads;
 #define NUM_RUNS 1000000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 
@@ -33,7 +33,7 @@ void* pingpong(void* a)
     char outname2[1024];
 
      coreid_t tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
+    __thread_init(tid, num_threads);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -99,13 +99,12 @@ void* pingpong(void* a)
 /**
  * \brief Broadcast trigger by topo_last_node() until back to LAST_NODE
  */
-extern std::vector<int> *all_leaf_nodes[];
 void* ab(void* a)
 {
     char outname[1024];
 
    coreid_t tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
+    __thread_init(tid, num_threads);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -113,7 +112,7 @@ void* ab(void* a)
     TOPO_NAME(outname, "ab");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
-    std::vector<int> *leafs = all_leaf_nodes[0];
+    std::vector<int> *leafs = topo_all_leaf_nodes()[0];
 
     for (std::vector<int>::iterator i=leafs->begin(); i!=leafs->end(); ++i) {
 
@@ -158,7 +157,7 @@ void* reduction(void* a)
     char outname[1024];
 
     coreid_t tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
+    __thread_init(tid, num_threads);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -166,7 +165,7 @@ void* reduction(void* a)
     TOPO_NAME(outname, "reduction");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
-    std::vector<int> *leafs = all_leaf_nodes[0];
+    std::vector<int> *leafs = topo_all_leaf_nodes()[0];
 
     for (std::vector<int>::iterator i=leafs->begin(); i!=leafs->end(); ++i) {
 
@@ -203,7 +202,7 @@ void* barrier(void* a)
     char outname[1024];
 
     coreid_t tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
+    __thread_init(tid, num_threads);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -233,7 +232,7 @@ void* agreement(void* a)
     char outname[1024];
 
     coreid_t tid = *((int*) a);
-    __thread_init(tid, NUM_THREADS);
+    __thread_init(tid, num_threads);
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -243,11 +242,14 @@ void* agreement(void* a)
 
     uintptr_t payload = 7;
 
-    std::vector<int> *leafs = all_leaf_nodes[0];
+    std::vector<int> *_leaf_nodes = topo_all_leaf_nodes()[0];
 
-    for (std::vector<int>::iterator i=leafs->begin(); i!=leafs->end(); ++i) {
+    for (std::vector<int>::iterator i=_leaf_nodes->begin();
+         i!=_leaf_nodes->end(); ++i) {
 
         coreid_t last_node = (coreid_t) *i;
+        assert (last_node>=0 && last_node<=num_threads);
+        
         sk_m_reset(&m);
 
         for (int epoch =0; epoch < NUM_RUNS; epoch++) {
@@ -301,9 +303,9 @@ void* agreement(void* a)
 
 int main(int argc, char **argv)
 {
-    NUM_THREADS = sysconf(_SC_NPROCESSORS_CONF);
+    num_threads = sysconf(_SC_NPROCESSORS_CONF);
 
-    pthread_barrier_init(&ab_barrier, NULL, NUM_THREADS);
+    pthread_barrier_init(&ab_barrier, NULL, num_threads);
 
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
@@ -322,12 +324,12 @@ int main(int argc, char **argv)
         "barrier",
     };
 
-    __sync_init(NUM_THREADS, true);
+    __sync_init(num_threads, true);
 
-    pthread_t ptds[NUM_THREADS];
-    int tids[NUM_THREADS];
+    pthread_t ptds[num_threads];
+    int tids[num_threads];
 
-    for (int e=0; e<NUM_TOPOS; e++) {
+    for (unsigned e=0; e<topo_num_topos(); e++) {
 
         for (int j=0; j<NUM_EXP; j++) {
 
@@ -339,7 +341,7 @@ int main(int argc, char **argv)
             sched_yield();
 
             // Create
-            for (int i=1; i<NUM_THREADS; i++) {
+            for (unsigned i=1; i<num_threads; i++) {
                 tids[i] = i;
                 pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
             }
@@ -349,12 +351,12 @@ int main(int argc, char **argv)
             workers[j]((void*) (tids+0));
 
             // Join
-            for (int i=1; i<NUM_THREADS; i++) {
+            for (unsigned i=1; i<num_threads; i++) {
                 pthread_join(ptds[i], NULL);
             }
         }
 
-        if( e<NUM_TOPOS-1) switch_topo();
+        if( e<topo_num_topos()-1) switch_topo();
     }
 
     pthread_barrier_destroy(&ab_barrier);
