@@ -240,7 +240,7 @@ void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
 
         debug_printfff(DBG__BINDING, "Allocating memory for bindings\n");
         bindings = (mp_binding**) malloc(sizeof(mp_binding*)*
-                                          topo_num_cores()*topo_num_cores());
+                                         get_num_threads()*get_num_threads());
         assert (bindings!=NULL);
     }
     
@@ -253,6 +253,10 @@ mp_binding* get_binding(coreid_t sender, coreid_t receiver)
 {
     debug_printfff(DBG__BINDING,
                    "%d Getting binding for %d, %d\n", get_thread_id(), sender, receiver);
+    
+    if (!bindings)
+        return NULL;
+    
     return bindings[sender*topo_num_cores()+receiver];
 }
 
