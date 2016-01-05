@@ -121,10 +121,12 @@ uintptr_t mp_receive_forward(uintptr_t val)
     return v;
 }
 
+#if 0
 bool _mp_is_reduction_root(void)
 {
     return get_thread_id()==get_sequentializer();
 }
+#endif
 
 /**
  * \brief Implement reductions
