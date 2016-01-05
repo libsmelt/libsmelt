@@ -5,7 +5,7 @@
 #include "topo.h"
 #include "barrier.h"
 #include "topo.h"
-
+#include "mp.h"
 #include "model_defs.h"
 
 enum state {
