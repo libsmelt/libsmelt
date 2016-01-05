@@ -2,7 +2,16 @@
 
 TARGET=libsync.so
 
-CFILES=$(wildcard *.c)
+CFILES= \
+	barrier.c \
+	debug.c \
+	linux.c \
+	mp.c \
+	shm.c \
+	sync.c \
+	topo.c \
+	tree_setup.c 
+
 OBJS += $(patsubst %.c,%.o,$(CFILES))
 HEADERS=$(wildcard *.h)
 
