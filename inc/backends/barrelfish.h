@@ -1,3 +1,4 @@
+#include <barrelfish/barrelfish.h>
 #include <barrelfish_kpi/types.h>
 
 //#include <barrelfish/waitset.h>
@@ -21,7 +22,6 @@ typedef struct ffq_pair_state mp_binding;
 
 typedef struct ump_pair_state mp_binding;
 
-#define UMP_QUEUE_SIZE 1000U
-
-#include <barrelfish/barrelfish.h>
 #endif
+
+#define UMP_QUEUE_SIZE 1000U

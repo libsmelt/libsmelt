@@ -5,9 +5,11 @@
 #include "model_defs.h"
 #include "sync.h"
 #include "topo.h"
+#include "backends/barrelfish.h"
+#include "mp.h"
 
 #ifdef FFQ
-
+#include "ffq_conf.h"
 #else
 #include "ump_conf.h"
 #endif
@@ -150,7 +152,6 @@ void _setup_chanels(int src, int dst)
     add_binding(dst, src, ump_pair_state_create(&rev_conf));
 }
 
-void mp_send_raw(mp_binding *b, uintptr_t val);
 void mp_send_raw(mp_binding *b, uintptr_t val)
 {
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
@@ -159,7 +160,7 @@ void mp_send_raw(mp_binding *b, uintptr_t val)
     ump_enqueue_word(q, val);
 }
 
-uintptr_t mp_receive_raw(mp_binding *b);
+
 uintptr_t mp_receive_raw(mp_binding *b)
 {
     struct ump_pair_state *ups = (struct ump_pair_state*) b;

@@ -1,6 +1,10 @@
 #include "sync.h"
 #include "shm.h"
 
+#ifdef BARRELFISH
+#include <barrelfish/barrelfish.h>
+#endif
+
 // Master share is shared between all threads.
 union quorum_share *master_share = NULL;
 #ifdef BARRELFISH
