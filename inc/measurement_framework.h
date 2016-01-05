@@ -22,6 +22,9 @@
 
 #include "inttypes.h"
 
+
+#ifndef BARRELFISH
+
 static inline void cpuid(uint32_t function, uint32_t *eax, uint32_t *ebx,
                          uint32_t *ecx, uint32_t *edx)
 {
@@ -45,8 +48,9 @@ static inline void cpuid(uint32_t function, uint32_t *eax, uint32_t *ebx,
                    );
 }
 
-typedef uint64_t cycles_t;
 
+typedef uint64_t cycles_t;
+#endif
 
 struct sk_measurement {
 
@@ -90,9 +94,12 @@ inline static void sk_m_init(struct sk_measurement *m,
     m->total = 0;
     m->label = name;
 
+#ifdef BARRELFISH
+    bench_init();
+#else
     uint32_t eax, ebx, ecx, edx;
     bool rdtscp_flag;
-    
+
     cpuid(0x80000001, &eax, &ebx, &ecx, &edx);
     if ((edx >> 27) & 1) {
         rdtscp_flag = true;
@@ -103,7 +110,7 @@ inline static void sk_m_init(struct sk_measurement *m,
     // Otherwise, we need the other tsc function (see BF's bench_tsc)
     assert(rdtscp_flag==1);
 
-    
+#endif
     m->buffer = buf;
     assert(buf!=NULL);
 }
