@@ -43,7 +43,7 @@ void switch_topo(void)
 
 static void _debug_print_curr_model(void)
 {
-#ifdef QRM_DBG_ENABLED    
+#ifdef QRM_DBG_ENABLED
 
     printf("Model start:");
     for (unsigned i=0; i<topo_num_cores(); i++) {
@@ -70,16 +70,16 @@ static void _build_model(coreid_t num_threads)
 
     assert (_topo!=NULL);
     memset(_topo, 0, sizeof(int)*num_threads*num_threads);
-    
+
     // Fill model
     for (unsigned i=0; i<num_threads; i++) {
 
         coreid_t id1 = 2*i+1;
         coreid_t id2 = 2*i+2;
 
-        if (id1<=num_threads)
+        if (id1<num_threads)
             _topo[i*num_threads + id1] = 1;
-        if (id2<=num_threads)
+        if (id2<num_threads)
             _topo[i*num_threads + id2] = 2;
 
         debug_printfff(DBG__SWITCH_TOPO,
@@ -88,7 +88,7 @@ static void _build_model(coreid_t num_threads)
         coreid_t parent = (i-1) / 2;
         debug_printfff(DBG__SWITCH_TOPO,
                        "Parent of %d is %d\n", i, parent);
-        
+
         if (i!=0) {
 
             _topo[i*num_threads + parent] = 99;
@@ -120,19 +120,19 @@ static void _build_model(coreid_t num_threads)
 
     all_leaf_nodes = (std::vector<int>**) malloc(sizeof(std::vector<int>*));
     assert (all_leaf_nodes!=NULL);
-    
+
     all_leaf_nodes[0] = _leaf_nodes;
 
     // Last node
     last_nodes.push_back(num_threads-1);
-    
+
     model_generated = 1;
 }
 
 /**
  * \brief Switch topology according to given index.
  *
- * \param idx Index of the topology to be used.  
+ * \param idx Index of the topology to be used.
  *
  * \return true if successful, false otherwise (e.g. in case of
  * invalid index idx)
@@ -145,13 +145,13 @@ bool switch_topo_to_idx(int idx)
         _build_model(get_num_threads());
     }
 
-    
+
     if ((unsigned) idx>=topo_num_topos()) {
 
         printw("Cannot switch topology: index %d invalid\n", idx);
         return false;
     }
-    
+
     topo_idx = idx;
     if (get_core_id() == get_sequentializer()) {
         debug_printfff(DBG__SWITCH_TOPO, "Available topos: %d out of %d\n",
@@ -163,7 +163,7 @@ bool switch_topo_to_idx(int idx)
                          i, topo_combined[i], topo_names[i],
                          i==topo_idx ? 'X' : ' ' );
         }
-        
+
         debug_printf("Switching topology: \033[1;36m%s\033[0m\n",
                      topo_get_name());
         debug_printf("last node is: %d\n", topo_last_node());
@@ -171,7 +171,7 @@ bool switch_topo_to_idx(int idx)
 
     topo = topo_combined[topo_idx];
     _debug_print_curr_model();
-    
+
     debug_printfff(DBG__SWITCH_TOPO, "test-accessing topo .. %d %d\n",
                    topo_get(0, 0),
                    topo_get(topo_num_cores()-1, topo_num_cores()-1));
@@ -235,10 +235,10 @@ bool topo_is_child(coreid_t node1, coreid_t node2)
 int topo_is_parent_real(coreid_t core, coreid_t parent)
 {
     bool is_parent = topo_get(parent, core) == 99;
-    
+
     // Sanity check for model consistency
     assert (!is_parent || topo_is_child(core, parent));
-    
+
     return is_parent;
 }
 
@@ -336,9 +336,9 @@ bool topo_does_shm_receive(coreid_t core)
 
 static int __topo_get(int* mod, int x, int y)
 {
-#ifdef QRM_DBG_ENABLED    
+#ifdef QRM_DBG_ENABLED
     assert ((x*topo_num_cores()+y)<(topo_num_cores()*topo_num_cores()));
-#endif    
+#endif
     return mod[x*topo_num_cores()+y];
 }
 
