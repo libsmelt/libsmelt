@@ -1,4 +1,8 @@
 #include "stdio.h"
+#ifdef BARRELFISH
+#include <barrelfish/barrelfish.h>
+#endif
+#include <numa.h>
 
 #include "shm.h"
 #include "sync.h"
@@ -24,6 +28,11 @@ void __sync_init(int _nproc, bool init_model)
 {
 
     __sys_init();
+
+    if (_nproc == -1) {
+        debug_printf("Getting number of processors from libnuma\n");
+        _nproc = numa_num_configured_cpus();
+    }
 
     nproc = _nproc;
     debug_printf("Initializing libsync: model: %d nodes, %d threads\n",
@@ -78,11 +87,11 @@ void __sync_init(int _nproc, bool init_model)
  * for parallelism, call this only once. With processes, it has to be
  * executed on each process.
  *
- * \param _nproc Number of prcesses participating 
+ * \param _nproc Number of prcesses participating
  */
 
 void __sync_init_no_tree(int _nproc)
-{   
+{
     nproc = _nproc;
     tree_init_bindings();
 }
