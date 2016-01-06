@@ -377,7 +377,7 @@ static void* agreement(void* a)
 #else
                mp_send(get_sequentializer(), payload);
 #endif
-            }        
+            }
 
             // broadcast to all
 
@@ -395,7 +395,7 @@ static void* agreement(void* a)
                 val = mp_receive_forward(0);
 #endif
             }
-            // Reduction 
+            // Reduction
 #ifdef SEND7
             mp_reduce7(1, v[1], v[2], v[3], v[4], v[5], v[6]);
 #else
@@ -444,7 +444,11 @@ static void domain_init_done(void *arg, errval_t err)
 
 int main(int argc, char **argv)
 {
-    num_threads = sysconf(_SC_NPROCESSORS_CONF);
+    unsigned nthreads = sysconf(_SC_NPROCESSORS_CONF);
+
+    __sync_init(nthreads, true);
+
+    num_threads = get_num_threads();
 
     pthread_barrier_init(&ab_barrier, NULL, num_threads);
 
@@ -465,7 +469,7 @@ int main(int argc, char **argv)
         "Agreement",
     };
 
-    __sync_init(num_threads, true);
+
 
     pthread_t ptds[num_threads];
     int tids[num_threads];
