@@ -35,7 +35,10 @@ void init_topo(void);
  */
 void switch_topo(void)
 {
-    assert (switch_topo_to_idx(topo_idx+1));
+    bool res = switch_topo_to_idx(topo_idx+1);
+    if (!res) {
+        assert(!res);
+    }
 }
 
 static void _debug_print_curr_model(void)

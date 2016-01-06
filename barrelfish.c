@@ -110,6 +110,30 @@ uintptr_t mp_receive_raw(mp_binding *b)
     return r;
 }
 
+void mp_send_raw7(mp_binding *b,
+                  uintptr_t val1,
+                  uintptr_t val2,
+                  uintptr_t val3,
+                  uintptr_t val4,
+                  uintptr_t val5,
+                  uintptr_t val6,
+                  uintptr_t val7)
+{
+   assert(!"NYI");
+}
+
+uintptr_t* mp_receive_raw7(mp_binding *b)
+{
+    assert(!"NYI");
+    return NULL;
+}
+
+bool mp_can_receive_raw(mp_binding *b)
+{
+    assert(!"NYI");
+    return 0;
+}
+
 #else // UMP
 // --------------------------------------------------
 
@@ -160,6 +184,21 @@ void mp_send_raw(mp_binding *b, uintptr_t val)
     ump_enqueue_word(q, val);
 }
 
+void mp_send_raw7(mp_binding *b,
+                  uintptr_t val1,
+                  uintptr_t val2,
+                  uintptr_t val3,
+                  uintptr_t val4,
+                  uintptr_t val5,
+                  uintptr_t val6,
+                  uintptr_t val7)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->src.queue;
+
+    ump_enqueue(q, val1, val2, val3, val4,
+                val5, val6, val7);
+}
 
 uintptr_t mp_receive_raw(mp_binding *b)
 {
@@ -170,6 +209,24 @@ uintptr_t mp_receive_raw(mp_binding *b)
     ump_dequeue_word(q, &r);
 
     return r;
+}
+
+uintptr_t* mp_receive_raw7(mp_binding *b)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->dst.queue;
+
+    uintptr_t* r;
+    ump_dequeue(q, &r);
+
+    return r;
+}
+
+bool mp_can_receive_raw(mp_binding *b)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->dst.queue;
+    return ump_can_dequeue(q);
 }
 
 #endif
@@ -208,7 +265,9 @@ void __sys_init(void)
 #else
     printf("UMP sleep disabled\n");
 #endif
-    assert (numa_available()==0);
+    if(numa_available()) {
+        USER_PANIC("NUMA is not available!\n");
+    };
 
 }
 

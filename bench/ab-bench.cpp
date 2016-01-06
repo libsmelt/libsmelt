@@ -15,6 +15,11 @@
 
 #define SEND7
 
+#ifdef BARRELFISH
+#include <barrelfish/barrelfish.h>
+#include <posixcompat.h>
+#endif
+
 __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
@@ -130,14 +135,14 @@ static void* pingpong(void* a)
 
             debug_printff("send %d\n", epoch);
 #ifdef SEND7
-            mp_send7(get_last_node(), epoch,
+            mp_send7(topo_last_node(), epoch,
                     1,
                     2,
                     3,
                     4,
                     5,
                     6);
-            mp_send7(get_last_node(), epoch,
+            mp_send7(topo_last_node(), epoch,
                     1,
                     2,
                     3,
@@ -430,6 +435,13 @@ static void* agreement(void* a)
 
 #define NUM_EXP 5
 
+#ifdef BARRELFISH
+static void domain_init_done(void *arg, errval_t err)
+{
+    debug_printf("SPANNED!\n");
+}
+#endif
+
 int main(int argc, char **argv)
 {
     num_threads = sysconf(_SC_NPROCESSORS_CONF);
@@ -458,10 +470,25 @@ int main(int argc, char **argv)
     pthread_t ptds[num_threads];
     int tids[num_threads];
 
+    cpu_set_t *cpuset = CPU_ALLOC(num_threads);
+
+
+#ifdef BARRELFISH
+    for (unsigned i=1; i<num_threads; i++) {
+        //for (int i = my_core_id + BOMP_DEFAULT_CORE_STRIDE; i < nos_threads + my_core_id; i++) {
+        coreid_t core = i;
+        errval_t err = domain_new_dispatcher(core, domain_init_done, NULL);
+        if (err_is_fail(err)) {
+            DEBUG_ERR(err, "failed to span domain");
+            printf("Failed to span domain to %d\n", i);
+            assert(err_is_ok(err));
+        }
+    }
+
+#endif
+
     for (unsigned e=0; e<topo_num_topos(); e++) {
-
         for (int j=0; j<NUM_EXP; j++) {
-
             printf("----------------------------------------\n");
             printf("Executing experiment %d - %s\n", (j+1), labels[j]);
             printf("----------------------------------------\n");
@@ -472,13 +499,19 @@ int main(int argc, char **argv)
             // Yield to reduce the risk of getting de-scheduled later
             sched_yield();
 #endif
-
             // Create
             for (unsigned i=1; i<num_threads; i++) {
                 tids[i] = i;
-                pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
-            }
 
+                pthread_attr_t attr;
+                pthread_attr_init(&attr);
+
+                CPU_ZERO(cpuset);
+                CPU_SET(i, cpuset);
+                pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), cpuset);
+
+                pthread_create(ptds+i, &attr, workers[j], (void*) (tids+i));
+            }
             // Master thread executes work for node 0
             tids[0] = 0;
             workers[j]((void*) (tids+0));
@@ -494,4 +527,9 @@ int main(int argc, char **argv)
 
     pthread_barrier_destroy(&ab_barrier);
 
+#ifdef BARRELFISH
+    debug_printf("done!");
+    while(1)
+        ;
+#endif
 }

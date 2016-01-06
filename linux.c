@@ -150,6 +150,26 @@ uintptr_t mp_receive_raw(mp_binding *b)
     return r;
 }
 
+void mp_send_raw7(mp_binding *b,
+                  uintptr_t val1,
+                  uintptr_t val2,
+                  uintptr_t val3,
+                  uintptr_t val4,
+                  uintptr_t val5,
+                  uintptr_t val6,
+                  uintptr_t val7)
+{
+   assert(!"NYI");
+}
+
+uintptr_t* mp_receive_raw7(mp_binding *b)
+{
+    assert(!"NYI");
+
+    return r;
+}
+
+
 #else // UMP
 // --------------------------------------------------
 
