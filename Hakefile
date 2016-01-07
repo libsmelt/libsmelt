@@ -1,0 +1,84 @@
+--------------------------------------------------------------------------
+-- Copyright (c) 2013, ETH Zurich.
+-- All rights reserved.
+--
+-- This file is distributed under the terms in the attached LICENSE file.
+-- If you do not find this file, copies can be found by writing to:
+-- ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
+--
+-- Hakefile for lib/sync
+--
+--------------------------------------------------------------------------
+
+[   build library { 
+        target = "sync_ump",
+        cxxFiles = [ 
+            -- UMP part
+            "../umpq/ump_chan.c",
+            "../umpq/ump_conf.c",
+            "../umpq/ump_queue.c",
+            "../umpq/ump_rxchan.c",
+            "../umpq/ump_txchan.c",
+            "../umpq/lxaffnuma.c",
+            "../umpq/parse_int.c",
+             -- Sync
+             "barrelfish.c",
+             "barrier.c",
+             "debug.c",
+             "mp.c",
+             "shm.c",
+             "sync.c",
+             "topo.c",
+             "tree_setup.c"
+        ],
+        addLibraries = [ "numa", "bench" ],
+        addIncludes = [ "inc", "../umpq" ],
+        --addCxxFlags = [ "-DSYNC_DEBUG" ],
+        architectures = [ "x86_64" ]
+    },
+                
+    build library { 
+        target = "sync_ffq",
+        cxxFiles = [ 
+            -- FFQ  Part
+            "../umpq/ffq_conf.c",
+            "../umpq/ff_queue.c",
+            "../umpq/lxaffnuma.c",
+            "../umpq/parse_int.c",
+             -- Sync
+             "barrelfish.c",
+             "barrier.c",
+             "debug.c",
+             "mp.c",
+             "shm.c",
+             "sync.c",
+             "topo.c",
+             "tree_setup.c"
+         ],
+        addIncludes = [ "inc", "../umpq" ],
+        addCxxFlags = [ "-DFFQ" ],
+        addLibraries = [ "numa", "bench" ],
+        architectures = [ "x86_64" ]
+    },
+    
+    build application {
+        target = "benchmarks/ab-bench",
+         cxxFiles = [
+            "bench/ab-bench.cpp" 
+         ],
+        addLibraries = [ "sync_ump" ],
+        addIncludes = [ "inc", "../umpq" ],
+        architectures = [ "x86_64" ]
+    },
+    
+    build application {
+        target = "benchmarks/ff-ab-bench",
+         cxxFiles = [
+            "bench/ab-bench.cpp" 
+         ],
+        addCxxFlags = [ "-DFFQ" ],
+        addLibraries = [ "sync_ffq" ],
+        addIncludes = [ "inc", "../umpq" ],
+        architectures = [ "x86_64" ]
+    }
+]
