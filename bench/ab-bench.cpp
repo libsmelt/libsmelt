@@ -92,8 +92,14 @@ static void* pingpong(void* a)
             assert(v[5]==5);
             assert(v[6]==6);
 #else
-            assert(mp_receive_raw(b)==epoch);
-            assert(mp_receive_raw(b)==epoch);
+            if (mp_receive_raw(b) !=epoch) {
+                printf("mp_receive_raw(b) != epoch");
+                exit(1);
+            }
+            if (mp_receive_raw(b) !=epoch) {
+                printf("mp_receive_raw(b) != epoch");
+                exit(1);
+            }
 #endif
             sk_m_add(&m2);
             sk_m_add(&m);
@@ -128,8 +134,15 @@ static void* pingpong(void* a)
             assert(v[5]==5);
             assert(v[6]==6);
 #else
-            assert(mp_receive_raw(b)==epoch);
-            assert(mp_receive_raw(b)==epoch);
+            if (mp_receive_raw(b) != epoch) {
+                printf("mp_receive_raw(b) != epoch");
+                exit(1);
+            }
+
+            if (mp_receive_raw(b) != epoch) {
+                printf("mp_receive_raw(b) != epoch");
+                exit(1);
+            }
 #endif
             sk_m_add(&m2);
 
