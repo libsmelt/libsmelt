@@ -82,7 +82,7 @@ uintptr_t mp_receive(coreid_t s)
     return mp_receive_raw(b);
 }
 
-uintptr_t* mp_receive7(coreid_t s)
+void mp_receive7(coreid_t s, uintptr_t* buf)
 {
     num_mp_receive++;
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
@@ -94,7 +94,7 @@ uintptr_t* mp_receive7(coreid_t s)
         printf("Failed to get binding for %d %d\n", s, get_thread_id());
     }
     assert (b!=NULL);
-    return mp_receive_raw7(b);
+    mp_receive_raw7(b, buf);
 }
 
 bool mp_can_receive(coreid_t s)
@@ -241,24 +241,23 @@ uintptr_t mp_receive_forward(uintptr_t val)
     return v;
 }
 
-uintptr_t* mp_receive_forward7(uintptr_t val)
+void mp_receive_forward7(uintptr_t* buf)
 {
     int parent_core;
 
     mp_binding *b = mp_get_parent(get_thread_id(), &parent_core);
     
     debug_printfff(DBG__AB, "Receiving from parent %d\n", parent_core);
-    uintptr_t* v = mp_receive_raw7(b);
+    mp_receive_raw7(b, buf);
 
-    mp_send_ab7(v[0],
-                v[1],
-                v[2],
-                v[3],
-                v[4],
-                v[5],
-                v[6]);
+    mp_send_ab7(buf[0],
+                buf[1],
+                buf[2],
+                buf[3],
+                buf[4],
+                buf[5],
+                buf[6]);
 
-    return v;
 }
 
 #if 0
@@ -342,14 +341,16 @@ uintptr_t mp_reduce(uintptr_t val)
  * 
  * 
  * */
-static __thread uintptr_t vals[7];
-uintptr_t* mp_reduce7(uintptr_t val1,
-                      uintptr_t val2,
-                      uintptr_t val3,
-                      uintptr_t val4,
-                      uintptr_t val5,
-                      uintptr_t val6,
-                      uintptr_t val7)
+
+__thread uintptr_t* vals;
+void mp_reduce7(uintptr_t* buf,
+                uintptr_t val1,
+                uintptr_t val2,
+                uintptr_t val3,
+                uintptr_t val4,
+                uintptr_t val5,
+                uintptr_t val6,
+                uintptr_t val7)
 {
     coreid_t my_core_id = get_thread_id();
     uintptr_t current_aggregate = val1;
@@ -368,30 +369,29 @@ uintptr_t* mp_reduce7(uintptr_t val1,
     }
     
     // Decide to parents
-    uintptr_t* v;
     for (int i=0; i<numbindings; i++) {
 
-        v = mp_receive_raw7(blst->b_reverse[i]);
-        current_aggregate += v[0];
+        mp_receive_raw7(blst->b_reverse[i], vals);
+        current_aggregate += vals[0];
         debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", v, i);
         if (i == 0) {
-            vals[1] = v[1];
-            vals[2] = v[2];
-            vals[3] = v[3];
-            vals[4] = v[4];
-            vals[5] = v[5];
-            vals[6] = v[6];
+            buf[1] = vals[1];
+            buf[2] = vals[2];
+            buf[3] = vals[3];
+            buf[4] = vals[4];
+            buf[5] = vals[5];
+            buf[6] = vals[6];
         }   
     }
     
     if (numbindings == 0) {
-        vals[0] = val1;
-        vals[1] = val2;
-        vals[2] = val3;
-        vals[3] = val4;
-        vals[4] = val5;
-        vals[5] = val6;
-        vals[6] = val7;
+        buf[0] = val1;
+        buf[1] = val2;
+        buf[2] = val3;
+        buf[3] = val4;
+        buf[4] = val5;
+        buf[5] = val6;
+        buf[6] = val7;
     }
 
     debug_printfff(DBG__REDUCE, "Receiving done, value is now %" PRIu64 "\n",
@@ -418,8 +418,7 @@ uintptr_t* mp_reduce7(uintptr_t val1,
 			             vals[6]);
     }
 
-    vals[0] = current_aggregate;
-    return vals;
+    buf[0] = current_aggregate;
 }
 
 static __thread uint32_t _num_barrier = 0;

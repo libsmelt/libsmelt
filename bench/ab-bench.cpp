@@ -48,6 +48,8 @@ static void* pingpong(void* a)
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     cycles_t *buf2 = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
 
+    uintptr_t* v = (uintptr_t*) malloc(sizeof(uintptr_t)*8);
+
     TOPO_NAME(outname, "pingpong");
     TOPO_NAME(outname2, "pingpong_receive");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
@@ -73,8 +75,7 @@ static void* pingpong(void* a)
             debug_printff("receive %d\n", epoch);
             sk_m_restart_tsc(&m2);
 #ifdef SEND7
-            uintptr_t* v;
-            v = mp_receive_raw7(b);
+            mp_receive_raw7(b, v);
             assert(v[0]==epoch);
             assert(v[1]==1);
             assert(v[2]==2);
@@ -83,7 +84,7 @@ static void* pingpong(void* a)
             assert(v[5]==5);
             assert(v[6]==6);
 
-            v = mp_receive_raw7(b);
+            mp_receive_raw7(b, v);
             assert(v[0]==epoch);
             assert(v[1]==1);
             assert(v[2]==2);
@@ -114,9 +115,8 @@ static void* pingpong(void* a)
             debug_printff("receive %d\n", epoch);
             sk_m_restart_tsc(&m);
             sk_m_restart_tsc(&m2);
-#ifdef SEN7
-            uintptr_t* v;
-            v = mp_receive_raw7(b);
+#ifdef SEND7
+            mp_receive_raw7(b, v);
             assert(v[0]==epoch);
             assert(v[1]==1);
             assert(v[2]==2);
@@ -125,7 +125,7 @@ static void* pingpong(void* a)
             assert(v[5]==5);
             assert(v[6]==6);
 
-            v = mp_receive_raw7(b);
+            mp_receive_raw7(b, v);
             assert(v[0]==epoch);
             assert(v[1]==1);
             assert(v[2]==2);
@@ -195,6 +195,7 @@ static void* ab(void* a)
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    uintptr_t* v = (uintptr_t*) malloc(sizeof(uintptr_t)*8);
 
     TOPO_NAME(outname, "ab");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
@@ -220,7 +221,7 @@ static void* ab(void* a)
 
             if (get_thread_id()==get_sequentializer()) {
 #ifdef SEND7
-		        uintptr_t* v = mp_receive7(last_node);
+		        mp_receive7(last_node, v);
 		        mp_send_ab7(v[0], v[1], v[2], v[3], v[4],
 			                v[5], v[6]);
 #else
@@ -229,7 +230,7 @@ static void* ab(void* a)
             }
             else {
 #ifdef SEND7
-                mp_receive_forward7(0);
+                mp_receive_forward7(v);
 #else
                 mp_receive_forward(0);
 #endif
@@ -267,6 +268,7 @@ static void* reduction(void* a)
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    uintptr_t* v = (uintptr_t*) malloc(sizeof(uintptr_t)*8);
 
     TOPO_NAME(outname, "reduction");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
@@ -282,7 +284,8 @@ static void* reduction(void* a)
 
             sk_m_restart_tsc(&m);
 #ifdef SEND7
-            mp_reduce7(tid, 0, 0, 0, 0, 0, 0);
+            mp_reduce7(v, 
+                       1, 1, 1, 1, 1, 1, 1);
 #else
             mp_reduce(tid);
 #endif
@@ -295,9 +298,9 @@ static void* reduction(void* a)
 #endif
             } else if (tid==last_node) {
 #ifdef SEND7
-                mp_receive7(get_sequentializer());
+                mp_receive7(get_sequentializer(), v);
 #else
-                mp_receive(get_sequentializer());
+                mp_receive(get_sequentializer(), v);
 #endif
                 sk_m_add(&m);
             }
@@ -354,6 +357,7 @@ static void* agreement(void* a)
 
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    uintptr_t* v = (uintptr_t*) malloc(sizeof(uintptr_t)*8);
 
     TOPO_NAME(outname, "agreement");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
@@ -378,10 +382,8 @@ static void* agreement(void* a)
              */
             sk_m_restart_tsc(&m);
 
-#ifdef SEND7
-            uintptr_t* v;
-#else
             //Synchronize
+#ifndef SEND7
             uintptr_t val = 0;
 #endif
             if (get_thread_id() == last_node) {
@@ -396,21 +398,21 @@ static void* agreement(void* a)
 
             if (tid == get_sequentializer()) {
 #ifdef SEND7
-                v = mp_receive7(last_node);
+                mp_receive7(last_node, v);
                 mp_send_ab7(v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
 #else
                 mp_send_ab(mp_receive(last_node));
 #endif
             } else {
 #ifdef SEND7
-                v = mp_receive_forward7(0);
+                mp_receive_forward7(v);
 #else
                 val = mp_receive_forward(0);
 #endif
             }
             // Reduction
 #ifdef SEND7
-            mp_reduce7(1, v[1], v[2], v[3], v[4], v[5], v[6]);
+            mp_reduce7(v, v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
 #else
             mp_reduce(val);
 #endif
@@ -428,7 +430,7 @@ static void* agreement(void* a)
 #endif
             } else {
 #ifdef SEND7
-                v = mp_receive_forward7(0);
+                mp_receive_forward7(v);
 #else
                 val = mp_receive_forward(0);
 #endif

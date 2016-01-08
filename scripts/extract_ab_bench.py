@@ -66,7 +66,7 @@ def parse_log(s=sys.stdin, output=True):
                 (mean, stderr, vmin, vmax, median) = statistics_cropped(values)
                 topo = title.replace(t+'_', '')
                 if not topo in res:
-                    res[topo] = []
+                    res[topo] = []ar
                 res[topo].append((core, median, stderr))
 
 
