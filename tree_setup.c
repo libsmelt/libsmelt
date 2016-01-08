@@ -199,7 +199,7 @@ void tree_init_bindings(void)
     if (bindings==NULL) {
 
         debug_printfff(DBG__BINDING, "Allocating memory for bindings\n");
-        bindings = (mp_binding**) malloc(sizeof(mp_binding*)*
+        bindings = (mp_binding**) calloc(sizeof(mp_binding*),
                                          (get_num_threads()*get_num_threads()));
         assert (bindings!=NULL);
     }
@@ -254,7 +254,7 @@ void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
     if (bindings==NULL) {
 
         debug_printfff(DBG__BINDING, "Allocating memory for bindings\n");
-        bindings = (mp_binding**) malloc(sizeof(mp_binding*)*(get_num_threads()*get_num_threads()));
+        bindings = (mp_binding**) calloc(sizeof(mp_binding*), (get_num_threads()*get_num_threads()));
         assert (bindings!=NULL);
     }
     
