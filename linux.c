@@ -249,7 +249,7 @@ void mp_receive_raw7(mp_binding *b, uintptr_t* buf)
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
     struct ump_queue *q = &ups->dst.queue;
 
-    ump_dequeue(q, &buf);
+    ump_dequeue(q, buf);
 }
 
 bool mp_can_receive_raw(mp_binding *b)
