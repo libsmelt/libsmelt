@@ -299,6 +299,9 @@ bool topo_does_mp_receive(coreid_t core, bool include_leafs)
 
 const char* topo_get_name(void)
 {
+    if (topo_names == NULL) {
+        return "unknown-topo";
+    }
     return topo_names[get_topo_idx()];
 }
 
