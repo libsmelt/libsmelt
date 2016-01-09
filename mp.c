@@ -342,7 +342,7 @@ uintptr_t mp_reduce(uintptr_t val)
  * 
  * */
 
-__thread uintptr_t* vals;
+__thread uintptr_t vals[8];
 void mp_reduce7(uintptr_t* buf,
                 uintptr_t val1,
                 uintptr_t val2,
