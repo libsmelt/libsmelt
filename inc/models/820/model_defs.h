@@ -10,6 +10,4 @@
 #define SHM_MASTER_START 70
 #define SHM_MASTER_MAX 89
 #define NUM_TOPOS 6
-#define ALL_LAST_NODES ((int[]) {23, 15, 29, 5, 24, 9})
-#define LAST_NODE ALL_LAST_NODES[get_topo_idx()]
 #endif
