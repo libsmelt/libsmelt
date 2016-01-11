@@ -44,8 +44,6 @@ struct shm_queue* shm_init_context(void* shm,
 
     queue->write_pos = (union pos_pointer*) shm;
     queue->readers_pos = (union pos_pointer*) shm+1;
-    printf("Writer pos %p \n", queue->write_pos);
-    printf("Reader pos %p \n", queue->readers_pos);
     queue->l_pos = 0;
     queue->data = (uint8_t*) shm+((num_readers+1)*sizeof(union pos_pointer));   
 
