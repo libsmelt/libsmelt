@@ -225,6 +225,9 @@ uintptr_t mp_send_ab7(uintptr_t val1,
 /**
  * \brief Receive a message from the broadcast tree and forward
  *
+ * \param val The value to be added to the received value before
+ * forwarding. Useful for reductions, but should probably not be here.
+ * 
  * \return The message received from the broadcast tree
  */
 uintptr_t mp_receive_forward(uintptr_t val)

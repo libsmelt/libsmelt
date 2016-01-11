@@ -16,7 +16,15 @@ struct capref shared_frame;
 #endif
 
 #define get_max_num_clusters(x) (SHM_MASTER_MAX-SHM_MASTER_START)
+
+// Stores the meta data for each clusters. This is indexed by the
+// cluster ID. E.g. 53 in the model corresponds to cluster 3, so the
+// corresponding meta data stored at index 3 in that array.
 struct shm_queue** clusters;
+
+// Stores a reference ID each thread belongs to. Assumes that there is
+// only one cluster per thread.
+int* thread_clusters;
 
 int init_master_share(void)
 {
@@ -87,6 +95,10 @@ void shm_switch_topo(void)
     clusters = (struct shm_queue**) malloc(sizeof(struct shm_queue*)*get_max_num_clusters());
     assert (clusters!=NULL);
 
+    // Store one cluster per thread
+    thread_clusters = (int*) malloc(sizeof(int)*topo_num_cores());
+    assert (thread_clusters!=NULL);
+
     // Find all clusters this core is part of in ALL models
     shm_get_clusters_for_core(get_thread_id(), &num_clusters,
                               &model_ids, &cluster_ids);
@@ -118,10 +130,13 @@ void shm_switch_topo(void)
                 assert (cid<=num_clusters);
                 clusters[cid] = shm_init_context(buf, num_readers, cid);
 
+                thread_clusters[get_thread_id()] == cid;
                 
             } else {
                 debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo: Switching model %d client\n",
                                cid);
+                
+                thread_clusters[get_thread_id()] == cid;
             }
         }
     }
@@ -231,3 +246,29 @@ int shm_get_coordinator_for_cluster(int cluster)
     return -1;
 }
 
+void shm_receive(uintptr_t *p1,
+                 uintptr_t *p2,
+                 uintptr_t *p3,
+                 uintptr_t *p4,
+                 uintptr_t *p5,
+                 uintptr_t *p6,
+                 uintptr_t *p7) {
+
+    // Find the cluster
+    
+    
+    shm_receive_raw (clusters[thread_clusters[get_thread_id()]],
+                     p1, p2, p3, p4, p5, p6, p7);
+}
+
+void shm_send(uintptr_t p1,
+              uintptr_t p2,
+              uintptr_t p3,
+              uintptr_t p4,
+              uintptr_t p5,
+              uintptr_t p6,
+              uintptr_t p7) {
+
+    shm_send_raw (clusters[thread_clusters[get_sequentializer()]],
+                     p1, p2, p3, p4, p5, p6, p7);
+}

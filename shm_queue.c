@@ -73,14 +73,14 @@ static bool check_readers_end(struct shm_queue* queue)
     return true;    
 }
 
-void shm_send(struct shm_queue* context,
-              uintptr_t p1,
-              uintptr_t p2,
-              uintptr_t p3,
-              uintptr_t p4,
-              uintptr_t p5,
-              uintptr_t p6,
-              uintptr_t p7)
+void shm_send_raw(struct shm_queue* context,
+                  uintptr_t p1,
+                  uintptr_t p2,
+                  uintptr_t p3,
+                  uintptr_t p4,
+                  uintptr_t p5,
+                  uintptr_t p6,
+                  uintptr_t p7)
 {
     // if we reached the end sync with readers    
     if ((context->write_pos[0].pos) == 0) {
@@ -163,14 +163,14 @@ bool shm_receive_non_blocking(struct shm_queue* context,
 
 // blocks
 // TODO make this smarter?
-void shm_receive(struct shm_queue* context,
-              uintptr_t *p1,
-              uintptr_t *p2,
-              uintptr_t *p3,
-              uintptr_t *p4,
-              uintptr_t *p5,
-              uintptr_t *p6,
-              uintptr_t *p7)
+void shm_receive_raw(struct shm_queue* context,
+                     uintptr_t *p1,
+                     uintptr_t *p2,
+                     uintptr_t *p3,
+                     uintptr_t *p4,
+                     uintptr_t *p5,
+                     uintptr_t *p6,
+                     uintptr_t *p7)
 {
     while(!shm_receive_non_blocking(context, p1, p2, p3,
                                  p4, p5, p6, p7)){};

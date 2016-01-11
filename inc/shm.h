@@ -69,14 +69,23 @@ struct shm_queue* shm_init_context(void* shm,
 void shm_switch_topo(void);
 
 
-void shm_send(struct shm_queue* context,
-              uintptr_t p1,
+void shm_send_raw(struct shm_queue* context,
+                  uintptr_t p1,
+                  uintptr_t p2,
+                  uintptr_t p3,
+                  uintptr_t p4,
+                  uintptr_t p5,
+                  uintptr_t p6,
+                  uintptr_t p7);
+
+void shm_send(uintptr_t p1,
               uintptr_t p2,
               uintptr_t p3,
               uintptr_t p4,
               uintptr_t p5,
               uintptr_t p6,
               uintptr_t p7);
+
 
 /*
  * Receiver
@@ -90,7 +99,7 @@ void shm_send(struct shm_queue* context,
  * 
  */
 
-void shm_receive(struct shm_queue* context,
+void shm_receive_raw(struct shm_queue* context,
               uintptr_t *p1,
               uintptr_t *p2,
               uintptr_t *p3,
@@ -98,6 +107,14 @@ void shm_receive(struct shm_queue* context,
               uintptr_t *p5,
               uintptr_t *p6,
               uintptr_t *p7);
+
+void shm_receive(uintptr_t *p1,
+                 uintptr_t *p2,
+                 uintptr_t *p3,
+                 uintptr_t *p4,
+                 uintptr_t *p5,
+                 uintptr_t *p6,
+                 uintptr_t *p7);
 
 int shm_does_shm(coreid_t core);
 int shm_is_cluster_coordinator(coreid_t core);
