@@ -19,26 +19,33 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sched.h>
+#include <stdbool.h>
 
 #include "shm.h"
 
 
-#define DEBUG_SHM
+//#define DEBUG_SHM
 
 struct shm_queue* shm_init_context(void* shm,
                                    uint8_t num_readers,
                                    uint8_t id)
 {
 
-    struct shm_queue* queue = (struct shm_queue*) malloc(sizeof(struct shm_queue));
+    struct shm_queue* queue = (struct shm_queue*) calloc(1, sizeof(struct shm_queue));
     queue->shm = (uint8_t*) shm;
     queue->num_readers = num_readers;
     queue->id = id;
 
-    queue->num_slots = ((SHMQ_SIZE-((num_readers+2)*
+    queue->num_slots = ((SHMQ_SIZE-((num_readers+1)*
                            sizeof(union pos_pointer)))/CACHELINE_SIZE) -1;
+#ifdef DEBUG_SHM
+    queue->num_slots = 10;
+#endif
+
     queue->write_pos = (union pos_pointer*) shm;
     queue->readers_pos = (union pos_pointer*) shm+1;
+    printf("Writer pos %p \n", queue->write_pos);
+    printf("Reader pos %p \n", queue->readers_pos);
     queue->l_pos = 0;
     queue->data = (uint8_t*) shm+((num_readers+1)*sizeof(union pos_pointer));   
 
@@ -80,7 +87,8 @@ void shm_send(struct shm_queue* context,
     }
 
     uintptr_t* slot_start = (uintptr_t*) context->data + 
-                            (context->write_pos[0].pos*CACHELINE_SIZE);
+                            (context->write_pos[0].pos*
+                            (CACHELINE_SIZE/sizeof(uintptr_t)));
 
     slot_start[0] = p1;
     slot_start[1] = p2;
@@ -91,9 +99,9 @@ void shm_send(struct shm_queue* context,
     slot_start[6] = p7;
 
 #ifdef DEBUG_SHM
-    printf("Shm writer %d: write pos %" PRIu64 " addr %p \n", 
+    printf("Shm writer %d: write pos %" PRIu64 " addr %p value1 %lu \n", 
             sched_getcpu(), context->write_pos[0].pos,
-            slot_start);
+            slot_start, slot_start[0]);
 #endif
 
     // increse write pointer..
@@ -103,7 +111,7 @@ void shm_send(struct shm_queue* context,
 }
 
 // returns NULL if reader reached writers pos
-static bool shm_receive_non_blocking(struct shm_queue* context,
+bool shm_receive_non_blocking(struct shm_queue* context,
               uintptr_t *p1,
               uintptr_t *p2,
               uintptr_t *p3,
@@ -118,7 +126,8 @@ static bool shm_receive_non_blocking(struct shm_queue* context,
     } else {
 
         uintptr_t* start;
-        start = (uintptr_t*) context->data + ((context->l_pos)*CACHELINE_SIZE);
+        start = (uintptr_t*) context->data + ((context->l_pos)*
+                 CACHELINE_SIZE/(sizeof(uintptr_t)));
         *p1 = start[0];
         *p2 = start[1];
         *p3 = start[2];
@@ -135,7 +144,7 @@ static bool shm_receive_non_blocking(struct shm_queue* context,
         if (context->l_pos == 0) {
             context->readers_pos[context->id].pos = 0;
 #ifdef DEBUG_SHM
-            printf("Reader %d: reset \n", context->id);
+            printf("Reader %d: reset \n", sched_getcpu());
 #endif
         }
         return true;
