@@ -10,6 +10,7 @@
 #define INTERNAL_DEBUG_H 1
 
 #include "sync.h"
+#include "shm.h"
 
 struct shm_context {
 
@@ -25,7 +26,7 @@ struct libsync_context {
 
     // NYI    struct mp_context mp_c;
 
-    struct shm_queue_t *shm_c;
+    struct shm_queue *shm_c;
 };
 
 /**

@@ -10,7 +10,8 @@ CFILES= \
 	shm.c \
 	sync.c \
 	topo.c \
-	tree_setup.c 
+	tree_setup.c \
+    shm_queue.c
 
 OBJS += $(patsubst %.c,%.o,$(CFILES))
 HEADERS=$(wildcard *.h)
