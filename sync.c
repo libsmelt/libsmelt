@@ -131,6 +131,9 @@ void __sync_init_no_tree(int _nproc)
 
     if (_tid == get_sequentializer()) {
 
+        // Message passing initialization
+        // --------------------------------------------------
+        
         tree_init(_tmp);
 
         tree_reset();
@@ -139,6 +142,11 @@ void __sync_init_no_tree(int _nproc)
         // Build associated broadcast tree
         setup_tree_from_model();
     }
+
+    // Shared memory initialization
+    // --------------------------------------------------
+    shm_switch_topo();
+
 
     pthread_barrier_wait(&get_master_share()->data.sync_barrier);
     return 0;

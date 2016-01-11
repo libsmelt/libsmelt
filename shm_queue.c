@@ -26,6 +26,17 @@
 
 //#define DEBUG_SHM
 
+/**
+ * \brief Initalize a shared memory queue
+ *
+ * \param shm Pointer to memory that should be used for the
+ * queue. Presumably, this has to be SHMQ_SIZE bytes.
+ *
+ * \param num_readers The number of readers using this queue. Each
+ * reader has a read pointer, which has to be allocated.
+ *
+ * \param id An ID representing the queue? Why?
+ */
 struct shm_queue* shm_init_context(void* shm,
                                    uint8_t num_readers,
                                    uint8_t id)

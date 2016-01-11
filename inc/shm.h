@@ -10,6 +10,7 @@
 #define SYNC_SHM_H 1
 
 #include <inttypes.h>
+#include "sync.h"
 
 int init_master_share(void);
 int map_master_share(void);
@@ -28,7 +29,7 @@ union __attribute__((aligned(64))) pos_pointer{
     uint8_t padding[CACHELINE_SIZE];
 };
 
-struct shm_queue{	
+struct shm_queue {	
     // The shared memory itself
     uint8_t* shm;
     uint8_t* data;
@@ -65,6 +66,8 @@ struct shm_queue* shm_init_context(void* shm,
                                    uint8_t num_readers,
                                    uint8_t id);
 
+void shm_switch_topo(void);
+
 
 void shm_send(struct shm_queue* context,
               uintptr_t p1,
@@ -95,4 +98,11 @@ void shm_receive(struct shm_queue* context,
               uintptr_t *p5,
               uintptr_t *p6,
               uintptr_t *p7);
+
+int shm_does_shm(coreid_t core);
+int shm_is_cluster_coordinator(coreid_t core);
+void shm_get_clusters_for_core (int core, int *num_clusters,
+                                int **model_ids, int **cluster_ids);
+int shm_get_coordinator_for_cluster(int cluster);
+
 #endif /* SYNC_SHM_H */
