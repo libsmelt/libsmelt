@@ -159,16 +159,19 @@ void mp_send_raw7(mp_binding *b,
                   uintptr_t val6,
                   uintptr_t val7)
 {
-   assert(!"NYI");
+    ffq_enqueue_full(&b->src, val1, val2, val3, 
+                val4, val5, val6, val7);
 }
 
 void mp_receive_raw7(mp_binding *b, uintptr_t* buf)
 {
-    assert(!"NYI");
-
-    return r;
+    ffq_dequeue_full(&b->dst, buf);
 }
 
+bool mp_can_receive_raw(mp_binding *b)
+{
+    return ffq_can_dequeue(&b->dst);
+}
 
 #else // UMP
 // --------------------------------------------------

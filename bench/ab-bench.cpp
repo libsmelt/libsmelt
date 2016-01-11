@@ -13,7 +13,7 @@
 #include "model_defs.h"
 
 
-#define SEND7
+//#define SEND7
 
 #ifdef BARRELFISH
 #include <barrelfish/barrelfish.h>
@@ -49,6 +49,7 @@ static void* pingpong(void* a)
     cycles_t *buf2 = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
 
     uintptr_t* v = (uintptr_t*) malloc(sizeof(uintptr_t)*8);
+    v[0] = 0;
 
     TOPO_NAME(outname, "pingpong");
     TOPO_NAME(outname2, "pingpong_receive");
@@ -196,6 +197,8 @@ static void* ab(void* a)
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     uintptr_t* v = (uintptr_t*) malloc(sizeof(uintptr_t)*8);
+    v[0] = 0;
+
 
     TOPO_NAME(outname, "ab");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
@@ -300,7 +303,7 @@ static void* reduction(void* a)
 #ifdef SEND7
                 mp_receive7(get_sequentializer(), v);
 #else
-                mp_receive(get_sequentializer(), v);
+                v[0] = mp_receive(get_sequentializer());
 #endif
                 sk_m_add(&m);
             }
@@ -358,6 +361,7 @@ static void* agreement(void* a)
     // Setup buffer for measurements
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     uintptr_t* v = (uintptr_t*) malloc(sizeof(uintptr_t)*8);
+    v[0] = 0;
 
     TOPO_NAME(outname, "agreement");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
@@ -489,10 +493,10 @@ int main(int argc, char **argv)
     pthread_t ptds[num_threads];
     int tids[num_threads];
 
-    cpu_set_t *cpuset = CPU_ALLOC(num_threads);
-
 
 #ifdef BARRELFISH
+    cpu_set_t *cpuset = CPU_ALLOC(num_threads);
+
     for (unsigned i=1; i<num_threads; i++) {
         //for (int i = my_core_id + BOMP_DEFAULT_CORE_STRIDE; i < nos_threads + my_core_id; i++) {
         coreid_t core = i;
@@ -522,6 +526,7 @@ int main(int argc, char **argv)
             for (unsigned i=1; i<num_threads; i++) {
                 tids[i] = i;
 
+#ifdef BARRELFISH
                 pthread_attr_t attr;
                 pthread_attr_init(&attr);
 
@@ -530,6 +535,9 @@ int main(int argc, char **argv)
                 pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), cpuset);
 
                 pthread_create(ptds+i, &attr, workers[j], (void*) (tids+i));
+#else
+                pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
+#endif
             }
             // Master thread executes work for node 0
             tids[0] = 0;
@@ -545,6 +553,10 @@ int main(int argc, char **argv)
     }
 
     pthread_barrier_destroy(&ab_barrier);
+
+#ifdef SEND7
+    printf("Send7 defined \n");
+#endif
 
 #ifdef BARRELFISH
     debug_printf("done!");
