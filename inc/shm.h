@@ -55,13 +55,15 @@ struct shm_queue{
  * cluster cores
  * 
  * \param shm           the shared memory itself
- * \param num_readers   the number of readers  
+ * \param num_readers   the number of readers
+ * \param id            the readers id, unique within cluster  
  *
  * \return the initialized per thread struct
  */
 
 struct shm_queue* shm_init_context(void* shm,
-                                   uint8_t num_readers);
+                                   uint8_t num_readers,
+                                   uint8_t id);
 
 
 void shm_send(struct shm_queue* context,
