@@ -185,7 +185,7 @@ uintptr_t mp_send_ab7(uintptr_t val1,
     for (int i=0; i<mp_max; i++) {
     
         debug_printfff(DBG__AB, "message(req%d): %d->%d - %d\n",
-                       num_requests, get_thread_id(), nidx[i], payload);
+                       num_requests, get_thread_id(), nidx[i], val1);
 
 #ifdef MEASURE_SEND_OVERHEAD
         sk_m_restart_tsc(&m_send_overhead);
@@ -373,7 +373,7 @@ void mp_reduce7(uintptr_t* buf,
 
         mp_receive_raw7(blst->b_reverse[i], vals);
         current_aggregate += vals[0];
-        debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", v, i);
+        debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", val1, i);
         if (i == 0) {
             buf[1] = vals[1];
             buf[2] = vals[2];
