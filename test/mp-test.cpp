@@ -10,13 +10,11 @@
 
 #include "model_defs.h"
 
-__thread struct sk_measurement m;
-
 #define NUM_THREADS 4
-#define NUM_RUNS 10000 // Tested up to 1.000.000
+#define NUM_RUNS 1000 // Tested up to 1.000.000
 void* worker2(void* a)
 {
-    int tid = *((int*) a);
+    unsigned tid = *((unsigned*) a);
     __thread_init(tid, NUM_THREADS);
 
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
@@ -42,6 +40,24 @@ void* worker2(void* a)
     return NULL;
 }
 
+void* hybrid_ab(void* a)
+{
+    int tid = *((int*) a);
+    __thread_init(tid, NUM_THREADS);
+
+
+    for (unsigned i=0; i<NUM_RUNS; i++) {
+    
+        uintptr_t r = ab_forward(i, topo_last_node());
+        assert (r==i);
+    }
+
+    debug_printf("Reduction complete\n");
+
+    __thread_end();
+    return NULL;
+}
+
 void* worker3(void* a)
 {
     int tid = *((int*) a);
@@ -59,10 +75,6 @@ void* worker4(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
-
-    // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "barriers", buf);
 
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 
@@ -83,28 +95,23 @@ void* worker4(void* a)
 
     }
 
-    if (get_thread_id()==get_sequentializer()) {
-
-        sk_m_print(&m);
-    }
-
-
     debug_printf("All done :-)\n");
 
     __thread_end();
     return NULL;
 }
 
-#define NUM_EXP 3
+#define NUM_EXP 1
 
 int main(int argc, char **argv)
 {
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
         //        &worker1,
-        &worker2,
-        &worker3,
-        &worker4
+        // &worker2,
+        // &worker3,
+        // &worker4,
+        &hybrid_ab
     };
 
     __sync_init(NUM_THREADS, true);
