@@ -11,7 +11,7 @@
 #include "model_defs.h"
 
 #define NUM_THREADS 4
-#define NUM_RUNS 1000 // Tested up to 1.000.000
+#define NUM_RUNS 10000 // Tested up to 1.000.000
 void* worker2(void* a)
 {
     unsigned tid = *((unsigned*) a);

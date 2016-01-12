@@ -27,15 +27,20 @@
 //#define DEBUG_SHM
 
 /**
- * \brief Initalize a shared memory queue
+ * \brief Initalize a shared memory context
+ *
+ * The memory must already be shared between the 
+ * cluster cores
  *
  * \param shm Pointer to memory that should be used for the
- * queue. Presumably, this has to be SHMQ_SIZE bytes.
+ * queue. Presumably, this has to be SHMQ_SIZE*CACHELINE bytes.
  *
  * \param num_readers The number of readers using this queue. Each
  * reader has a read pointer, which has to be allocated.
  *
- * \param id An ID representing the queue? Why?
+ * \param id An ID representing this reader, has to unique within a
+ * cluster, starting at 0, i.e. for three readers, the id's would be
+ * 0, 1 and 2.
  */
 struct shm_queue* shm_init_context(void* shm,
                                    uint8_t num_readers,

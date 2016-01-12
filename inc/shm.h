@@ -51,19 +51,6 @@ struct shm_queue {
 
 void shm_init(void);
 
-/*
- * \brief Initializ a shared memory context
- *
- * The memory must already be shared between the 
- * cluster cores
- * 
- * \param shm           the shared memory itself
- * \param num_readers   the number of readers
- * \param id            the readers id, unique within cluster  
- *
- * \return the initialized per thread struct
- */
-
 struct shm_queue* shm_init_context(void* shm,
                                    uint8_t num_readers,
                                    uint8_t id);
@@ -123,5 +110,10 @@ int shm_is_cluster_coordinator(coreid_t core);
 void shm_get_clusters_for_core (int core, int *num_clusters,
                                 int **model_ids, int **cluster_ids);
 coreid_t shm_get_coordinator_for_cluster(int cluster);
+coreid_t shm_get_coordinator_for_cluster_in_model(int cluster, int model);
+
+int shm_cluster_get_unique_reader_id(unsigned cid,
+                                     coreid_t reader);
+
 
 #endif /* SYNC_SHM_H */

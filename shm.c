@@ -22,9 +22,8 @@ struct capref shared_frame;
 // corresponding meta data stored at index 3 in that array.
 struct shm_queue** clusters;
 
-// Stores a reference ID each thread belongs to. Assumes that there is
-// only one cluster per thread.
-int* thread_clusters;
+// Stores the buffers to be used for shared memory queues
+void** cluster_bufs;
 
 int init_master_share(void)
 {
@@ -83,15 +82,41 @@ union quorum_share* get_master_share(void)
  */
 void shm_init(void)
 {
+    // Should be called from sequentializer
     assert (get_thread_id() == get_sequentializer());
 
     // Allocate space for mappings
-    clusters = new struct shm_queue* [get_max_num_clusters()];
-    assert (clusters!=NULL);
+    clusters = new struct shm_queue* [topo_num_cores()];
 
-    // Store one cluster per thread
-    thread_clusters = new int [topo_num_cores()];
-    assert (thread_clusters!=NULL);
+    // Allocate space for buffers
+    cluster_bufs = new void* [get_max_num_clusters()];
+    
+    // Allocate memory for shared memory queues
+    int num_clusters;
+    int *model_ids;
+    int *cluster_ids;
+
+    // Find all clusters this core is part of in ALL models
+    shm_get_clusters_for_core(get_thread_id(), &num_clusters,
+                              &model_ids, &cluster_ids);
+    
+    // Allocate buffers for shared memory queues
+    for (int cidx=0; cidx<num_clusters; cidx++) {
+
+        // SHM queue writer
+        coreid_t coord;
+        coord = shm_get_coordinator_for_cluster_in_model(cluster_ids[cidx],
+                                                         model_ids[cidx]);
+
+        
+        // Allocate queue - on NUMA node of coordinator
+        void *buf = numa_alloc_onnode(SHMQ_SIZE*CACHELINE_SIZE,
+                                      numa_node_of_cpu(coord));
+        assert (buf!=NULL);
+        cluster_bufs[cidx] = buf;
+        
+    }    
+    
 }
 
 /**
@@ -113,8 +138,6 @@ void shm_switch_topo(void)
 
     debug_printf("shm_switch_topo: number of clusters %d\n", num_clusters);
 
-    thread_clusters[get_thread_id()] = -1;
-
     // Iterate all clusters this thread is part of
     for (int cidx=0; cidx<num_clusters; cidx++) {
 
@@ -126,32 +149,23 @@ void shm_switch_topo(void)
 
         // Is this cluster part of the current model?
         if (mid==get_topo_idx()) {
-            if (shm_get_coordinator_for_cluster(cid)==get_thread_id()) {
-                
-                debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo: Switching model %d master\n",
-                               cid);
 
-                // Allocate queue - on NUMA node of coordinator
-                void *buf = numa_alloc_local(SHMQ_SIZE*CACHELINE_SIZE);
-                assert (buf!=NULL);
-                
-                int num_readers = topo_mp_cluster_size(get_thread_id(), cid);
-                num_readers -= 1; // coordinator is writer
+            int num_readers = topo_mp_cluster_size(get_thread_id(), cid);
+            num_readers -= 1; // coordinator is writer
 
-                assert (cid<=num_clusters && cid<get_max_num_clusters());
-                clusters[cid] = shm_init_context(buf, num_readers, cid);
-
-                assert (clusters[cid]!=NULL);
-                
-                debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo: clusters[%d] = %p\n",
-                               cid, clusters[cid]);
-                
-            }
+            int reader_id = shm_cluster_get_unique_reader_id(cid,
+                                                             get_thread_id());
             
-            thread_clusters[get_thread_id()] = cid;
-            debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo: thread_clusters[%d] = %d\n",
-                           get_thread_id(), cid);
+            assert (cid<=num_clusters && cid<get_max_num_clusters());
+            clusters[get_thread_id()] = shm_init_context(cluster_bufs[cidx],
+                                                         num_readers,
+                                                         reader_id);
+
+            assert (clusters[cid]!=NULL);
                 
+            debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo: clusters[%d] = %p\n",
+                           cid, clusters[cid]);
+            
         }
     }
 
@@ -261,6 +275,22 @@ coreid_t shm_get_coordinator_for_cluster(int cluster)
     return -1;
 }
 
+coreid_t shm_get_coordinator_for_cluster_in_model(int cluster, int model)
+{
+    for (unsigned x=0; x<topo_num_cores(); x++) {
+        for (unsigned y=0; y<topo_num_cores(); y++) {
+
+            int value = topos_get(model, x, y);
+            if (value>=SHM_MASTER_START && value<SHM_MASTER_MAX) {
+
+                if (value-SHM_MASTER_START == cluster)
+                    return x;
+            }
+        }
+    }
+    return -1;
+}
+
 void shm_receive(uintptr_t *p1,
                  uintptr_t *p2,
                  uintptr_t *p3,
@@ -270,8 +300,7 @@ void shm_receive(uintptr_t *p1,
                  uintptr_t *p7) {
 
     // Find the cluster
-    int id = thread_clusters[get_thread_id()];
-    struct shm_queue *q = clusters[id];
+    struct shm_queue *q = clusters[get_thread_id()];
     shm_receive_raw (q, p1, p2, p3, p4, p5, p6, p7);
 }
 
@@ -283,7 +312,39 @@ void shm_send(uintptr_t p1,
               uintptr_t p6,
               uintptr_t p7) {
 
-    int id = thread_clusters[get_thread_id()];
-    struct shm_queue *q = clusters[id];
+    struct shm_queue *q = clusters[get_thread_id()];
     shm_send_raw (q, p1, p2, p3, p4, p5, p6, p7);
+}
+
+/**
+ * \brief Return a unique reader for the SHM context for the given reader
+ *
+ * Refers to the currently active model.
+ *
+ * \param cid Cluster ID 
+ *
+ * \param reader Thread ID of the reader for which a unique ID should
+ * be returned.
+ */
+int shm_cluster_get_unique_reader_id(unsigned cid,
+                                     coreid_t reader)
+{
+    unsigned val = cid + SHM_MASTER_START;
+    int ret = -1;
+
+    coreid_t coord =  shm_get_coordinator_for_cluster(cid);
+    
+    for (coreid_t i=0; i<topo_num_cores(); i++) {
+
+        if ((unsigned) topo_get(coord, i)==val) {
+            ret++;
+        }
+
+        if (i==reader) {
+
+            return ret;
+        }
+    }
+
+    return -1;
 }
