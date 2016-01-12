@@ -161,7 +161,7 @@ bool switch_topo_to_idx(int idx)
 
             debug_printfff(DBG__SWITCH_TOPO, "topo %d %p %s [%c]\n",
                          i, topo_combined[i], topo_names[i],
-                         i==topo_idx ? 'X' : ' ' );
+                         i==(unsigned) topo_idx ? 'X' : ' ' );
         }
 
         debug_printf("Switching topology: \033[1;36m%s\033[0m\n",
@@ -351,7 +351,7 @@ std::vector<int> **topo_all_leaf_nodes(void)
 
 bool topo_does_shm_send(coreid_t core)
 {
-    for (int i=0; i<topo_num_cores(); i++) {
+    for (unsigned i=0; i<topo_num_cores(); i++) {
 
         if (topo_get(core, i)>=SHM_MASTER_START &&
             topo_get(core, i)<SHM_MASTER_MAX) {
@@ -365,7 +365,7 @@ bool topo_does_shm_send(coreid_t core)
 
 bool topo_does_shm_receive(coreid_t core)
 {
-    for (int i=0; i<topo_num_cores(); i++) {
+    for (unsigned i=0; i<topo_num_cores(); i++) {
 
         if (topo_get(core, i)>=SHM_SLAVE_START &&
             topo_get(core, i)<SHM_SLAVE_MAX) {
@@ -394,7 +394,7 @@ int topo_mp_cluster_size(coreid_t coordinator, int clusterid)
 
     assert (clusterid>=0);
 
-    for (int x=0; x<topo_num_cores(); x++) {
+    for (unsigned x=0; x<topo_num_cores(); x++) {
 
         value = topo_get(coordinator, x);
 

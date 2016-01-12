@@ -25,9 +25,11 @@ uintptr_t ab_forward(uintptr_t val, coreid_t sender)
     // --------------------------------------------------
     if (does_mp) {
 
-        debug_printfff(DBG__HYBRID_AC, "Starting message passing .. %d %d\n",
+        debug_printfff(DBG__HYBRID_AC, "Starting message passing .. "
+                       "does_recv=%d does_send=%d - val=%d\n",
                        topo_does_mp_receive(my_core_id, false),
-                       topo_does_mp_send(my_core_id, false));
+                       topo_does_mp_send(my_core_id, false),
+                       val);
 
         if (my_core_id == SEQUENTIALIZER) {
             val = mp_receive(sender);

@@ -43,6 +43,8 @@ struct shm_queue* shm_init_context(void* shm,
 {
 
     struct shm_queue* queue = (struct shm_queue*) calloc(1, sizeof(struct shm_queue));
+    assert (queue!=NULL);
+    
     queue->shm = (uint8_t*) shm;
     queue->num_readers = num_readers;
     queue->id = id;
@@ -82,6 +84,8 @@ void shm_send_raw(struct shm_queue* context,
                   uintptr_t p6,
                   uintptr_t p7)
 {
+    assert (context!=NULL);
+    
     // if we reached the end sync with readers    
     if ((context->write_pos[0].pos) == 0) {
         while(!check_readers_end(context)){};
@@ -129,7 +133,7 @@ bool shm_receive_non_blocking(struct shm_queue* context,
               uintptr_t *p6,
               uintptr_t *p7)
 {
-
+    assert (context!=NULL);
     if (context->l_pos == context->write_pos[0].pos) {
         return false;
     } else {

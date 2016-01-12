@@ -59,6 +59,8 @@ void __sync_init(int _nproc, bool init_model)
     debug_printfff(DBG__INIT, "Initializing master share .. \n");
     init_master_share();
 
+    shm_init();
+
     // Initialize model
     if (init_model) {
         assert (topo_num_cores()==nproc || topo_num_cores()==0);
@@ -111,7 +113,7 @@ void __sync_init_no_tree(int _nproc)
  *     memory implementations, this is redundant, as already given by
  *     __sync_init.
  */
- int __thread_init(coreid_t _tid, int _nproc)
+int __thread_init(coreid_t _tid, int _nproc)
 {
     __lowlevel_thread_init(_tid);
 

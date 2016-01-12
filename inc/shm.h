@@ -21,7 +21,7 @@ union quorum_share* get_master_share(void);
  * Definitions for shared memory queue
  */
 
-#define SHMQ_SIZE 4096
+#define SHMQ_SIZE 64 // Number of slots in shared memory queue
 #define CACHELINE_SIZE 64
 
 union __attribute__((aligned(64))) pos_pointer{
@@ -48,6 +48,8 @@ struct shm_queue {
     uint16_t l_pos;
 
 };
+
+void shm_init(void);
 
 /*
  * \brief Initializ a shared memory context
@@ -120,6 +122,6 @@ int shm_does_shm(coreid_t core);
 int shm_is_cluster_coordinator(coreid_t core);
 void shm_get_clusters_for_core (int core, int *num_clusters,
                                 int **model_ids, int **cluster_ids);
-int shm_get_coordinator_for_cluster(int cluster);
+coreid_t shm_get_coordinator_for_cluster(int cluster);
 
 #endif /* SYNC_SHM_H */
