@@ -16,13 +16,12 @@
 #include "ump_common.h"
 
 #define NUM_EXP 100
-#define NUM_PIPELINE 100
 
-#define INIT_SKM(func, sender, receiver)                                \
-        char _str_buf[1024];                                            \
-        cycles_t _buf[NUM_EXP];                                         \
-        struct sk_measurement m;                                        \
-        snprintf(_str_buf, 1024, "%s-%d-%d", func, sender, receiver);   \
+#define INIT_SKM(func, id, sender, receiver)                                \
+        char _str_buf[1024];                                                \
+        cycles_t _buf[NUM_EXP];                                             \
+        struct sk_measurement m;                                            \
+        snprintf(_str_buf, 1024, "%s%zu-%d-%d", func, id, sender, receiver); \
         sk_m_init(&m, NUM_EXP, _str_buf, _buf);
 
 /**
@@ -54,6 +53,7 @@ static inline uintptr_t raw_receive(mp_binding *b, sk_measurement *_m, bool rest
 struct thr_args {
     coreid_t s;
     coreid_t r;
+    size_t num_messages;
 };
 
 void* thr_sender(void* a)
@@ -61,20 +61,20 @@ void* thr_sender(void* a)
     struct thr_args* arg = (struct thr_args*) a;
     __lowlevel_thread_init(arg->s);
 
-    INIT_SKM("send", arg->s, arg->r);
+    INIT_SKM("send", arg->num_messages, arg->s, arg->r);
 
     mp_binding *bsend = get_binding(get_thread_id(), arg->r);
     mp_binding *brecv = get_binding(arg->r, get_thread_id());
 
-    for (int i=0; i<NUM_EXP; i++) {
+    for (size_t i=0; i<NUM_EXP; i++) {
 
         sk_m_restart_tsc(&m);
-        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+        for (size_t j = 0; j <= arg->num_messages; j++) {
             mp_send_raw(bsend, i);
         }
         sk_m_add(&m);
 
-        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+        for (size_t j = 0; j <= arg->num_messages; j++) {
             raw_receive(brecv, NULL, 0);
         }
     }
@@ -91,19 +91,19 @@ void* thr_receiver(void* a)
     struct thr_args* arg = (struct thr_args*) a;
     __lowlevel_thread_init(arg->r);
 
-    INIT_SKM("receive", arg->s, arg->r);
+    INIT_SKM("receive", arg->num_messages, arg->s, arg->r);
 
     mp_binding *bsend = get_binding(get_thread_id(), arg->s);
     mp_binding *brecv = get_binding(arg->s, get_thread_id());
 
-    for (unsigned i=0; i<NUM_EXP; i++) {
+    for (size_t i=0; i<NUM_EXP; i++) {
 
-        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+        for (size_t j = 0; j <= arg->num_messages; j++) {
             uintptr_t result = raw_receive(brecv, &m, j == 0);
             assert(result == i);
         }
         sk_m_add(&m);
-        for (size_t j = 0; j < NUM_PIPELINE; j++) {
+        for (size_t j = 0; j <= arg->num_messages; j++) {
             mp_send_raw(bsend, i);
         }
     }
@@ -128,28 +128,30 @@ int main(int argc, char **argv)
             // Measurement does not make sense if sender == receiver
             if (s==r) continue;
 
-            pthread_t ptd1;
-            struct thr_args arg = {
-                .s = s,
-                .r = r
-            };
+            for (size_t num_messages = 1; num_messages <= num_cores; num_messages++) {
+                pthread_t ptd1;
+                struct thr_args arg = {
+                    .s = s,
+                    .r = r,
+                    .num_messages = num_messages,
+                };
 
-            _setup_chanels(s, r);
+                _setup_chanels(s, r);
 
-            // Thread for the sender
-            pthread_create(&ptd1, NULL, thr_sender, (void*) &arg);
+                // Thread for the sender
+                pthread_create(&ptd1, NULL, thr_sender, (void*) &arg);
 
-            // Receive on THIS thread: we don't want another thread
-            // for this, as the master would then busy-wait for both
-            // to complete, and we would have to guarantee that it
-            // does not do so on any of the cores involved in the
-            // benchmark, or their hyper-threads, which seems like a
-            // hassle.
-            thr_receiver((void*) &arg);
+                // Receive on THIS thread: we don't want another thread
+                // for this, as the master would then busy-wait for both
+                // to complete, and we would have to guarantee that it
+                // does not do so on any of the cores involved in the
+                // benchmark, or their hyper-threads, which seems like a
+                // hassle.
+                thr_receiver((void*) &arg);
 
-            // Wait for sender to complete
-            pthread_join(ptd1, NULL);
-
+                // Wait for sender to complete
+                pthread_join(ptd1, NULL);
+            }
         }
     }
 }
