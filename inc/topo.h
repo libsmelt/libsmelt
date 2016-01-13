@@ -28,6 +28,8 @@ const char* topo_get_name(void);
 
 bool topo_does_mp_send(coreid_t, bool);
 bool topo_does_mp_receive(coreid_t, bool);
+bool topo_does_mp(coreid_t);
+
 bool topo_does_shm_send(coreid_t core);
 bool topo_does_shm_receive(coreid_t core);
 int get_topo_idx(void);

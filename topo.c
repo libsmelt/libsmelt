@@ -377,7 +377,7 @@ bool topo_does_shm_receive(coreid_t core)
     return false;
 }
 
- 
+
 
 /**
  * \brief Determine the size of a cluster.
@@ -415,4 +415,9 @@ int topo_mp_cluster_size(coreid_t coordinator, int clusterid)
     }
 
     return num;
+}
+
+bool topo_does_mp(coreid_t core)
+{
+    return topo_does_mp_send(core, false) || topo_does_mp_receive(core, false);
 }

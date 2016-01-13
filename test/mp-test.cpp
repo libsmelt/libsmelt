@@ -60,12 +60,12 @@ void* hybrid_ab(void* a)
     return NULL;
 }
 
-void* worker3(void* a)
+void* hybrid_reduce(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    debug_printf("Reduction complete: %d\n", mp_reduce(tid));
+    debug_printf("Reduction complete: %d\n", sync_reduce(tid));
 
     __thread_end();
     return NULL;
@@ -111,9 +111,9 @@ int main(int argc, char **argv)
     worker_func_t* workers[NUM_EXP] = {
         //        &worker1,
         // &worker2,
-        // &worker3,
+        &hybrid_reduce,
         // &worker4,
-        &hybrid_ab
+        //        &hybrid_ab
     };
 
     if (argc>1) {

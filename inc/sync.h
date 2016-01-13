@@ -121,5 +121,6 @@ int __lowlevel_thread_init(int tid);
 coreid_t get_sequentializer(void);
 
 uintptr_t ab_forward(uintptr_t, coreid_t);
+uintptr_t sync_reduce(uintptr_t);
 
 #endif /* SYNC_H */

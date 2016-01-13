@@ -51,6 +51,18 @@ struct shm_queue {
     uint8_t epoch;
 };
 
+struct shm_reduction {
+    
+    // shared memory for reduction
+    uint64_t __attribute__((aligned(64))) reduction_aggregate;
+
+    // shared memory for reduction (counter to indicate how many finished)
+    uint64_t __attribute__((aligned(64))) reduction_counter;
+
+    // shared memory for reduction (counter to indicate round)
+    uint8_t __attribute__((aligned(64))) reduction_round; // XXX has to be uint8
+};
+
 void shm_init(void);
 
 struct shm_queue* shm_init_context(void* shm,
@@ -118,5 +130,7 @@ coreid_t shm_get_coordinator_for_cluster_in_model(int cluster, int model);
 int shm_cluster_get_unique_reader_id(unsigned cid,
                                      coreid_t reader);
 
+
+uintptr_t shm_reduce(uintptr_t);
 
 #endif /* SYNC_SHM_H */

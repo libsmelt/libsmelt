@@ -22,8 +22,25 @@ struct capref shared_frame;
 // corresponding meta data stored at index 3 in that array.
 struct shm_queue** clusters;
 
+// Stores pointers to per-cluster structs for reductions. Indexed as
+// "clusters"
+struct shm_reduction** cluster_reductions;
+struct shm_reduction** reductions;
+
 // Stores the buffers to be used for shared memory queues
 void** cluster_bufs;
+
+/*
+ * We need to remember the round of reductions we are in. Clients can
+ * also start a new reduction once the previous is finished.
+ *
+ * The coordinator increases the current round once it is done summing
+ * up all values and resetting counters.
+ *
+ * Will overflow, but that is okay given that the type of the local
+ * and global round variable is the same (uint8)
+ */
+static __thread uint8_t red_round = 0; // XXX HAS to be uint8
 
 int init_master_share(void)
 {
@@ -85,11 +102,15 @@ void shm_init(void)
     // Should be called from sequentializer
     assert (get_thread_id() == get_sequentializer());
 
-    // Allocate space for mappings
+    // --> per-thread state:
+    // Allocate space for shared-memory data structures
     clusters = new struct shm_queue* [topo_num_cores()];
+    cluster_reductions = new struct shm_reduction* [topo_num_cores()];
 
+    // --> per-cluster state:
     // Allocate space for buffers
     cluster_bufs = new void* [get_max_num_clusters()];
+    reductions = new struct shm_reduction* [get_max_num_clusters()];
 
     // Allocate memory for shared memory queues
     int num_clusters;
@@ -99,7 +120,7 @@ void shm_init(void)
     // Find all clusters this core is part of in ALL models
     shm_get_clusters (&num_clusters, &model_ids, &cluster_ids);
 
-    // Allocate buffers for shared memory queues
+    // Allocate shared-memory datastructures, one per cluster
     for (int cidx=0; cidx<num_clusters; cidx++) {
 
         // SHM queue writer
@@ -116,6 +137,11 @@ void shm_init(void)
         assert (buf!=NULL);
         cluster_bufs[cidx] = buf;
 
+        reductions[cidx] = (struct shm_reduction*)
+            numa_alloc_onnode(sizeof(struct shm_reduction),
+                              numa_node_of_cpu(coord));
+
+        assert (reductions[cidx]!=NULL);
     }
 
 }
@@ -152,7 +178,7 @@ void shm_switch_topo(void)
         // Is this cluster part of the current model?
         if (mid==get_topo_idx()) {
 
-            int coord = shm_get_coordinator_for_cluster(cid);
+            coreid_t coord = shm_get_coordinator_for_cluster(cid);
 
             //TODO topo_mp_cluster_size only correct for coordinator?
             int num_readers = topo_mp_cluster_size(coord, cid);
@@ -161,9 +187,36 @@ void shm_switch_topo(void)
             int reader_id = shm_cluster_get_unique_reader_id(cid,
                                                              get_thread_id());
 
+            // <cid>, despite being a model-local index for the
+            // cluster is fine here, since there is only one model
+            // active at the time, and the cid is unique within that
+            // model. The fact that it is not globally unique does not
+            // matter here.
+
+            // Queue
             clusters[get_thread_id()] = shm_init_context(cluster_bufs[cid],
                                                          num_readers,
                                                          reader_id);
+            // Reduction
+            cluster_reductions[get_thread_id()] = reductions[cid];
+
+
+            // We need to initialize the shared datastructures here,
+            // presumably by the coordinator. A lock (hopefully)
+            // following the call to this function will ensure that
+            // noone uses any of these uninitialized.
+            if (coord==get_core_id()) {
+
+                // SHM queues
+                // XXX Roni?
+
+                // SHM reductions
+                *(cluster_reductions[cid]) = {
+                    .reduction_aggregate = 0,
+                    .reduction_counter = 0,
+                    .reduction_round = 0
+                };
+            }
 
             assert (clusters[get_thread_id()]!=NULL);
 
@@ -406,4 +459,124 @@ int shm_cluster_get_unique_reader_id(unsigned cid,
     }
 
     return -1;
+}
+
+/**
+ * \brief Add value to sum atomically using shared memory
+ */
+static inline void shm_reduce_add(uint64_t *sum, uint64_t *value)
+{
+    __sync_add_and_fetch(sum, *value);
+}
+
+/**
+ *\ brief Atomically update shared state of reduction
+ *
+ * \param value The value to be "added" to the shared state. We should
+ * really support other operations at some point.
+ */
+static uintptr_t shm_reduce_write(uintptr_t value)
+{
+    debug_printfff(DBG__REDUCE, "core %d waiting to start with round %d\n",
+                 get_core_id(), red_round);
+
+    // Find cluster share
+    struct shm_reduction *red_state = cluster_reductions[get_thread_id()];
+
+    volatile uint8_t *rnd = &red_state->reduction_round;
+    while (*rnd!=red_round)
+        ;
+
+    // Add value to aggregate
+    shm_reduce_add(&red_state->reduction_aggregate, &value);
+
+    // Track that we added our value
+#if defined(QRM_DBG_ENABLED)
+    uint64_t ctrval =
+#endif
+        __sync_add_and_fetch(&red_state->reduction_counter, 1);
+
+    debug_printfff(DBG__REDUCE, "shm_reduce, adding value %"PRIu64", "
+                   "counter now %"PRIu64"\n", value, ctrval);
+
+    // Switch to the next round
+    red_round++;
+
+    return 0;
+}
+
+
+/**
+ * \brief Writer: wait for results of children
+ */
+static uint64_t shm_reduce_sum_children(void)
+{
+    coreid_t my_core_id = get_thread_id();
+
+    // Find cluster share
+    struct shm_reduction *red_state = cluster_reductions[get_thread_id()];
+
+    uint64_t r;
+
+    // Determine which cluster we are the coordinator of
+    int clusterid = shm_is_cluster_coordinator(my_core_id);
+    assert (clusterid>=0);
+
+    unsigned clustersize = topo_mp_cluster_size(my_core_id, clusterid);
+    assert (clustersize>1); // Otherwise it would be ONLY the coordinator
+
+    debug_printfff(DBG__REDUCE, "wait for cluster %d to finish SHM, size %d\n",
+                  clusterid, clustersize);
+
+    // Wait for everybody to write - volatile: prevent storage in registers
+    volatile uint64_t *ptr = &red_state->reduction_counter;
+    while (*ptr!=(clustersize-1))
+        ;
+
+    r = red_state->reduction_aggregate;
+
+    // Cleanup
+    red_state->reduction_aggregate = 0;
+    red_state->reduction_counter = 0;
+
+    // Start next round
+    red_state->reduction_round++;
+
+    return r;
+}
+
+
+/**
+ * \brief Reduce cluster
+ *
+ * \return The sum of all children for the cluster head, 0 otherwise.
+ */
+uintptr_t shm_reduce(uintptr_t val)
+{
+    uintptr_t current_aggregate = val;
+
+    // Leaf nodes send messagas
+    if (topo_does_shm_receive(get_thread_id())) {
+
+        shm_reduce_write(val);
+        return 0;
+    }
+
+    // Coordinator of each cluster
+    if (topo_does_shm_send(get_thread_id())) {
+
+        debug_printfff(DBG__REDUCE,
+                       "cluster coordinator %d looking for share\n",
+                       get_thread_id());
+
+        current_aggregate = shm_reduce_sum_children();
+
+        debug_printfff(DBG__REDUCE,
+                       "cluster coordinator %d got value: %"PRIu64"\n",
+                       get_thread_id(),
+                       current_aggregate);
+
+        return current_aggregate;
+
+    }
 }

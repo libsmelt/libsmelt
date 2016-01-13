@@ -280,12 +280,15 @@ bool _mp_is_reduction_root(void)
  */
 uintptr_t mp_reduce(uintptr_t val)
 {
+    if (!topo_does_mp(get_thread_id()))
+        return val;
+
     coreid_t my_core_id = get_thread_id();
     uintptr_t current_aggregate = val;
-    
+
     // Receive (this will be from several children)
     // --------------------------------------------------
-        
+
     // Determine child bindings
     struct binding_lst *blst = _mp_get_children_raw(get_thread_id());
     int numbindings = blst->num;
