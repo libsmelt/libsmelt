@@ -10,14 +10,16 @@
 
 #include "model_defs.h"
 
-#define NUM_THREADS 4
-#define NUM_RUNS 10000 // Tested up to 1.000.000
+#define NUM_THREADS 32
+
+unsigned num_runs = 50;
+
 void* worker2(void* a)
 {
     unsigned tid = *((unsigned*) a);
     __thread_init(tid, NUM_THREADS);
 
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+    for (unsigned epoch=0; epoch<num_runs; epoch++) {
 
         if (tid == get_sequentializer()) {
             mp_send_ab(tid);
@@ -46,13 +48,13 @@ void* hybrid_ab(void* a)
     __thread_init(tid, NUM_THREADS);
 
 
-    for (unsigned i=0; i<NUM_RUNS; i++) {
-    
+    for (unsigned i=0; i<num_runs; i++) {
+
         uintptr_t r = ab_forward(i, topo_last_node());
         assert (r==i);
     }
 
-    debug_printf("Reduction complete\n");
+    debug_printf("hybrid ab complete\n");
 
     __thread_end();
     return NULL;
@@ -69,14 +71,14 @@ void* worker3(void* a)
     return NULL;
 }
 
-int barrier_rounds[NUM_THREADS];
+unsigned barrier_rounds[NUM_THREADS];
 
 void* worker4(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+    for (unsigned epoch=0; epoch<num_runs; epoch++) {
 
         mp_barrier(NULL);
         barrier_rounds[tid] = epoch;
@@ -113,6 +115,12 @@ int main(int argc, char **argv)
         // &worker4,
         &hybrid_ab
     };
+
+    if (argc>1) {
+
+        num_runs = (unsigned) atoi(argv[1]);
+    }
+    printf("num_runs = %d (from first argument)\n", num_runs);
 
     __sync_init(NUM_THREADS, true);
 

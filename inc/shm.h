@@ -25,28 +25,30 @@ union quorum_share* get_master_share(void);
 #define CACHELINE_SIZE 64
 
 union __attribute__((aligned(64))) pos_pointer{
-    uint64_t pos;
+    uint64_t pos[3];
     uint8_t padding[CACHELINE_SIZE];
 };
 
-struct shm_queue {	
+struct shm_queue {
     // The shared memory itself
     uint8_t* shm;
     uint8_t* data;
     // Positions of readers/writer within shared queue
-    union pos_pointer* write_pos;
-    union pos_pointer* readers_pos;
+    volatile union pos_pointer* write_pos;
+    volatile union pos_pointer* readers_pos;
     // Number of readers
     uint8_t num_readers;
     // Reader id, only unique within cluster
     uint8_t id;
     // Number of slots (depends on num_readers)
-    uint16_t num_slots;
+    uint64_t num_slots;
     /* local position pointer, global will be updated
      * when the end of the queue is reached
      */
     uint16_t l_pos;
 
+    // avoid bug
+    uint8_t epoch;
 };
 
 void shm_init(void);
@@ -80,12 +82,12 @@ void shm_send(uintptr_t p1,
  * Receiver
  *
  * void bla(uintptr_t d1, ... ) {
- * uintptr_t d1, d2, d3 .. 
+ * uintptr_t d1, d2, d3 ..
  * uintptr_t d[7];
  * shm_receive(..., &d1, &d2, .. )
  * sth(d);
  * }
- * 
+ *
  */
 
 void shm_receive_raw(struct shm_queue* context,
@@ -109,6 +111,7 @@ int shm_does_shm(coreid_t core);
 int shm_is_cluster_coordinator(coreid_t core);
 void shm_get_clusters_for_core (int core, int *num_clusters,
                                 int **model_ids, int **cluster_ids);
+void shm_get_clusters (int *num_clusters, int **model_ids, int **cluster_ids);
 coreid_t shm_get_coordinator_for_cluster(int cluster);
 coreid_t shm_get_coordinator_for_cluster_in_model(int cluster, int model);
 

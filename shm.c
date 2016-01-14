@@ -27,7 +27,7 @@ void** cluster_bufs;
 
 int init_master_share(void)
 {
-#ifdef BARRELFISH    
+#ifdef BARRELFISH
     errval_t err;
 
     if (master_share)
@@ -56,7 +56,7 @@ int init_master_share(void)
 
     master_share = (union quorum_share*) malloc(SHM_SIZE);
     assert (master_share!=NULL);
-    
+
     return 0;
 #endif
 }
@@ -90,16 +90,15 @@ void shm_init(void)
 
     // Allocate space for buffers
     cluster_bufs = new void* [get_max_num_clusters()];
-    
+
     // Allocate memory for shared memory queues
     int num_clusters;
     int *model_ids;
     int *cluster_ids;
 
     // Find all clusters this core is part of in ALL models
-    shm_get_clusters_for_core(get_thread_id(), &num_clusters,
-                              &model_ids, &cluster_ids);
-    
+    shm_get_clusters (&num_clusters, &model_ids, &cluster_ids);
+
     // Allocate buffers for shared memory queues
     for (int cidx=0; cidx<num_clusters; cidx++) {
 
@@ -108,15 +107,17 @@ void shm_init(void)
         coord = shm_get_coordinator_for_cluster_in_model(cluster_ids[cidx],
                                                          model_ids[cidx]);
 
-        
+
         // Allocate queue - on NUMA node of coordinator
+        // That's exactly one page (4096 bytes) and libnuma guarantees that
+        // memory will be cache aligned
         void *buf = numa_alloc_onnode(SHMQ_SIZE*CACHELINE_SIZE,
                                       numa_node_of_cpu(coord));
         assert (buf!=NULL);
         cluster_bufs[cidx] = buf;
-        
-    }    
-    
+
+    }
+
 }
 
 /**
@@ -136,7 +137,8 @@ void shm_switch_topo(void)
     shm_get_clusters_for_core(get_thread_id(), &num_clusters,
                               &model_ids, &cluster_ids);
 
-    debug_printf("shm_switch_topo: number of clusters %d\n", num_clusters);
+    debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo: number of clusters %d\n",
+                   num_clusters);
 
     // Iterate all clusters this thread is part of
     for (int cidx=0; cidx<num_clusters; cidx++) {
@@ -150,22 +152,24 @@ void shm_switch_topo(void)
         // Is this cluster part of the current model?
         if (mid==get_topo_idx()) {
 
-            int num_readers = topo_mp_cluster_size(get_thread_id(), cid);
+            int coord = shm_get_coordinator_for_cluster(cid);
+
+            //TODO topo_mp_cluster_size only correct for coordinator?
+            int num_readers = topo_mp_cluster_size(coord, cid);
             num_readers -= 1; // coordinator is writer
 
             int reader_id = shm_cluster_get_unique_reader_id(cid,
                                                              get_thread_id());
-            
-            assert (cid<=num_clusters && cid<get_max_num_clusters());
-            clusters[get_thread_id()] = shm_init_context(cluster_bufs[cidx],
+
+            clusters[get_thread_id()] = shm_init_context(cluster_bufs[cid],
                                                          num_readers,
                                                          reader_id);
 
-            assert (clusters[cid]!=NULL);
-                
+            assert (clusters[get_thread_id()]!=NULL);
+
             debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo: clusters[%d] = %p\n",
                            cid, clusters[cid]);
-            
+
         }
     }
 
@@ -211,10 +215,12 @@ int shm_is_cluster_coordinator(coreid_t core)
     return -1;
 }
 
-void shm_get_clusters_for_core (int core, int *num_clusters,
-                                int **model_ids, int **cluster_ids)
-{
-    int i = 0;
+void shm_get_clusters_for_core (int core,
+                                int* num_clusters,
+                                int **model_ids,
+                                int **cluster_ids) {
+
+     int i = 0;
 
     *model_ids = (int*) malloc(sizeof(int)*topo_num_topos()*get_max_num_clusters());
     *cluster_ids = (int*) malloc(sizeof(int)*topo_num_topos()*get_max_num_clusters());
@@ -229,7 +235,6 @@ void shm_get_clusters_for_core (int core, int *num_clusters,
         for (unsigned x=0; x<topo_num_cores(); x++) {
 
             int value = topos_get(mod, core, x);
-            debug_printf("Looking at value %d\n", value);
 
             if (value>=SHM_MASTER_START && value<SHM_MASTER_MAX) {
                 value -= SHM_MASTER_START;
@@ -250,8 +255,62 @@ void shm_get_clusters_for_core (int core, int *num_clusters,
                 i++;
 
                 clusters_added[value] = true;
-                debug_printf("adding cluster model=%d cluster id=%d\n",
-                             mod, value);
+
+                debug_printfff(DBG__SHM,
+                               "adding cluster model=%d cluster id=%d\n",
+                               mod, value);
+            }
+        }
+    }
+
+    *num_clusters = i;
+}
+
+
+void shm_get_clusters (int* num_clusters,
+                       int **model_ids,
+                       int **cluster_ids) {
+
+     int i = 0;
+
+    *model_ids = (int*) malloc(sizeof(int)*topo_num_topos()*get_max_num_clusters());
+    *cluster_ids = (int*) malloc(sizeof(int)*topo_num_topos()*get_max_num_clusters());
+
+    // Make sure we count each cluster only once. For this, we need
+    // state, once bit per possible cluster
+
+    for (unsigned mod=0; mod<topo_num_topos(); mod++) {
+
+        bool clusters_added[get_max_num_clusters()] = {0};
+
+        for (coreid_t core=0; core<topo_num_cores(); core++) {
+
+            for (unsigned x=0; x<topo_num_cores(); x++) {
+
+                int value = topos_get(mod, core, x);
+
+                if (value>=SHM_MASTER_START && value<SHM_MASTER_MAX) {
+                    value -= SHM_MASTER_START;
+                }
+
+                else if (value>=SHM_SLAVE_START && value<SHM_SLAVE_MAX) {
+                    value -= SHM_SLAVE_START;
+                }
+
+                else {
+                    value = -1;
+                }
+
+                if (value>=0 && !clusters_added[value]) {
+
+                    (*model_ids)[i] = mod;
+                    (*cluster_ids)[i] = value;
+                    i++;
+
+                    clusters_added[value] = true;
+                    debug_printf("adding cluster model=%d cluster id=%d\n",
+                                 mod, value);
+                }
             }
         }
     }
@@ -321,7 +380,7 @@ void shm_send(uintptr_t p1,
  *
  * Refers to the currently active model.
  *
- * \param cid Cluster ID 
+ * \param cid Cluster ID
  *
  * \param reader Thread ID of the reader for which a unique ID should
  * be returned.
@@ -333,7 +392,7 @@ int shm_cluster_get_unique_reader_id(unsigned cid,
     int ret = -1;
 
     coreid_t coord =  shm_get_coordinator_for_cluster(cid);
-    
+
     for (coreid_t i=0; i<topo_num_cores(); i++) {
 
         if ((unsigned) topo_get(coord, i)==val) {

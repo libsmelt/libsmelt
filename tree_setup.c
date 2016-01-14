@@ -244,7 +244,7 @@ void tree_reset(void)
 /*     assert(core!=get_thread_id()); */
 
 /*     _tree_register_receive_handler(b); */
-    
+
 /*     // Remember the binding */
 /*     _bindings[core] = b; */
 /* } */
@@ -257,7 +257,7 @@ void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
         bindings = (mp_binding**) calloc(sizeof(mp_binding*), (get_num_threads()*get_num_threads()));
         assert (bindings!=NULL);
     }
-    
+
     debug_printfff(DBG__BINDING,
                    "Adding binding for %d, %d\n", sender, receiver);
     bindings[sender*get_num_threads()+receiver] = b;
@@ -267,10 +267,10 @@ mp_binding* get_binding(coreid_t sender, coreid_t receiver)
 {
     debug_printfff(DBG__BINDING,
                    "%d Getting binding for %d, %d\n", get_thread_id(), sender, receiver);
-    
+
     if (!bindings)
         return NULL;
-    
+
     return bindings[sender*get_num_threads()+receiver];
 }
 
@@ -303,7 +303,7 @@ void setup_tree_from_model(void)
             malloc(sizeof(struct binding_lst)*topo_num_cores());
         assert(parent_bindings!=NULL);
     }
-    
+
     // Sanity check
     if (get_num_threads()!=topo_num_cores()) {
         printf("threads: %d/ topo: %d\n", get_num_threads(), topo_num_cores());
@@ -311,17 +311,17 @@ void setup_tree_from_model(void)
     }
 
     assert (is_coordinator(get_thread_id()));
-    
+
     int* tmp = new int[topo_num_cores()];
     int tmp_parent = -1;
-    
+
     debug_printfff(DBG__BINDING, "tree setup: start ------------------------------\n");
-  
+
     // Find children
     for (coreid_t s=0; s<topo_num_cores(); s++) { // foreach sender
 
         unsigned num = 0;
-        
+
         for (coreid_t i=1; i<topo_num_cores(); i++) { // + possible outward index
             for (coreid_t r=0; r<topo_num_cores(); r++) {
 
@@ -344,7 +344,9 @@ void setup_tree_from_model(void)
         }
 
         // Otherwise parent was not found
-        assert (tmp_parent >= 0 || s == get_sequentializer()); 
+        bool does_mp = topo_does_mp_send(s, false) ||
+            topo_does_mp_receive(s, false);
+        assert (tmp_parent >= 0 || s == get_sequentializer() || !does_mp);
 
         // Create permanent list of bindings for that core
         mp_binding **_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
@@ -357,11 +359,11 @@ void setup_tree_from_model(void)
 
         // Retrieve and store bindings
         for (unsigned j=0; j<num; j++) {
-            
+
             debug_printfff(DBG__BINDING,
                            "tree setup: adding binding(%d) %d->%d\n",
                            j, s, tmp[j]);
-            
+
             _bindings[j] =   get_binding(s, tmp[j]);
             _r_bindings[j] = get_binding(tmp[j], s);
 
@@ -391,7 +393,7 @@ void setup_tree_from_model(void)
             _bindings_p[0] = get_binding(tmp_parent, s);
             _bindings_p[1] = get_binding(s, tmp_parent);
             _idx_p[0] = tmp_parent;
-            
+
             parent_bindings[s] = (struct binding_lst) {
                 .num = 1,
                 .b = _bindings_p,
@@ -404,7 +406,7 @@ void setup_tree_from_model(void)
             assert (_idx_p!=NULL);
 
             _idx_p[0] = -1;
-            
+
             parent_bindings[s] = (struct binding_lst) {
                 .num = 0,
                 .b = NULL,
