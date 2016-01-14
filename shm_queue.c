@@ -25,6 +25,8 @@
 
 
 //#define DEBUG_SHM
+#define END 1
+#define RESET 9
 
 /**
  * \brief Initalize a shared memory context
@@ -71,7 +73,7 @@ static bool check_readers_end(struct shm_queue* queue)
 
     for (int i = 0; i < queue->num_readers; i++) {
         volatile uint64_t pos = queue->readers_pos[i].pos;
-        if (pos == 0) {
+        if (pos == END) {
 
         } else {
             return false;
@@ -92,6 +94,7 @@ void shm_send_raw(struct shm_queue* context,
     assert (context!=NULL);
     // if we reached the end sync with readers
     if ((context->write_pos[0].pos) == context->num_slots) {
+            //printf("Writer waiting %d \n", sched_getcpu());
             while(!check_readers_end(context)){};
 
 #ifdef DEBUG_SHM
@@ -103,7 +106,7 @@ void shm_send_raw(struct shm_queue* context,
             context->write_pos[0].pos = 0;
             // reset readers
             for (int i = 0; i < context->num_readers; i++) {
-                context->readers_pos[i].pos = 9;
+                context->readers_pos[i].pos = RESET;
             }
     }
 
@@ -125,8 +128,8 @@ void shm_send_raw(struct shm_queue* context,
        /* printf("Shm writer %d epoch %d: write pos %" PRIu64 " addr %p value1 %lu \n",
             sched_getcpu(), context->epoch, context->write_pos[0].pos[context->epoch],
             slot_start, slot_start[0]); */
-        printf("Shm writer %d epoch %d: write pos %" PRIu64 " val %lu \n", 
-                sched_getcpu(), context->epoch, context->write_pos[0].pos, 
+        printf("Shm writer %d: write pos %" PRIu64 " val %lu \n", 
+                sched_getcpu(), context->write_pos[0].pos, 
                 slot_start[0]);
 #endif
 
@@ -159,7 +162,7 @@ bool shm_receive_non_blocking(struct shm_queue* context,
 
     if (context->l_pos == context->num_slots) {
         // at end
-        context->readers_pos[context->id].pos = 0;
+        context->readers_pos[context->id].pos = END;
         context->l_pos = 0;
 
         // wait until writer resets
@@ -185,10 +188,16 @@ bool shm_receive_non_blocking(struct shm_queue* context,
         *p5 = start[4]; 
         *p6 = start[5]; 
         *p7 = start[6]; 
-#ifdef DEBUG_SHM
-        printf("Shm %d: read pos %" PRIu16 " val1 %lu slot_start %p \n",
-               sched_getcpu(), context->l_pos,
+/*
+        printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu slot_start %p \n",
+               sched_getcpu(), (sched_getcpu() % 4), context->l_pos,
                 *((uintptr_t *) start) , start); 
+*/
+#ifdef DEBUG_SHM
+        printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu slot_start %p \n",
+               sched_getcpu(), (sched_getcpu() % 4), context->l_pos,
+                *((uintptr_t *) start) , start); 
+    
 #endif
         context->l_pos = (context->l_pos+1);
         return true;
