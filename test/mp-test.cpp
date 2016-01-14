@@ -103,7 +103,7 @@ void* worker4(void* a)
     return NULL;
 }
 
-#define NUM_EXP 1
+#define NUM_EXP 2
 
 int main(int argc, char **argv)
 {
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
         // &worker2,
         &hybrid_reduce,
         // &worker4,
-        //        &hybrid_ab
+        &hybrid_ab
     };
 
     if (argc>1) {

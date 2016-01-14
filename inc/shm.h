@@ -29,10 +29,15 @@ union __attribute__((aligned(64))) pos_pointer{
     uint8_t padding[CACHELINE_SIZE];
 };
 
+/**
+ * \brief Per-thread datastructure representing a SHM queue.
+ */
 struct shm_queue {
+
     // The shared memory itself
     uint8_t* shm;
     uint8_t* data;
+
     // Positions of readers/writer within shared queue
     volatile union pos_pointer* write_pos;
     volatile union pos_pointer* readers_pos;
@@ -52,7 +57,7 @@ struct shm_queue {
 };
 
 struct shm_reduction {
-    
+
     // shared memory for reduction
     uint64_t __attribute__((aligned(64))) reduction_aggregate;
 
