@@ -26,16 +26,6 @@
 
 //#define DEBUG_SHM
 
-void toggle_epoch(struct shm_queue* context)
-{
-        if (context->epoch == 0) {
-            context->epoch = 1;
-        } else {
-            context->epoch = 0;
-        }
-}
-
-
 /**
  * \brief Initalize a shared memory context
  *
@@ -68,7 +58,6 @@ struct shm_queue* shm_init_context(void* shm,
 #ifdef DEBUG_SHM
     queue->num_slots = 10;
 #endif
-    queue->epoch = 0;
     queue->write_pos = (union pos_pointer*) shm;
     queue->readers_pos = (union pos_pointer*) shm+1;
     queue->l_pos = 0;
@@ -81,7 +70,7 @@ static bool check_readers_end(struct shm_queue* queue)
 {
 
     for (int i = 0; i < queue->num_readers; i++) {
-        volatile uint64_t pos = queue->readers_pos[i].pos[0];
+        volatile uint64_t pos = queue->readers_pos[i].pos;
         if (pos == 0) {
 
         } else {
@@ -102,7 +91,7 @@ void shm_send_raw(struct shm_queue* context,
 {
     assert (context!=NULL);
     // if we reached the end sync with readers
-    if ((context->write_pos[0].pos[context->epoch]) == context->num_slots) {
+    if ((context->write_pos[0].pos) == context->num_slots) {
             while(!check_readers_end(context)){};
 
 #ifdef DEBUG_SHM
@@ -111,18 +100,14 @@ void shm_send_raw(struct shm_queue* context,
             printf("#################################################### \n");
 #endif       
             // reset new pointer
-            context->write_pos[0].pos[(context->epoch+1) % 2] = 0;
+            context->write_pos[0].pos = 0;
             // reset readers
             for (int i = 0; i < context->num_readers; i++) {
-                context->readers_pos[i].pos[0] = 9;
+                context->readers_pos[i].pos = 9;
             }
-            
-            // toggle epoch
-            toggle_epoch(context);
-            context->write_pos[0].pos[3] = context->epoch;
     }
 
-    uintptr_t offset =  (context->write_pos[0].pos[context->epoch]*
+    uintptr_t offset =  (context->write_pos[0].pos*
                          (CACHELINE_SIZE/sizeof(uintptr_t)));
     assert (offset<SHMQ_SIZE*CACHELINE_SIZE);
 
@@ -140,20 +125,20 @@ void shm_send_raw(struct shm_queue* context,
        /* printf("Shm writer %d epoch %d: write pos %" PRIu64 " addr %p value1 %lu \n",
             sched_getcpu(), context->epoch, context->write_pos[0].pos[context->epoch],
             slot_start, slot_start[0]); */
-        printf("Shm writer %d epoch %d: write pos[0] %" PRIu64" pos[1] %" PRIu64 " val %d \n", 
-                sched_getcpu(), context->epoch, context->write_pos[0].pos[0], 
-                context->write_pos[0].pos[1], slot_start[0]);
+        printf("Shm writer %d epoch %d: write pos %" PRIu64 " val %lu \n", 
+                sched_getcpu(), context->epoch, context->write_pos[0].pos, 
+                slot_start[0]);
 #endif
 
     // increse write pointer..
-    uint64_t pos = context->write_pos[0].pos[context->epoch]+1;
-    context->write_pos[0].pos[context->epoch] = pos;
+    uint64_t pos = context->write_pos[0].pos+1;
+    context->write_pos[0].pos = pos;
 }
 
 
-bool check_epoch(struct shm_queue* context)
+bool check_reader_p(struct shm_queue* context)
 {
-    if (context->epoch == context->write_pos[0].pos[3]) {
+    if (context->readers_pos[context->id].pos == 9) {
         return false;
     } else {
         return true;
@@ -174,22 +159,19 @@ bool shm_receive_non_blocking(struct shm_queue* context,
 
     if (context->l_pos == context->num_slots) {
         // at end
-        context->readers_pos[context->id].pos[0] = 0;
- 
-        while (!check_epoch(context)){
-            volatile uint64_t epoch = context->write_pos[0].pos[3];
-        };
-
-        toggle_epoch(context);
+        context->readers_pos[context->id].pos = 0;
         context->l_pos = 0;
 
+        // wait until writer resets
+        while (check_reader_p(context)){};
+
 #ifdef DEBUG_SHM
-            printf("Reader %d: reset id %d\n", 
+        printf("Reader %d: reset id %d\n", 
                     sched_getcpu(), context->id);
 #endif
     }
 
-    if ((context->l_pos == (context->write_pos[0].pos[context->epoch]))) {
+    if ((context->l_pos == (context->write_pos[0].pos))) {
         return false;
     } else {
 
@@ -227,7 +209,6 @@ void shm_receive_raw(struct shm_queue* context,
 {
     while(!shm_receive_non_blocking(context, p1, p2, p3,
                                  p4, p5, p6, p7)){};
-
 
 }
 

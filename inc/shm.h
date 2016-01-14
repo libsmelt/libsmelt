@@ -25,7 +25,7 @@ union quorum_share* get_master_share(void);
 #define CACHELINE_SIZE 64
 
 union __attribute__((aligned(64))) pos_pointer{
-    uint64_t pos[3];
+    uint64_t pos;
     uint8_t padding[CACHELINE_SIZE];
 };
 
