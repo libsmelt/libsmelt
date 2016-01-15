@@ -105,7 +105,7 @@ void ab_forward7(coreid_t sender,
                        val);
 
         if (my_core_id == SEQUENTIALIZER) {
-            if (! sender == SEQUENTIALIZER) {
+            if (!(sender == SEQUENTIALIZER)) {
                 mp_receive7(sender, msg_buf);
             }
             mp_send_ab7(msg_buf[0], msg_buf[1], msg_buf[2], msg_buf[3], 
