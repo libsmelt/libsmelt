@@ -509,8 +509,7 @@ int main(int argc, char **argv)
     }
 
 #endif
-
-    for (unsigned e=0; e<topo_num_topos(); e++) {
+    for (unsigned e=0; e<(topo_num_topos()-1); e++) {
         for (int j=0; j<NUM_EXP; j++) {
             printf("----------------------------------------\n");
             printf("Executing experiment %d - %s\n", (j+1), labels[j]);

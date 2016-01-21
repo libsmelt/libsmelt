@@ -55,6 +55,12 @@ void mp_send7(coreid_t r,
     
     if (b==NULL) {
         printf("%lx \n", val1);
+        printf("%lx \n", val2);
+        printf("%lx \n", val3);
+        printf("%lx \n", val4);
+        printf("%lx \n", val5);
+        printf("%lx \n", val6);
+        printf("%lx \n", val7);
         printf("Failed to get binding for %d %d\n", s, r);
     }
     assert (b!=NULL);
@@ -336,7 +342,7 @@ uintptr_t mp_reduce(uintptr_t val)
  * anything but will send val1 - val7 up the tree
  *
  * If the node is not a leaf, the node will 
- * aggregate the val1, and send the values received
+ * not aggregate anything, and send the values received
  * up the tree 
  * 
  * 
@@ -353,7 +359,6 @@ void mp_reduce7(uintptr_t* buf,
                 uintptr_t val7)
 {
     coreid_t my_core_id = get_thread_id();
-    uintptr_t current_aggregate = val1;
     // Receive (this will be from several children)
     // --------------------------------------------------
         
@@ -370,18 +375,9 @@ void mp_reduce7(uintptr_t* buf,
     
     // Decide to parents
     for (int i=0; i<numbindings; i++) {
-
-        mp_receive_raw7(blst->b_reverse[i], vals);
-        current_aggregate += vals[0];
-        debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", v, i);
-        if (i == 0) {
-            buf[1] = vals[1];
-            buf[2] = vals[2];
-            buf[3] = vals[3];
-            buf[4] = vals[4];
-            buf[5] = vals[5];
-            buf[6] = vals[6];
-        }   
+        mp_receive_raw7(blst->b_reverse[i], buf);
+        //current_aggregate += vals[0];
+        debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", val1, i);
     }
     
     if (numbindings == 0) {
@@ -409,16 +405,11 @@ void mp_reduce7(uintptr_t* buf,
     assert (pidx!=-1 || my_core_id == get_sequentializer());
     
     if (pidx!=-1) {
-
         mp_binding *b_parent = blst_parent->b_reverse[0];
-        debug_printfff(DBG__REDUCE, "sending %" PRIu64 " to parent %d\n",
-                       current_aggregate, pidx);
-        mp_send_raw7(b_parent, current_aggregate, 
-			             vals[1], vals[2], vals[3], vals[4], vals[5],
-			             vals[6]);
+        mp_send_raw7(b_parent, buf[0], 
+			             buf[1], buf[2], buf[3], buf[4], buf[5],
+			             buf[6]);
     }
-
-    buf[0] = current_aggregate;
 }
 
 static __thread uint32_t _num_barrier = 0;
