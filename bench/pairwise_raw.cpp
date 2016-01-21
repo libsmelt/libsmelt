@@ -15,14 +15,20 @@
 #include "ump_conf.h"
 #include "ump_common.h"
 
+#ifdef FFQ
+#include "ff_queue.h"
+#endif
+
 #define NUM_EXP 100
 
+#define STR(X) #X
+
 #define INIT_SKM(func, id, sender, receiver)                                \
-        char _str_buf[1024];                                                \
-        cycles_t _buf[NUM_EXP];                                             \
-        struct sk_measurement m;                                            \
-        snprintf(_str_buf, 1024, "%s%zu-%d-%d", func, id, sender, receiver); \
-        sk_m_init(&m, NUM_EXP, _str_buf, _buf);
+        char _str_buf_##func[1024];                                                \
+        cycles_t _buf_##func[NUM_EXP];                                             \
+        struct sk_measurement m_##func;                                            \
+        snprintf(_str_buf_##func, 1024, "%s%zu-%d-%d", STR(func), id, sender, receiver); \
+        sk_m_init(&m_##func, NUM_EXP, _str_buf_##func, _buf_##func);
 
 /**
  * \brief Busy wait for message.
@@ -43,7 +49,11 @@ static inline uintptr_t raw_receive(mp_binding *b, sk_measurement *_m, bool rest
     do {
 
         if (_m && restart_tsc) sk_m_restart_tsc(_m);
+#ifdef FFQ
+        success = ffq_dequeue_nonblock(&b->dst, &ret);
+#else
         success = ump_dequeue_word_nonblock(q, &ret);
+#endif
 
     } while(!success);
 
@@ -61,25 +71,33 @@ void* thr_sender(void* a)
     struct thr_args* arg = (struct thr_args*) a;
     __lowlevel_thread_init(arg->s);
 
-    INIT_SKM("send", arg->num_messages, arg->s, arg->r);
+    INIT_SKM(send, arg->num_messages, arg->s, arg->r);
+    INIT_SKM(rtt, arg->num_messages, arg->s, arg->r);
 
     mp_binding *bsend = get_binding(get_thread_id(), arg->r);
     mp_binding *brecv = get_binding(arg->r, get_thread_id());
 
     for (size_t i=0; i<NUM_EXP; i++) {
 
-        sk_m_restart_tsc(&m);
+        sk_m_restart_tsc(&m_rtt);
+        sk_m_restart_tsc(&m_send);
         for (size_t j = 0; j <= arg->num_messages; j++) {
             mp_send_raw(bsend, i);
         }
-        sk_m_add(&m);
+        sk_m_add(&m_send);
 
         for (size_t j = 0; j <= arg->num_messages; j++) {
+#ifdef FFQ
+            mp_receive_raw(brecv);
+#else
             raw_receive(brecv, NULL, 0);
+#endif
         }
+        sk_m_add(&m_rtt);
     }
 
-    sk_m_print(&m);
+    sk_m_print(&m_send);
+    sk_m_print(&m_rtt);
     __thread_end();
 
     return NULL;
@@ -91,7 +109,7 @@ void* thr_receiver(void* a)
     struct thr_args* arg = (struct thr_args*) a;
     __lowlevel_thread_init(arg->r);
 
-    INIT_SKM("receive", arg->num_messages, arg->s, arg->r);
+    INIT_SKM(receive, arg->num_messages, arg->s, arg->r);
 
     mp_binding *bsend = get_binding(get_thread_id(), arg->s);
     mp_binding *brecv = get_binding(arg->s, get_thread_id());
@@ -99,16 +117,16 @@ void* thr_receiver(void* a)
     for (size_t i=0; i<NUM_EXP; i++) {
 
         for (size_t j = 0; j <= arg->num_messages; j++) {
-            uintptr_t result = raw_receive(brecv, &m, j == 0);
+            uintptr_t result = raw_receive(brecv, &m_receive, j == 0);
             assert(result == i);
         }
-        sk_m_add(&m);
+        sk_m_add(&m_receive);
         for (size_t j = 0; j <= arg->num_messages; j++) {
             mp_send_raw(bsend, i);
         }
     }
 
-    sk_m_print(&m);
+    sk_m_print(&m_receive);
     __thread_end();
 
     return NULL;
