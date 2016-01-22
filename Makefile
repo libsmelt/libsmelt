@@ -79,6 +79,18 @@ else
 	OBJS += $(patsubst %.c,%.o,$(UMP_OBJS))
 endif
 
+
+# ParLib
+# --------------------------------------------------
+PARLIB = 1
+ifdef PARLIB
+	PLBASE = contrib/parlib/src
+	CXXFLAGS += -DPARLIB
+	INC += -I$(PLBASE)
+	DEPS += $(PLBASE)/mcs.o
+	OBJS += $(PLBASE)/mcs.o
+endif
+
 LIBS += -lnuma
 CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)
 
@@ -98,6 +110,9 @@ test/ping-pong: $(DEPS) $(EXTERNAL_OBJS) test/ping-pong.cpp
 # --------------------------------------------------
 bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-bench.cpp -o $@
+
+bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.cpp
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-throughput.cpp -o $@
 
 bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.cpp -o $@
