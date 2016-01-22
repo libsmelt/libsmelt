@@ -16,11 +16,11 @@ uintptr_t ab_forward(uintptr_t val, coreid_t sender)
         (topo_does_mp_send(my_core_id, false));
 
     // Sender forwards message to the root
-    if (get_thread_id()==sender) {
+    if (get_thread_id()==sender && sender!=get_sequentializer()) {
 
         mp_send(get_sequentializer(), val);
     }
-    
+
     // Message passing
     // --------------------------------------------------
     if (does_mp) {
@@ -32,7 +32,9 @@ uintptr_t ab_forward(uintptr_t val, coreid_t sender)
                        val);
 
         if (my_core_id == SEQUENTIALIZER) {
-            val = mp_receive(sender);
+            if (sender!=get_sequentializer()) {
+                val = mp_receive(sender);
+            }
             mp_send_ab(val);
         } else {
             val = mp_receive_forward(0);
@@ -47,16 +49,16 @@ uintptr_t ab_forward(uintptr_t val, coreid_t sender)
 
             // send
             // --------------------------------------------------
-            
+
             debug_printfff(DBG__HYBRID_AC, "Starting SHM .. -- send, \n");
-            
+
             shm_send(val, 0, 0, 0, 0, 0, 0);
         }
         if (topo_does_shm_receive(my_core_id)) {
 
             // receive
             // --------------------------------------------------
-            
+
             debug_printfff(DBG__HYBRID_AC, "Starting SHM .. -- receive, \n");
 
             uintptr_t val1, val2, val3, val4, val5, val6, val7;
@@ -87,13 +89,13 @@ void ab_forward7(coreid_t sender,
         (topo_does_mp_send(my_core_id, false));
 
     // Sender forwards message to the root
-    if ((get_thread_id()==sender) && 
+    if ((get_thread_id()==sender) &&
          !(sender == get_sequentializer())) {
 
         mp_send7(get_sequentializer(), v1, v2, v3, v4,
                  v5, v6, v7);
     }
-    
+
     // Message passing
     // --------------------------------------------------
     if (does_mp) {
@@ -108,7 +110,7 @@ void ab_forward7(coreid_t sender,
             if (!(sender == SEQUENTIALIZER)) {
                 mp_receive7(sender, msg_buf);
             }
-            mp_send_ab7(msg_buf[0], msg_buf[1], msg_buf[2], msg_buf[3], 
+            mp_send_ab7(msg_buf[0], msg_buf[1], msg_buf[2], msg_buf[3],
                         msg_buf[4], msg_buf[5], msg_buf[6]);
         } else {
             mp_receive_forward7(msg_buf);
@@ -123,20 +125,20 @@ void ab_forward7(coreid_t sender,
 
             // send
             // --------------------------------------------------
-            
+
             debug_printfff(DBG__HYBRID_AC, "Starting SHM .. -- send, \n");
-            
-            shm_send(msg_buf[0], msg_buf[1], msg_buf[2], msg_buf[3], 
+
+            shm_send(msg_buf[0], msg_buf[1], msg_buf[2], msg_buf[3],
                      msg_buf[4], msg_buf[5], msg_buf[6]);
         }
         if (topo_does_shm_receive(my_core_id)) {
 
             // receive
             // --------------------------------------------------
-            
+
             debug_printfff(DBG__HYBRID_AC, "Starting SHM .. -- receive, \n");
 
-            shm_receive(&msg_buf[0], &msg_buf[1], &msg_buf[2], &msg_buf[3], &msg_buf[4], 
+            shm_receive(&msg_buf[0], &msg_buf[1], &msg_buf[2], &msg_buf[3], &msg_buf[4],
                         &msg_buf[5], &msg_buf[6]);
         }
 
