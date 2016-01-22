@@ -159,6 +159,12 @@ void shm_switch_topo(void)
     int *model_ids;
     int *cluster_ids;
 
+    if (get_thread_id()==get_sequentializer()) {
+        shm_init();
+    }
+
+    pthread_barrier_wait(&get_master_share()->data.sync_barrier);
+
     // Find all clusters this core is part of in ALL models
     shm_get_clusters_for_core(get_thread_id(), &num_clusters,
                               &model_ids, &cluster_ids);
@@ -199,13 +205,17 @@ void shm_switch_topo(void)
                                                          reader_id);
             // Reduction
             cluster_reductions[get_thread_id()] = reductions[cid];
+            debug_printfff(DBG__SWITCH_TOPO, "Mapping core %d to cluster %d\n",
+                           get_thread_id(), cid);
 
 
             // We need to initialize the shared datastructures here,
-            // presumably by the coordinator. A lock (hopefully)
-            // following the call to this function will ensure that
-            // noone uses any of these uninitialized.
+            // presumably by the coordinator. A barrier following the
+            // call to this function will ensure that no one uses any
+            // of these uninitialized.
             if (coord==get_core_id()) {
+
+                debug_printfff(DBG__SWITCH_TOPO, "Resetting data structures of cluster %d\n", cid);
 
                 // SHM queues
                 // XXX Roni?
@@ -361,8 +371,9 @@ void shm_get_clusters (int* num_clusters,
                     i++;
 
                     clusters_added[value] = true;
-                    debug_printf("adding cluster model=%d cluster id=%d\n",
-                                 mod, value);
+                    debug_printfff(DBG__SWITCH_TOPO,
+                                   "adding cluster model=%d cluster id=%d\n",
+                                   mod, value);
                 }
             }
         }
