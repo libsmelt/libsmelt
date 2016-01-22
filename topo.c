@@ -161,7 +161,7 @@ bool switch_topo_to_idx(int idx)
 
             debug_printfff(DBG__SWITCH_TOPO, "topo %d %p %s [%c]\n",
                          i, topo_combined[i], topo_names[i],
-                         i==topo_idx ? 'X' : ' ' );
+                         i==(unsigned) topo_idx ? 'X' : ' ' );
         }
 
         debug_printf("Switching topology: \033[1;36m%s\033[0m\n",
@@ -305,38 +305,6 @@ const char* topo_get_name(void)
     return topo_names[get_topo_idx()];
 }
 
-/*
-bool topo_does_shm_send(coreid_t core)
-{
-    for (int i=0; i<topo_num_cores(); i++) {
-
-        if (topo_get(core, i)>=SHM_MASTER_START &&
-            topo_get(core, i)<SHM_MASTER_MAX) {
-
-            assert(cluster_share != NULL);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool topo_does_shm_receive(coreid_t core)
-{
-    for (int i=0; i<topo_num_cores(); i++) {
-
-        if (topo_get(core, i)>=SHM_SLAVE_START &&
-            topo_get(core, i)<SHM_SLAVE_MAX) {
-
-            assert(cluster_share != NULL);
-            return true;
-        }
-    }
-
-    return false;
-}
-*/
-
 static int __topo_get(int* mod, int x, int y)
 {
 #ifdef QRM_DBG_ENABLED
@@ -379,4 +347,77 @@ coreid_t topo_last_node(void)
 std::vector<int> **topo_all_leaf_nodes(void)
 {
     return all_leaf_nodes;
+}
+
+bool topo_does_shm_send(coreid_t core)
+{
+    for (unsigned i=0; i<topo_num_cores(); i++) {
+
+        if (topo_get(core, i)>=SHM_MASTER_START &&
+            topo_get(core, i)<SHM_MASTER_MAX) {
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool topo_does_shm_receive(coreid_t core)
+{
+    for (unsigned i=0; i<topo_num_cores(); i++) {
+
+        if (topo_get(core, i)>=SHM_SLAVE_START &&
+            topo_get(core, i)<SHM_SLAVE_MAX) {
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
+/**
+ * \brief Determine the size of a cluster.
+ *
+ * The coordinator is an argument to this call for performance (only
+ * one row of the model has to be parsed, not the entire n*n one)
+ *
+ * \return Size of the given cluster
+ */
+int topo_mp_cluster_size(coreid_t coordinator, int clusterid)
+{
+    int num = 1;
+    int value;
+
+    assert (clusterid>=0);
+
+    for (unsigned x=0; x<topo_num_cores(); x++) {
+
+        value = topo_get(coordinator, x);
+
+        if (value>=SHM_MASTER_START && value<SHM_MASTER_MAX) {
+            value -= SHM_MASTER_START;
+        } /*
+        else if (value>=SHM_SLAVE_START && value<SHM_SLAVE_MAX) {
+            value -= SHM_SLAVE_START;
+            } */
+        else {
+            value = -1;
+        }
+
+        // node belongs to cluster
+        if (value>=0) {
+            num++;
+        }
+    }
+
+    return num;
+}
+
+bool topo_does_mp(coreid_t core)
+{
+    return topo_does_mp_send(core, false) || topo_does_mp_receive(core, false);
 }

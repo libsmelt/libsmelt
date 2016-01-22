@@ -10,16 +10,16 @@
 
 #include "model_defs.h"
 
-__thread struct sk_measurement m;
+#define NUM_THREADS 32
 
-#define NUM_THREADS 4
-#define NUM_RUNS 10000 // Tested up to 1.000.000
+unsigned num_runs = 50;
+
 void* worker2(void* a)
 {
-    int tid = *((int*) a);
+    unsigned tid = *((unsigned*) a);
     __thread_init(tid, NUM_THREADS);
 
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+    for (unsigned epoch=0; epoch<num_runs; epoch++) {
 
         if (tid == get_sequentializer()) {
             mp_send_ab(tid);
@@ -42,29 +42,43 @@ void* worker2(void* a)
     return NULL;
 }
 
-void* worker3(void* a)
+void* hybrid_ab(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    debug_printf("Reduction complete: %d\n", mp_reduce(tid));
+
+    for (unsigned i=0; i<num_runs; i++) {
+
+        uintptr_t r = ab_forward(i, topo_last_node());
+        assert (r==i);
+    }
+
+    debug_printf("hybrid ab complete\n");
 
     __thread_end();
     return NULL;
 }
 
-int barrier_rounds[NUM_THREADS];
+void* hybrid_reduce(void* a)
+{
+    int tid = *((int*) a);
+    __thread_init(tid, NUM_THREADS);
+
+    debug_printf("Reduction complete: %d\n", sync_reduce(tid));
+
+    __thread_end();
+    return NULL;
+}
+
+unsigned barrier_rounds[NUM_THREADS];
 
 void* worker4(void* a)
 {
     int tid = *((int*) a);
     __thread_init(tid, NUM_THREADS);
 
-    // Setup buffer for measurements
-    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RUNS);
-    sk_m_init(&m, NUM_RUNS, "barriers", buf);
-
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+    for (unsigned epoch=0; epoch<num_runs; epoch++) {
 
         mp_barrier(NULL);
         barrier_rounds[tid] = epoch;
@@ -83,29 +97,30 @@ void* worker4(void* a)
 
     }
 
-    if (get_thread_id()==get_sequentializer()) {
-
-        sk_m_print(&m);
-    }
-
-
     debug_printf("All done :-)\n");
 
     __thread_end();
     return NULL;
 }
 
-#define NUM_EXP 3
+#define NUM_EXP 2
 
 int main(int argc, char **argv)
 {
     typedef void* (worker_func_t)(void*);
     worker_func_t* workers[NUM_EXP] = {
         //        &worker1,
-        &worker2,
-        &worker3,
-        &worker4
+        // &worker2,
+        &hybrid_reduce,
+        // &worker4,
+        &hybrid_ab
     };
+
+    if (argc>1) {
+
+        num_runs = (unsigned) atoi(argv[1]);
+    }
+    printf("num_runs = %d (from first argument)\n", num_runs);
 
     __sync_init(NUM_THREADS, true);
 

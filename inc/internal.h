@@ -10,6 +10,24 @@
 #define INTERNAL_DEBUG_H 1
 
 #include "sync.h"
+#include "shm.h"
+
+struct shm_context {
+
+    
+};
+
+/**
+ * \brief Per-thread context of libsync.
+ *
+ * Is setup in __thread_init()
+ */
+struct libsync_context {
+
+    // NYI    struct mp_context mp_c;
+
+    struct shm_queue *shm_c;
+};
 
 /**
  * File: tree_setup.c
