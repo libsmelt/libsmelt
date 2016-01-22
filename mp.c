@@ -381,17 +381,9 @@ void mp_reduce7(uintptr_t* buf,
     
     // Decide to parents
     for (int i=0; i<numbindings; i++) {
-        mp_receive_raw7(blst->b_reverse[i], vals);
-        current_aggregate += vals[0];
+        mp_receive_raw7(blst->b_reverse[i], buf);
+        //current_aggregate += vals[0];
         debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", val1, i);
-        if (i == 0) {
-            buf[1] = vals[1];
-            buf[2] = vals[2];
-            buf[3] = vals[3];
-            buf[4] = vals[4];
-            buf[5] = vals[5];
-            buf[6] = vals[6];
-        }   
     }
     
     if (numbindings == 0) {
