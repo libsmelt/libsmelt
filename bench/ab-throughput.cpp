@@ -39,6 +39,7 @@ mcs_barrier_t mcs_b;
 static void* mcs_barrier(void* a)
 {
     coreid_t tid = *((int*) a);
+    __thread_init(tid, num_threads); // will bind threads
 
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     char outname[1024];
@@ -116,9 +117,9 @@ int main(int argc, char **argv)
     pthread_t ptds[num_threads];
     int tids[num_threads];
 
-    printf("%d models\n", max(1, (topo_num_topos()-1)));
-    
-    for (unsigned e=0; e<max(1, (topo_num_topos()-1)); e++) {
+    printf("%d models\n", max(1U, (topo_num_topos()-1)));
+
+    for (unsigned e=0; e<max(1U, (topo_num_topos()-1)); e++) {
         for (int j=0; j<NUM_EXP; j++) {
             printf("----------------------------------------\n");
             printf("Executing experiment %d - %s\n", (j+1), labels[j]);
