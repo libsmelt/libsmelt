@@ -169,7 +169,7 @@ void ab_forward7(coreid_t sender,
                        "does_recv=%d does_send=%d - val=%d\n",
                        topo_does_mp_receive(my_core_id, false),
                        topo_does_mp_send(my_core_id, false),
-                       val);
+                       v1);
 
         if (my_core_id == SEQUENTIALIZER) {
             if (!(sender == SEQUENTIALIZER)) {

@@ -15,7 +15,7 @@ void mp_connect(coreid_t src, coreid_t dst)
     mp_binding *b = get_binding(src, dst);
     if (b == NULL) {
         _setup_chanels(src, dst);
-    } 
+    }
 }
 
 
@@ -27,10 +27,10 @@ void mp_send(coreid_t r, uintptr_t val)
 {
     num_mp_send++;
     debug_printfff(DBG__AB, "mp_send to %d - %d\n", r, num_mp_send);
-    
+
     coreid_t s = get_thread_id();
     mp_binding *b = get_binding(s, r);
-    
+
     if (b==NULL) {
         printf("Failed to get binding for %d %d\n", s, r);
     }
@@ -38,7 +38,7 @@ void mp_send(coreid_t r, uintptr_t val)
     mp_send_raw(b, val);
 }
 
-void mp_send7(coreid_t r, 
+void mp_send7(coreid_t r,
              uintptr_t val1,
              uintptr_t val2,
              uintptr_t val3,
@@ -49,10 +49,10 @@ void mp_send7(coreid_t r,
 {
     num_mp_send++;
     debug_printfff(DBG__AB, "mp_send to %d - %d\n", r, num_mp_send);
-    
+
     coreid_t s = get_thread_id();
     mp_binding *b = get_binding(s, r);
-    
+
     if (b==NULL) {
         printf("%lx \n", val1);
         printf("%lx \n", val2);
@@ -77,10 +77,10 @@ uintptr_t mp_receive(coreid_t s)
 {
     num_mp_receive++;
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
-    
+
     coreid_t r = get_thread_id();
     mp_binding *b = get_binding(s, r);
-    
+
     if (b==NULL) {
         printf("Failed to get binding for %d %d\n", s, get_thread_id());
     }
@@ -92,10 +92,10 @@ void mp_receive7(coreid_t s, uintptr_t* buf)
 {
     num_mp_receive++;
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
-    
+
     coreid_t r = get_thread_id();
     mp_binding *b = get_binding(s, r);
-    
+
     if (b==NULL) {
         printf("Failed to get binding for %d %d\n", s, get_thread_id());
     }
@@ -135,7 +135,7 @@ uintptr_t mp_send_ab(uintptr_t payload)
     mp_binding** b = mp_get_children(get_thread_id(), &mp_max, &nidx);
 
     for (int i=0; i<mp_max; i++) {
-    
+
         debug_printfff(DBG__AB, "message(req%d): %d->%d - %d\n",
                        num_requests, get_thread_id(), nidx[i], payload);
 
@@ -203,7 +203,7 @@ uintptr_t mp_send_ab7(uintptr_t val1,
     mp_binding** b = mp_get_children(get_thread_id(), &mp_max, &nidx);
 
     for (int i=0; i<mp_max; i++) {
-    
+
         debug_printfff(DBG__AB, "message(req%d): %d->%d - %d\n",
                        num_requests, get_thread_id(), nidx[i], val1);
 
@@ -247,7 +247,7 @@ uintptr_t mp_send_ab7(uintptr_t val1,
  *
  * \param val The value to be added to the received value before
  * forwarding. Useful for reductions, but should probably not be here.
- * 
+ *
  * \return The message received from the broadcast tree
  */
 uintptr_t mp_receive_forward(uintptr_t val)
@@ -255,7 +255,7 @@ uintptr_t mp_receive_forward(uintptr_t val)
     int parent_core;
 
     mp_binding *b = mp_get_parent(get_thread_id(), &parent_core);
-    
+
     debug_printfff(DBG__AB, "Receiving from parent %d\n", parent_core);
     uintptr_t v = mp_receive_raw(b);
 
@@ -280,7 +280,7 @@ void mp_receive_forward7(uintptr_t* buf)
     int parent_core;
 
     mp_binding *b = mp_get_parent(get_thread_id(), &parent_core);
-    
+
     debug_printfff(DBG__AB, "Receiving from parent %d\n", parent_core);
     mp_receive_raw7(b, buf);
 
@@ -330,7 +330,7 @@ uintptr_t mp_reduce(uintptr_t val)
     if (numbindings!=0) {
         debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
     }
-    
+
     // Decide to parents
     for (int i=0; i<numbindings; i++) {
 
@@ -348,12 +348,12 @@ uintptr_t mp_reduce(uintptr_t val)
 
     binding_lst *blst_parent = _mp_get_parent_raw(get_thread_id());
     int pidx = blst_parent->idx[0];
-    
+
     assert ((pidx!=-1 && topo_does_mp_receive(my_core_id, false)) ||
             (pidx==-1 && !topo_does_mp_receive(my_core_id, false)));
 
     assert (pidx!=-1 || my_core_id == get_sequentializer());
-    
+
     if (pidx!=-1) {
 
         mp_binding *b_parent = blst_parent->b_reverse[0];
@@ -409,11 +409,11 @@ void mp_reduce0(void)
  * If the node is a leaf, the node dose not receive
  * anything but will send val1 - val7 up the tree
  *
- * If the node is not a leaf, the node will 
+ * If the node is not a leaf, the node will
  * not aggregate anything, and send the values received
- * up the tree 
- * 
- * 
+ * up the tree
+ *
+ *
  * */
 
 __thread uintptr_t vals[8];
@@ -429,7 +429,7 @@ void mp_reduce7(uintptr_t* buf,
     coreid_t my_core_id = get_thread_id();
     // Receive (this will be from several children)
     // --------------------------------------------------
-        
+
     // Determine child bindings
     struct binding_lst *blst = _mp_get_children_raw(get_thread_id());
     int numbindings = blst->num;
@@ -440,14 +440,14 @@ void mp_reduce7(uintptr_t* buf,
     if (numbindings!=0) {
         debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
     }
-    
+
     // Decide to parents
     for (int i=0; i<numbindings; i++) {
         mp_receive_raw7(blst->b_reverse[i], buf);
         //current_aggregate += vals[0];
         debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", val1, i);
     }
-    
+
     if (numbindings == 0) {
         buf[0] = val1;
         buf[1] = val2;
@@ -458,23 +458,23 @@ void mp_reduce7(uintptr_t* buf,
         buf[6] = val7;
     }
 
-    debug_printfff(DBG__REDUCE, "Receiving done, value is now %" PRIu64 "\n",
-                       current_aggregate);
+    /* debug_printfff(DBG__REDUCE, "Receiving done, value is now %" PRIu64 "\n", */
+    /*                    current_aggregate); */
 
     // Send (this should only be sending one message)
     // --------------------------------------------------
 
     binding_lst *blst_parent = _mp_get_parent_raw(get_thread_id());
     int pidx = blst_parent->idx[0];
-    
+
     assert ((pidx!=-1 && topo_does_mp_receive(my_core_id, false)) ||
             (pidx==-1 && !topo_does_mp_receive(my_core_id, false)));
 
     assert (pidx!=-1 || my_core_id == get_sequentializer());
-    
+
     if (pidx!=-1) {
         mp_binding *b_parent = blst_parent->b_reverse[0];
-        mp_send_raw7(b_parent, buf[0], 
+        mp_send_raw7(b_parent, buf[0],
 			             buf[1], buf[2], buf[3], buf[4], buf[5],
 			             buf[6]);
     }
@@ -500,32 +500,32 @@ void mp_barrier(cycles_t *measurement)
 #ifdef QRM_DBG_ENABLED
     ++_num_barrier;
     uint32_t _num_barrier_recv = _num_barrier;
-#endif    
+#endif
 
     debug_printfff(DBG__REDUCE, "barrier enter #%d\n", _num_barrier);
-    
+
     // Recution
     // --------------------------------------------------
-#ifdef QRM_DBG_ENABLED    
+#ifdef QRM_DBG_ENABLED
     uint32_t _tmp =
 #endif
     mp_reduce(_num_barrier);
 
-#ifdef QRM_DBG_ENABLED    
+#ifdef QRM_DBG_ENABLED
     // Sanity check
     if (tid==get_sequentializer()) {
         assert (_tmp == get_num_threads()*_num_barrier);
     }
-#endif
-    
     if (measurement)
         *measurement = bench_tsc();
-    
+
+#endif
+
     // Broadcast
     // --------------------------------------------------
     if (tid == get_sequentializer()) {
         mp_send_ab(_num_barrier);
-        
+
     } else {
 #ifdef QRM_DBG_ENABLED
         _num_barrier_recv =
@@ -548,7 +548,7 @@ void mp_barrier(cycles_t *measurement)
     debug_printfff(DBG_REDUCE, "finished barrier .. waiting for others\n");
     shl_barrier_shm(get_num_threads());
 #endif
-#endif    
+#endif
 
     debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
 }
