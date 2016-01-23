@@ -1,4 +1,5 @@
 #include "sync.h"
+#include "internal.h"
 #include "shm.h"
 #include "model_defs.h"
 #include "topo.h"
@@ -123,7 +124,11 @@ void shm_init(void)
     // Allocate shared-memory datastructures, one per cluster
     for (int cidx=0; cidx<num_clusters; cidx++) {
 
+        debug_printfff(DBG__SWITCH_TOPO,
+                       "allocating cluster resources for cluster %d\n", cidx);
+
         // SHM queue writer
+        // --------------------------------------------------
         coreid_t coord;
         coord = shm_get_coordinator_for_cluster_in_model(cluster_ids[cidx],
                                                          model_ids[cidx]);
@@ -137,6 +142,8 @@ void shm_init(void)
         assert (buf!=NULL);
         cluster_bufs[cidx] = buf;
 
+        // Reductions
+        // --------------------------------------------------
         reductions[cidx] = (struct shm_reduction*)
             numa_alloc_onnode(sizeof(struct shm_reduction),
                               numa_node_of_cpu(coord));
@@ -221,7 +228,7 @@ void shm_switch_topo(void)
                 // XXX Roni?
 
                 // SHM reductions
-                *(cluster_reductions[cid]) = {
+                *(reductions[cid]) = {
                     .reduction_aggregate = 0,
                     .reduction_counter = 0,
                     .reduction_round = 0
@@ -507,8 +514,8 @@ static uintptr_t shm_reduce_write(uintptr_t value)
 #endif
         __sync_add_and_fetch(&red_state->reduction_counter, 1);
 
-    debug_printfff(DBG__REDUCE, "shm_reduce, adding value %"PRIu64", "
-                   "counter now %"PRIu64"\n", value, ctrval);
+    debug_printfff(DBG__REDUCE, "shm_reduce, adding value %" PRIu64 ", "
+                   "counter now %" PRIu64 "\n", value, ctrval);
 
     // Switch to the next round
     red_round++;
@@ -583,11 +590,12 @@ uintptr_t shm_reduce(uintptr_t val)
         current_aggregate = shm_reduce_sum_children();
 
         debug_printfff(DBG__REDUCE,
-                       "cluster coordinator %d got value: %"PRIu64"\n",
+                       "cluster coordinator %d got value: %" PRIu64 "\n",
                        get_thread_id(),
                        current_aggregate);
 
-        return current_aggregate;
-
     }
+
+    return current_aggregate;
+
 }
