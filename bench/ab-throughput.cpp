@@ -28,7 +28,7 @@ __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
 unsigned num_threads;
-#define NUM_RUNS 1000000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 10000000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 
 pthread_barrier_t ab_barrier;
@@ -93,7 +93,7 @@ static void* barrier0(void* a)
 
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     char outname[1024];
-    TOPO_NAME(outname, "syc-barrier");
+    TOPO_NAME(outname, "syc-barrier0");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
     sk_m_restart_tsc(&m);
