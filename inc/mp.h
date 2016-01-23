@@ -31,6 +31,7 @@ void mp_send7(coreid_t,
               uintptr_t);
 
 // Atomic broadcast
+void mp_send_ab0(void);
 uintptr_t mp_send_ab(uintptr_t);
 uintptr_t mp_send_ab7(uintptr_t,
                       uintptr_t,
@@ -41,7 +42,9 @@ uintptr_t mp_send_ab7(uintptr_t,
 		      uintptr_t);
 uintptr_t mp_receive_forward(uintptr_t);
 void mp_receive_forward7(uintptr_t*);
+void mp_receive_forward0(void);
 // Reduce
+void mp_reduce0(void);
 uintptr_t mp_reduce(uintptr_t);
 void mp_reduce7(uintptr_t*,
                 uintptr_t,
@@ -52,10 +55,27 @@ void mp_reduce7(uintptr_t*,
                 uintptr_t,
                 uintptr_t);
 void mp_barrier(cycles_t*);
+void mp_barrier0(void);
 
 // To be implemented by the backend
 uintptr_t mp_receive_raw(mp_binding*);
 void mp_send_raw(mp_binding*, uintptr_t);
+
+static inline void mp_receive_raw0(mp_binding *b)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->dst.queue;
+
+    ump_dequeue_zero(q);
+}
+
+static inline void mp_send_raw0(mp_binding *b)
+{
+    struct ump_pair_state *ups = (struct ump_pair_state*) b;
+    struct ump_queue *q = &ups->src.queue;
+
+    ump_enqueue_zero(q);
+}
 
 void mp_receive_raw7(mp_binding*, 
                      uintptr_t* buf);

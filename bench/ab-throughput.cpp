@@ -85,7 +85,32 @@ static void* barrier(void* a)
     return NULL;
 }
 
-#define NUM_EXP 2
+static void* barrier0(void* a)
+{
+
+    coreid_t tid = *((int*) a);
+    __thread_init(tid, num_threads);
+
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    char outname[1024];
+    TOPO_NAME(outname, "syc-barrier");
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    sk_m_restart_tsc(&m);
+    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+        mp_barrier0();
+    }
+
+    sk_m_add(&m);
+    if (get_thread_id() == get_sequentializer()) {
+        sk_m_print(&m);
+    }
+
+    __thread_end();
+    return NULL;
+}
+
+#define NUM_EXP 3
 
 #define max(a,b) \
     ({ __typeof__ (a) _a = (a); \
@@ -107,11 +132,13 @@ int main(int argc, char **argv)
     worker_func_t* workers[NUM_EXP] = {
         &mcs_barrier,
         &barrier,
+        &barrier0,
     };
 
     const char *labels[NUM_EXP] = {
         "MCS barrier",
-        "libsync barrier"
+        "libsync barrier",
+        "libsync barrier0"
     };
 
     pthread_t ptds[num_threads];
