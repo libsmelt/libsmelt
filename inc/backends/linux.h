@@ -39,7 +39,7 @@ void domain_span_all_cores(void);
 void bench_init(void);
 
 #define BASE_PAGE_SIZE 4096U
-#define UMP_QUEUE_SIZE 64U
+#define UMP_QUEUE_SIZE 1000U // 64 aka one page does not work well on 815
 
 #define USER_PANIC(x) {                         \
         printf("PANIC: " x "\n");               \

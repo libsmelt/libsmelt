@@ -91,10 +91,13 @@ ifdef PARLIB
 	OBJS += $(PLBASE)/mcs.o
 endif
 
-LIBSHOAL=../shoal-library/
-INC +=  -I$(LIBSHOAL)/inc
-LIBS += -L$(LIBSHOAL)/shoal/ -lshl -llua5.2 -L$(LIBSHOAL)/contrib/papi-5.3.0/src -lpapi -lpfm
-LIBS += -lpapi -fopenmp
+ifdef USE_SHOAL
+	LIBSHOAL=../shoal-library/
+	INC +=  -I$(LIBSHOAL)/inc
+	LIBS += -L$(LIBSHOAL)/shoal/ -lshl -llua5.2 -L$(LIBSHOAL)/contrib/papi-5.3.0/src -lpapi -lpfm
+	LIBS += -lpapi -fopenmp
+	CXXFLAGS += -DSHL
+endif
 
 LIBS += -lnuma
 CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)

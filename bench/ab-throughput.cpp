@@ -9,7 +9,6 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <vector>
-#include "shl.h"
 
 #include "model_defs.h"
 #include "barrier.h"
@@ -17,6 +16,7 @@
 #ifdef PARLIB
 #include "mcs.h"
 #endif
+
 
 //#define SEND7
 
@@ -40,7 +40,6 @@ mcs_barrier_t mcs_b;
 static void* mcs_barrier(void* a)
 {
     coreid_t tid = *((int*) a);
-    shl__init_thread(tid);
     __thread_init(tid, num_threads); // will bind threads
 
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -48,17 +47,14 @@ static void* mcs_barrier(void* a)
     TOPO_NAME(outname, "mcs-barrier");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
-    if (get_thread_id() == get_sequentializer())
-        papi_start();
     sk_m_restart_tsc(&m);
-
     for (unsigned i=0; i<NUM_RUNS; i++) {
+
         mcs_barrier_wait(&mcs_b, tid);
     }
 
     sk_m_add(&m);
     if (get_thread_id() == get_sequentializer()) {
-        papi_stop();
         sk_m_print(&m);
     }
 
@@ -69,7 +65,6 @@ static void* barrier(void* a)
 {
 
     coreid_t tid = *((int*) a);
-    shl__init_thread(tid);
     __thread_init(tid, num_threads);
 
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -77,15 +72,13 @@ static void* barrier(void* a)
     TOPO_NAME(outname, "syc-barrier");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
-    if (get_thread_id() == get_sequentializer())
-        papi_start();
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
         shl_hybrid_barrier(NULL);
     }
+
     sk_m_add(&m);
     if (get_thread_id() == get_sequentializer()) {
-        papi_stop();
         sk_m_print(&m);
     }
 
@@ -97,7 +90,6 @@ static void* barrier0(void* a)
 {
 
     coreid_t tid = *((int*) a);
-    shl__init_thread(tid);
     __thread_init(tid, num_threads);
 
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
@@ -105,16 +97,13 @@ static void* barrier0(void* a)
     TOPO_NAME(outname, "syc-barrier0");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
-    if (get_thread_id() == get_sequentializer())
-        papi_start();
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
         shl_hybrid_barrier0(NULL);
     }
-    sk_m_add(&m);
 
+    sk_m_add(&m);
     if (get_thread_id() == get_sequentializer()) {
-        papi_stop();
         sk_m_print(&m);
     }
 
@@ -133,7 +122,6 @@ int main(int argc, char **argv)
 {
     unsigned nthreads = sysconf(_SC_NPROCESSORS_CONF);
 
-    shl__init(nthreads, false);
     __sync_init(nthreads, true);
 
     num_threads = get_num_threads();
