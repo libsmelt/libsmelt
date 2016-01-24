@@ -74,7 +74,11 @@ static void* barrier(void* a)
 
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+#ifdef HYB
         shl_hybrid_barrier(NULL);
+#else
+        mp_barrier(NULL);
+#endif
     }
 
     sk_m_add(&m);
@@ -99,7 +103,11 @@ static void* barrier0(void* a)
 
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+#ifdef HYB
         shl_hybrid_barrier0(NULL);
+#else
+        mp_barrier0();
+#endif
     }
 
     sk_m_add(&m);
