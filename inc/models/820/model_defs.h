@@ -1,7 +1,7 @@
 #ifndef MULTICORE_MODEL_DEFS
 #define MULTICORE_MODEL_DEFS 1
 
-#define MACHINE "<class 'netos_machine.NetosMachine'>"
+#define MACHINE "sgs-r820-01"
 #define TOPO_NUM_CORES 32
 
 #define TOPOLOGY "multi-model"

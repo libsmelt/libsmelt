@@ -37,6 +37,7 @@ void __sync_init(int _nproc, bool init_model)
     nproc = _nproc;
     debug_printf("Initializing libsync: model: %d nodes, %d threads\n",
                  topo_num_cores(), nproc);
+    debug_printf("Model is for machine: %s\n", MACHINE);
     char *ic_driver = const_cast<char*>("UMPQ");
 #ifdef FFQ
     ic_driver = const_cast<char*>("FFQ");

@@ -64,6 +64,17 @@ int shl_hybrid_barrier(void* bla)
     return 0;
 }
 
+int shl_hybrid_barrier0(void* bla)
+{
+    // Reduce
+    sync_reduce0(1);
+
+    // Broadcast
+    ab_forward0(1, get_sequentializer());
+
+    return 0;
+}
+
 
 static __thread int _shl_round = 0;
 void shl_barrier_shm(int b_count)

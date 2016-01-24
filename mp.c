@@ -172,6 +172,20 @@ uintptr_t mp_send_ab(uintptr_t payload)
     return 0;
 }
 
+void mp_send_ab0(void)
+{
+    // Walk children and send a message each
+    int mp_max;
+    int *nidx;
+    mp_binding** b = mp_get_children(get_thread_id(), &mp_max, &nidx);
+
+    for (int i=0; i<mp_max; i++) {
+        mp_send_raw0(b[i]);
+    }
+
+    return;
+}
+
 uintptr_t mp_send_ab7(uintptr_t val1,
                       uintptr_t val2,
                       uintptr_t val3,
@@ -248,6 +262,17 @@ uintptr_t mp_receive_forward(uintptr_t val)
     mp_send_ab(v + val);
 
     return v;
+}
+
+void mp_receive_forward0(void)
+{
+    int parent_core;
+
+    mp_binding *b = mp_get_parent(get_thread_id(), &parent_core);
+
+    mp_receive_raw0(b);
+
+    mp_send_ab0();
 }
 
 void mp_receive_forward7(uintptr_t* buf)
@@ -340,6 +365,43 @@ uintptr_t mp_reduce(uintptr_t val)
 
     return current_aggregate;
 }
+
+
+void mp_reduce0(void)
+{
+    coreid_t my_core_id = get_thread_id();
+
+    if (!topo_does_mp(my_core_id))
+        return;
+
+
+    // Receive (this will be from several children)
+    // --------------------------------------------------
+
+    // Determine child bindings
+    struct binding_lst *blst = _mp_get_children_raw(my_core_id);
+    int numbindings = blst->num;
+
+    // Decide to parents
+    for (int i=0; i<numbindings; i++) {
+        mp_receive_raw0(blst->b_reverse[i]);
+    }
+
+    // Send (this should only be sending one message)
+    // --------------------------------------------------
+
+    binding_lst *blst_parent = _mp_get_parent_raw(my_core_id);
+    int pidx = blst_parent->idx[0];
+
+    if (pidx!=-1) {
+
+        mp_binding *b_parent = blst_parent->b_reverse[0];
+
+        mp_send_raw0(b_parent);
+    }
+}
+
+
 
 /*
  * Only reduceds the first value !
@@ -489,4 +551,24 @@ void mp_barrier(cycles_t *measurement)
 #endif
 
     debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
+}
+
+
+void mp_barrier0(void)
+{
+    coreid_t tid = get_core_id();
+
+    // Recution
+    // --------------------------------------------------
+    mp_reduce0();
+
+
+    // Broadcast
+    // --------------------------------------------------
+    if (tid == get_sequentializer()) {
+        mp_send_ab0();
+
+    } else {
+        mp_receive_forward0();
+    }
 }
