@@ -23,5 +23,6 @@ int shl_barrier_init(shl_barrier_t *barrier,
 
 int shl_barrier_wait(shl_barrier_t *barrier);
 int shl_hybrid_barrier(void*);
+int shl_hybrid_barrier0(void*);
 
 #endif /* BARRIER_H */

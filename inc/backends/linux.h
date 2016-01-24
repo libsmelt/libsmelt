@@ -58,5 +58,3 @@ static inline uint64_t rdtscp(void)
 }
 
 #define bench_tsc() rdtscp()
-
-

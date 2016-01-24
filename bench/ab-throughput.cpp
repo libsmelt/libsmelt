@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "model_defs.h"
+#include "barrier.h"
 
 #ifdef PARLIB
 #include "mcs.h"
@@ -28,7 +29,7 @@ __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
 unsigned num_threads;
-#define NUM_RUNS 10000000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 
 pthread_barrier_t ab_barrier;
@@ -45,13 +46,13 @@ static void* mcs_barrier(void* a)
     char outname[1024];
     TOPO_NAME(outname, "mcs-barrier");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
-   
+
     sk_m_restart_tsc(&m);
     for (unsigned i=0; i<NUM_RUNS; i++) {
 
         mcs_barrier_wait(&mcs_b, tid);
     }
-    
+
     sk_m_add(&m);
     if (get_thread_id() == get_sequentializer()) {
         sk_m_print(&m);
@@ -73,7 +74,7 @@ static void* barrier(void* a)
 
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
-        mp_barrier(NULL);
+        shl_hybrid_barrier(NULL);
     }
 
     sk_m_add(&m);
@@ -98,7 +99,7 @@ static void* barrier0(void* a)
 
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
-        mp_barrier0();
+        shl_hybrid_barrier0(NULL);
     }
 
     sk_m_add(&m);
