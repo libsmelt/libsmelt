@@ -9,5 +9,5 @@
 #define SHM_SLAVE_MAX 69
 #define SHM_MASTER_START 70
 #define SHM_MASTER_MAX 89
-#define NUM_TOPOS 1
+#define NUM_TOPOS 6
 #endif
