@@ -9,6 +9,7 @@ CFILES= \
 	mp.c \
 	shm.c \
 	sync.c \
+	cwrapper.c\
 	topo.c \
 	tree_setup.c \
 	shm_queue.c \
@@ -132,6 +133,7 @@ bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.cpp
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) -shared $(CXXFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET)
+	ar  rcs $(TARGET).a  $(OBJS) $(EXTERNAL_OBJS)
 
 # Compile object files
 # --------------------------------------------------

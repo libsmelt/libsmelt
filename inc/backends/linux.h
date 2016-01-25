@@ -1,6 +1,7 @@
 #ifndef __LIBSYNC_LINUX
 #define __LIBSYNC_LINUX 1
 
+#ifdef __cplusplus
 #include <cstdint>
 #include <pthread.h>
 #include <cstdio>
@@ -8,6 +9,7 @@
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
+#endif
 
 #ifdef FFQ
 
