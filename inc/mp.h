@@ -57,15 +57,32 @@ void mp_reduce7(uintptr_t*,
 void mp_barrier(cycles_t*);
 void mp_barrier0(void);
 
+#ifdef FFQ
+static inline void mp_send_raw(mp_binding *b, uintptr_t val)
+{
+    ffq_enqueue(&b->src, val);
+}
+
+static inline uintptr_t mp_receive_raw(mp_binding *b)
+{
+    uintptr_t r;
+    ffq_dequeue(&b->dst, &r);
+
+    return r;
+}
+
+#else
+
 // To be implemented by the backend
 uintptr_t mp_receive_raw(mp_binding*);
 void mp_send_raw(mp_binding*, uintptr_t);
 
+#endif
+
 static inline void mp_receive_raw0(mp_binding *b)
 {
 #ifdef FFQ
-    // for FFQ, adding payload does not make a difference
-    ffq_enqueue(&b->src, 0);
+    mp_receive_raw(b);
 #else
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
     struct ump_queue *q = &ups->dst.queue;
@@ -77,9 +94,7 @@ static inline void mp_receive_raw0(mp_binding *b)
 static inline void mp_send_raw0(mp_binding *b)
 {
 #ifdef FFQ
-    // for FFQ, adding payload does not make a difference
-    uintptr_t r;
-    ffq_dequeue(&b->dst, &r);
+    mp_send_raw(b, 0);
 #else
     struct ump_pair_state *ups = (struct ump_pair_state*) b;
     struct ump_queue *q = &ups->src.queue;

@@ -125,7 +125,7 @@ void _setup_chanels(int src, int dst)
 {
     debug_printfff(DBG__INIT, "FF: setting up channel between %d and %d\n",
                    src, dst);
-    
+
     struct ffq_pair_conf ffpc = FF_CONF_INIT(src, dst);
     struct ffq_pair_state *ffps = ffq_pair_state_create(&ffpc);
 
@@ -133,21 +133,8 @@ void _setup_chanels(int src, int dst)
 
     struct ffq_pair_conf ffpc_r = FF_CONF_INIT(dst, src);
     struct ffq_pair_state *ffps_r = ffq_pair_state_create(&ffpc_r);
-    
+
     add_binding(dst, src, ffps_r);
-}
-
-void mp_send_raw(mp_binding *b, uintptr_t val)
-{
-    ffq_enqueue(&b->src, val);
-}
-
-uintptr_t mp_receive_raw(mp_binding *b)
-{
-    uintptr_t r;
-    ffq_dequeue(&b->dst, &r);
-
-    return r;
 }
 
 void mp_send_raw7(mp_binding *b,
@@ -159,7 +146,7 @@ void mp_send_raw7(mp_binding *b,
                   uintptr_t val6,
                   uintptr_t val7)
 {
-    ffq_enqueue_full(&b->src, val1, val2, val3, 
+    ffq_enqueue_full(&b->src, val1, val2, val3,
                 val4, val5, val6, val7);
 }
 
@@ -219,7 +206,7 @@ void mp_send_raw(mp_binding *b, uintptr_t val)
     ump_enqueue_word(q, val);
 }
 
-void mp_send_raw7(mp_binding *b, 
+void mp_send_raw7(mp_binding *b,
                   uintptr_t val1,
                   uintptr_t val2,
                   uintptr_t val3,
@@ -263,7 +250,7 @@ bool mp_can_receive_raw(mp_binding *b)
     return ump_can_dequeue(q);
 }
 
-#endif 
+#endif
 
 /**
  * \brief Establish connections as given by the model.
@@ -334,9 +321,9 @@ int __backend_thread_start(void)
 {
 #ifdef UMP_DBG_COUNT
 #ifdef FFQ
-#else    
+#else
     ump_start();
-#endif    
+#endif
 #endif
     return 0;
 }
@@ -347,7 +334,7 @@ int __backend_thread_end(void)
 #ifdef FFQ
 #else
     ump_end();
-#endif    
+#endif
 #endif
     return 0;
 }

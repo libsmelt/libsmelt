@@ -40,10 +40,12 @@
 #define QDBG(...)              qrm_debug(DBG__GENERAL, __VA_ARGS__)
 #define debug_printff(...)     qrm_debug(DBG__GENERAL, __VA_ARGS__)
 #define debug_printfff(x, ...) qrm_debug(x,            __VA_ARGS__)
+#define dbg_assert(x) assert(x)
 #else /* QRM_DBG_ENABLED --------------------------------*/
 #define QDBG(...) void()
 #define debug_printff(...) void()
 #define debug_printfff(...) void()
+#define dbg_assert(...) void()
 #endif /* QRM_DBG_ENABLED -------------------------------*/
 
 #define qrm_debug(_subs, _fmt, ...) \
