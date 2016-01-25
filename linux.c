@@ -263,7 +263,8 @@ void tree_connect(const char *qrm_my_name)
 
         for (unsigned int j=0; j<nproc; j++) {
 
-            if (topo_is_parent_real(i, j) || (j==get_sequentializer() && i!=j)) {
+            if (topo_is_parent_real(i, j) ||
+                (j==get_sequentializer() && i!=j && topo_does_mp(i))) {
                 debug_printfff(DBG__SWITCH_TOPO, "setup: %d %d\n", i, j);
                 _setup_chanels(i, j);
             }

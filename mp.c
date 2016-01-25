@@ -12,10 +12,12 @@ extern void shl_barrier_shm(int b_count);
  */
 void mp_connect(coreid_t src, coreid_t dst)
 {
-    mp_binding *b = get_binding(src, dst);
-    if (b == NULL) {
-        _setup_chanels(src, dst);
-    }
+    debug_printf("Opening channels manually: %d -> %d\n", src, dst);
+    assert (get_binding(src, dst)==NULL);
+
+    _setup_chanels(src, dst);
+
+    assert (get_binding(src,dst)!=NULL);
 }
 
 
@@ -29,7 +31,7 @@ void mp_send(coreid_t r, uintptr_t val)
     num_mp_send++;
 #endif
 
-    debug_printfff(DBG__AB, "mp_send to %d - %d\n", r, num_mp_send);
+    debug_printfff(DBG__AB, "mp_send to %d - num=%d\n", r, num_mp_send);
 
     coreid_t s = get_thread_id();
     mp_binding *b = get_binding(s, r);
