@@ -130,6 +130,17 @@ int main(int argc, char **argv)
 {
     unsigned nthreads = sysconf(_SC_NPROCESSORS_CONF);
 
+    int topology = -1;
+    if (argc>1) {
+        topology = atoi(argv[1]);
+
+    }
+    if (topology>=0) {
+        switch_topo_to_idx(topology);
+    } else {
+        printf("No topology given, using default one\n");
+    }
+
     __sync_init(nthreads, true);
 
     num_threads = get_num_threads();
@@ -155,7 +166,16 @@ int main(int argc, char **argv)
 
     printf("%d models\n", max(1U, (topo_num_topos()-1)));
 
-    for (unsigned e=0; e<max(1U, (topo_num_topos()-1)); e++) {
+    // Choose how many topologies to evaluate.  We evaluate at least
+    // one, even in the case of the auto-generated binary tree. If a
+    // topology is given as argument, we ONLY evaluate that single
+    // one.
+    size_t num_topos = max(1U, (topo_num_topos()-1));
+    if (topology>0) {
+        num_topos = 1;
+    }
+
+    for (unsigned e=0; e<num_topos; e++) {
         for (int j=0; j<NUM_EXP; j++) {
             printf("----------------------------------------\n");
             printf("Executing experiment %d - %s\n", (j+1), labels[j]);
