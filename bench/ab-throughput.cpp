@@ -171,7 +171,7 @@ int main(int argc, char **argv)
     // topology is given as argument, we ONLY evaluate that single
     // one.
     size_t num_topos = max(1U, (topo_num_topos()-1));
-    if (topology>0) {
+    if (topology>=0) {
         num_topos = 1;
     }
 
