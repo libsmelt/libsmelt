@@ -50,7 +50,9 @@ void mp_send7(coreid_t r,
              uintptr_t val6,
              uintptr_t val7)
 {
+#ifdef QRM_DBG_ENABLED
     num_mp_send++;
+#endif
     debug_printfff(DBG__AB, "mp_send to %d - %d\n", r, num_mp_send);
 
     coreid_t s = get_thread_id();
@@ -66,7 +68,7 @@ void mp_send7(coreid_t r,
         printf("%lx \n", val7);
         printf("Failed to get binding for %d %d\n", s, r);
     }
-    assert (b!=NULL);
+    dbg_assert (b!=NULL);
     mp_send_raw7(b, val1, val2, val3, val4,
                 val5, val6, val7);
 }
@@ -78,7 +80,9 @@ void mp_send7(coreid_t r,
 __thread uint64_t num_mp_receive = 0;
 uintptr_t mp_receive(coreid_t s)
 {
+#ifdef QRM_DBG_ENABLED
     num_mp_receive++;
+#endif
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
 
     coreid_t r = get_thread_id();
@@ -87,13 +91,16 @@ uintptr_t mp_receive(coreid_t s)
     if (b==NULL) {
         printf("Failed to get binding for %d %d\n", s, get_thread_id());
     }
-    assert (b!=NULL);
+    dbg_assert (b!=NULL);
     return mp_receive_raw(b);
 }
 
 void mp_receive7(coreid_t s, uintptr_t* buf)
 {
+
+#ifdef QRM_DBG_ENABLED
     num_mp_receive++;
+#endif
     debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
 
     coreid_t r = get_thread_id();
@@ -102,7 +109,8 @@ void mp_receive7(coreid_t s, uintptr_t* buf)
     if (b==NULL) {
         printf("Failed to get binding for %d %d\n", s, get_thread_id());
     }
-    assert (b!=NULL);
+
+    dbg_assert(b!=NULL);
     mp_receive_raw7(b, buf);
 }
 
@@ -178,8 +186,9 @@ uintptr_t mp_send_ab7(uintptr_t val1,
                       uintptr_t val6,
                       uintptr_t val7)
 {
+#ifdef QRM_DBG_ENABLED
     num_requests = 0;
-
+#endif
     // Walk children and send a message each
     int mp_max;
     int *nidx;
@@ -190,36 +199,17 @@ uintptr_t mp_send_ab7(uintptr_t val1,
         debug_printfff(DBG__AB, "message(req%d): %d->%d - %d\n",
                        num_requests, get_thread_id(), nidx[i], val1);
 
-#ifdef MEASURE_SEND_OVERHEAD
-        sk_m_restart_tsc(&m_send_overhead);
-#endif
-        assert (b[i]!=NULL);
+        dbg_assert (b[i]!=NULL);
 
         debug_printfff(DBG__AB, "sending .. \n");
         mp_send_raw7(b[i], val1, val2, val3, val4,
                      val5, val6, val7);
+
+
+#ifdef QRM_DBG_ENABLED
         num_requests++;
-
-#ifdef MEASURE_SEND_OVERHEAD
-        sk_m_add(&m_send_overhead);
 #endif
-
     }
-
-#ifdef QRM_DO_ACKS
-    // If no children, ACK right away
-    if (num_requests==0) {
-
-        QDBG("forward_tree_message -> qrm_send_ack\n");
-        qrm_send_ack();
-    }
-#else
-
-#if defined(CONFIG_TRACE)
-    trace_flush(MKCLOSURE(trace_callback, NULL));
-#endif /* CONFIG_TRACE */
-
-#endif
 
     return 0;
 }
@@ -415,21 +405,20 @@ void mp_reduce7(uintptr_t* buf,
                 uintptr_t val6,
                 uintptr_t val7)
 {
-    coreid_t my_core_id = get_thread_id();
     // Receive (this will be from several children)
     // --------------------------------------------------
 
     // Determine child bindings
     struct binding_lst *blst = _mp_get_children_raw(get_thread_id());
     int numbindings = blst->num;
-/*
+
+#ifdef QRM_DBG_ENABLED
     assert ((numbindings==0 && !topo_does_mp_send(my_core_id, false)) ||
             (numbindings>0 && topo_does_mp_send(my_core_id, false)));
-*/
     if (numbindings!=0) {
         debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
     }
-
+#endif
     // Decide to parents
     for (int i=0; i<numbindings; i++) {
         mp_receive_raw7(blst->b_reverse[i], buf);
@@ -456,10 +445,12 @@ void mp_reduce7(uintptr_t* buf,
     binding_lst *blst_parent = _mp_get_parent_raw(get_thread_id());
     int pidx = blst_parent->idx[0];
 
+#ifdef QRM_DBG_ENABLED
     assert ((pidx!=-1 && topo_does_mp_receive(my_core_id, false)) ||
             (pidx==-1 && !topo_does_mp_receive(my_core_id, false)));
 
     assert (pidx!=-1 || my_core_id == get_sequentializer());
+#endif
 
     if (pidx!=-1) {
         mp_binding *b_parent = blst_parent->b_reverse[0];
