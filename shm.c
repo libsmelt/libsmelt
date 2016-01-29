@@ -137,17 +137,27 @@ void shm_init(void)
         // Allocate queue - on NUMA node of coordinator
         // That's exactly one page (4096 bytes) and libnuma guarantees that
         // memory will be cache aligned
+#ifdef BARRELFISH
+        void *buf = numa_alloc_onnode(SHMQ_SIZE*CACHELINE_SIZE,
+                                              numa_node_of_cpu(coord), BASE_PAGE_SIZE);
+#else
         void *buf = numa_alloc_onnode(SHMQ_SIZE*CACHELINE_SIZE,
                                       numa_node_of_cpu(coord));
+#endif
         assert (buf!=NULL);
         cluster_bufs[cidx] = buf;
 
         // Reductions
         // --------------------------------------------------
         reductions[cidx] = (struct shm_reduction*)
+#ifdef BARRELFISH
+                numa_alloc_onnode(sizeof(struct shm_reduction),
+                                              numa_node_of_cpu(coord),
+                                              BASE_PAGE_SIZE);
+#else
             numa_alloc_onnode(sizeof(struct shm_reduction),
                               numa_node_of_cpu(coord));
-
+#endif
         assert (reductions[cidx]!=NULL);
     }
 
