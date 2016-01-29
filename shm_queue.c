@@ -139,7 +139,7 @@ void shm_send_raw(struct shm_queue* context,
 }
 
 
-bool check_reader_p(struct shm_queue* context)
+static bool check_reader_p(struct shm_queue* context)
 {
     if (context->readers_pos[context->id].pos == 9) {
         return false;
@@ -149,7 +149,7 @@ bool check_reader_p(struct shm_queue* context)
 }
 
 // returns NULL if reader reached writers pos
-bool shm_receive_non_blocking(struct shm_queue* context,
+static bool shm_receive_non_blocking(struct shm_queue* context,
               uintptr_t *p1,
               uintptr_t *p2,
               uintptr_t *p3,
