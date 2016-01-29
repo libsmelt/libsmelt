@@ -135,7 +135,6 @@ bool mp_can_receive(coreid_t s)
  * Send a message to all children in the tree given by the
  * topology. The order is given by qrm_children.
  */
-static __thread int num_requests = 0;
 uintptr_t mp_send_ab(uintptr_t payload)
 {
 #ifdef QRM_DBG_ENABLED
