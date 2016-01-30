@@ -17,6 +17,7 @@
 #include "mcs.h"
 #endif
 
+#define HYB 1
 
 //#define SEND7
 
@@ -30,6 +31,7 @@ __thread struct sk_measurement m2;
 
 unsigned num_threads;
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_REPETITIONS 100
 #define NUM_RESULTS 1000
 
 pthread_barrier_t ab_barrier;
@@ -46,6 +48,7 @@ static void* mcs_barrier(void* a)
     char outname[1024];
     TOPO_NAME(outname, "mcs-barrier");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
+for (int k = 0; k < NUM_REPETITIONS; ++k) {
 
     sk_m_restart_tsc(&m);
     for (unsigned i=0; i<NUM_RUNS; i++) {
@@ -57,7 +60,7 @@ static void* mcs_barrier(void* a)
     if (get_thread_id() == get_sequentializer()) {
         sk_m_print(&m);
     }
-
+}
     return NULL;
 }
 
@@ -71,6 +74,7 @@ static void* barrier(void* a)
     char outname[1024];
     TOPO_NAME(outname, "syc-barrier");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
+for (int k = 0; k < NUM_REPETITIONS; ++k) {
 
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
@@ -85,7 +89,7 @@ static void* barrier(void* a)
     if (get_thread_id() == get_sequentializer()) {
         sk_m_print(&m);
     }
-
+}
     __thread_end();
     return NULL;
 }
@@ -101,6 +105,9 @@ static void* barrier0(void* a)
     TOPO_NAME(outname, "syc-barrier0");
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
+    for (int k = 0; k < NUM_REPETITIONS; ++k) {
+
+
     sk_m_restart_tsc(&m);
     for (int epoch=0; epoch<NUM_RUNS; epoch++) {
 #ifdef HYB
@@ -114,7 +121,7 @@ static void* barrier0(void* a)
     if (get_thread_id() == get_sequentializer()) {
         sk_m_print(&m);
     }
-
+    }
     __thread_end();
     return NULL;
 }
@@ -125,6 +132,14 @@ static void* barrier0(void* a)
     ({ __typeof__ (a) _a = (a); \
         __typeof__ (b) _b = (b); \
         _a > _b ? _a : _b; })
+
+#ifdef BARRELFISH
+static void domain_init_done(void *arg, errval_t err)
+{
+    debug_printf("SPANNED!\n");
+}
+#endif
+
 
 int main(int argc, char **argv)
 {
@@ -166,6 +181,24 @@ int main(int argc, char **argv)
 
     printf("%d models\n", max(1U, (topo_num_topos()-1)));
 
+
+#ifdef BARRELFISH
+    cpu_set_t *cpuset = CPU_ALLOC(num_threads);
+
+    for (unsigned i=1; i<num_threads; i++) {
+        //for (int i = my_core_id + BOMP_DEFAULT_CORE_STRIDE; i < nos_threads + my_core_id; i++) {
+        coreid_t core = i;
+        errval_t err = domain_new_dispatcher(core, domain_init_done, NULL);
+        if (err_is_fail(err)) {
+            DEBUG_ERR(err, "failed to span domain");
+            printf("Failed to span domain to %d\n", i);
+            assert(err_is_ok(err));
+        }
+    }
+
+#endif
+
+
     // Choose how many topologies to evaluate.  We evaluate at least
     // one, even in the case of the auto-generated binary tree. If a
     // topology is given as argument, we ONLY evaluate that single
@@ -180,15 +213,25 @@ int main(int argc, char **argv)
             printf("----------------------------------------\n");
             printf("Executing experiment %d - %s\n", (j+1), labels[j]);
             printf("----------------------------------------\n");
-
             // Yield to reduce the risk of getting de-scheduled later
             sched_yield();
 
             // Create
             for (unsigned i=1; i<num_threads; i++) {
                 tids[i] = i;
+#ifdef BARRELFISH
+                pthread_attr_t attr;
+                pthread_attr_init(&attr);
+
+                CPU_ZERO(cpuset);
+                CPU_SET(i, cpuset);
+                pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), cpuset);
+
+                pthread_create(ptds+i, &attr, workers[j], (void*) (tids+i));
+#else
 
                 pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
+#endif
             }
 
             // Master thread executes work for node 0
