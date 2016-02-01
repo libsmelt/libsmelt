@@ -23,4 +23,9 @@ set -x
     ln -s models/$MODEL/model_defs.h .
 )
 make clean
+make -j10
 make bench/ab-throughput
+make bench/ab-bench
+
+cp bench/ab-bench ab-bench-$MODEL
+cp bench/ab-throughput ab-throughput-$MODEL
