@@ -24,7 +24,7 @@ __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
 unsigned num_threads;
-#define NUM_RUNS 1000000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 10000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 
 
@@ -509,7 +509,7 @@ int main(int argc, char **argv)
     }
 
 #endif
-    for (unsigned e=0; e<(topo_num_topos()-1); e++) {
+    for (unsigned e=0; e<(topo_num_topos()); e++) {
         for (int j=0; j<NUM_EXP; j++) {
             printf("----------------------------------------\n");
             printf("Executing experiment %d - %s\n", (j+1), labels[j]);
