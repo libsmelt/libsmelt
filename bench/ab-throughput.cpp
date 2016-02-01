@@ -203,7 +203,7 @@ int main(int argc, char **argv)
     // one, even in the case of the auto-generated binary tree. If a
     // topology is given as argument, we ONLY evaluate that single
     // one.
-    size_t num_topos = max(1U, (topo_num_topos()-1));
+    size_t num_topos = max(1U, (topo_num_topos()));
     if (topology>=0) {
         num_topos = 1;
     }
