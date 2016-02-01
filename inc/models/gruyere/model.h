@@ -270,5 +270,5 @@ std::vector<int> leaf_nodes5 {14,18,20,21,23,24,25,26,27,28,29,30,31};
 std::vector<int> leaf_nodes6 {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
 std::vector<int> *_all_leaf_nodes[NUM_TOPOS] = {&leaf_nodes0,&leaf_nodes1,&leaf_nodes2,&leaf_nodes3,&leaf_nodes4,&leaf_nodes5,&leaf_nodes6};
 std::vector<int> **all_leaf_nodes = _all_leaf_nodes;
-std::vector<coreid_t> last_nodes = {0, 0, 0, 0, 0, 0, 0};
+std::vector<coreid_t> last_nodes = {31, 31, 31, 31, 27, 31, 31};
 #endif
