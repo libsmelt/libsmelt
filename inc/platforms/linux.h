@@ -11,6 +11,8 @@
 #include <cstring>
 #endif
 
+
+
 #ifdef FFQ
 
 #include "ff_queue.h"
@@ -60,3 +62,6 @@ static inline uint64_t rdtscp(void)
 }
 
 #define bench_tsc() rdtscp()
+
+
+typedef int errval_t;
