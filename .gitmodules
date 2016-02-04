@@ -1,6 +1,0 @@
-[submodule "contrib/stabilizer"]
-	path = contrib/stabilizer
-	url = git://github.com/ccurtsinger/stabilizer.git
-[submodule "contrib/parlib"]
-	path = contrib/parlib
-	url = git@github.com:stefan-kaestle/parlib.git
