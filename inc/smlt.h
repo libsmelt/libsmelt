@@ -9,25 +9,26 @@
 #ifndef SMLT_SMLT_H_
 #define SMLT_SMLT_H_ 1
 
+
+/*
+ * ===========================================================================
+ * Smelt configuration
+ * ===========================================================================
+ */
+
+
 /*
  * ===========================================================================
  * type declarations
  * ===========================================================================
  */
+
 
 
 /**
- * represents a smelt message handed by the system
+ * represents a handle to a smelt instance.
  */
-struct smlt_msg
-{
-    uint32_t offset;    ///< offset into the data region
-    uint32_t datalen;   ///< length of the data region in bytes
-    uint32_t maxlen;    ///< maximum length of the data region
-    uint32_t _pad;      ///< unused padding for now
-    uint64_t data[];    ///< the data region
-};
-
+struct smlt_inst;
 
 /*
  * ===========================================================================
@@ -35,9 +36,22 @@ struct smlt_msg
  * ===========================================================================
  */
 
+/**
+ * @brief creates a new smelt instance
+ */
+errval_t smlt_instance_create();
 
-errval_t smlt_init();
+/**
+ * @brief destroys a smelt instance.
+ */
+errval_t smlt_instance_destroy();
+
 
 errval_t smlt_thread_init();
+
+
+struct smlt_inst *smlt_get_current_instance();
+
+errval_t smlt_switch_instance();
 
 #endif /* SMLT_SMLT_H_ */
