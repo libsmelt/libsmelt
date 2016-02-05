@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 ETH Zurich.
+ * Copyright (c) 2016 ETH Zurich.
  * All rights reserved.
  *
  * This file is distributed under the terms in the attached LICENSE file.
@@ -8,8 +8,69 @@
  */
 
 
-#ifndef BARRIER_H
-#define BARRIER_H 1
+#ifndef SMLT_BARRIER_H
+#define SMLT_BARRIER_H 1
+
+
+/*
+ * ===========================================================================
+ * Smelt barrier MACROS
+ * ===========================================================================
+ */
+
+
+/*
+ * ===========================================================================
+ * Smelt barrier type declarations
+ * ===========================================================================
+ */
+
+
+/**
+ * the smelt barrier data structure
+ */
+struct smlt_barrier 
+{
+
+
+};
+
+
+/*
+ * ===========================================================================
+ * Barrier interface
+ * ===========================================================================
+ */
+
+/**
+ * @brief destroys a smlt barrier
+ *
+ * @param bar the Smelt barrier to be initialized
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_barrier_init(struct smlt_barrier *bar);
+
+/**
+ * @brief destroys a smlt barrier
+ *
+ * @param bar the Smelt barrier to destroy
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_barrier_destroy(struct smlt_barrier *bar);
+
+/**
+ * @brief waits on the supplied barrier
+ *
+ * @param bar the Smelt barrier to wait on
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_barrier_wait(struct smlt_barrier *bar);
+
+
+
 
 struct shl_barrier_t {
     int num;
@@ -25,4 +86,4 @@ int shl_barrier_wait(shl_barrier_t *barrier);
 int shl_hybrid_barrier(void*);
 int shl_hybrid_barrier0(void*);
 
-#endif /* BARRIER_H */
+#endif /* SMLT_BARRIER_H */
