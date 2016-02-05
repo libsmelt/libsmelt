@@ -6,7 +6,7 @@
  * If you do not find this file, copies can be found by writing to:
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
-#ifndef SMLT_SMLT_H_
+#ifndef SMLT_ENDPOINT_H_
 #define SMLT_ENDPOINT_H_ 1
 
 /*
