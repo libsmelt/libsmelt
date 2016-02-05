@@ -110,7 +110,7 @@ struct smlt_ep
 
 
  /**
-  * @brief destroys the endpoint 
+  * @brief creates the endpoint 
   *
   * @param TODO: information specification
   *
@@ -137,14 +137,14 @@ errval_t smlt_endpoint_destroy(struct smlt_ep *ep);
 
 
 /**
- * @brief type definition for the OP function of the endpoint. 
+ * @brief sends a message on the to the endpoint
  * 
  * @param ep    the Smelt endpoint to call the operation on
  * @param msg   Smelt message argument
  * 
  * @returns error value
  *
- * this invokes either the send or recv function
+ * This function is BLOCKING if the endpoint cannot take new messages
  */
 static inline errval_t smlt_endpoint_send(struct smlt_ep *ep, 
                                           struct smlt_msg *msg)
@@ -155,14 +155,28 @@ static inline errval_t smlt_endpoint_send(struct smlt_ep *ep,
 }
 
 /**
- * @brief type definition for the CHECK function of the endpoint. 
+ * @brief sends a notification (zero payload message) 
+ * 
+ * @param ep    the Smelt endpoint to call the operation on
+ * @param msg   Smelt message argument
+ * 
+ * @returns error value
+ */
+static inline errval_t smlt_endpoint_notify(struct smlt_ep *ep)
+{
+    SMLT_EP_CHECK(ep, SMLT_EP_DIRECTION_SEND);
+
+    /* XXX: maybe provide another function */
+    return ep->send(ep, NULL);
+}
+
+/**
+ * @brief checks if the a message can be sent on the endpoint
  * 
  * @param ep    the Smelt endpoint to call the check function on
  * 
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
- *
- * this invokes either the can_send or can_receive function
  */
 static inline bool smlt_endpoint_can_send(struct smlt_ep *ep)
 {
@@ -181,14 +195,14 @@ static inline bool smlt_endpoint_can_send(struct smlt_ep *ep)
 
 
 /**
- * @brief type definition for the OP function of the endpoint. 
+ * @brief receives a message or a notification from the endpoint
  * 
  * @param ep    the Smelt endpoint to call the operation on
  * @param msg   Smelt message argument
  * 
  * @returns error value
  *
- * this invokes either the send or recv function
+ * this function is BLOCKING if there is no message on the endpoint
  */
 static inline errval_t smlt_endpoint_recv(struct smlt_ep *ep, 
                                           struct smlt_msg *msg)
@@ -199,7 +213,7 @@ static inline errval_t smlt_endpoint_recv(struct smlt_ep *ep,
 }
 
 /**
- * @brief type definition for the CHECK function of the endpoint. 
+ * @brief checks if there is a message to be received
  * 
  * @param ep    the Smelt endpoint to call the check function on
  * 
@@ -214,6 +228,7 @@ static inline bool smlt_endpoint_can_recv(struct smlt_ep *ep)
 
     return ep->can_recv(ep);
 }
+
 
 /*
  * ===========================================================================
