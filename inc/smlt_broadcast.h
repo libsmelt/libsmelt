@@ -9,6 +9,12 @@
 #ifndef SMLT_BROADCAST_H_
 #define SMLT_BROADCAST_H_ 1
 
+/*
+ * ===========================================================================
+ * Smelt broadcast: higher level functions
+ * ===========================================================================
+ */
+
 
 /**
  * @brief performs a broadcast on the current active instance 
@@ -27,10 +33,29 @@ errval_t smlt_broadcast(struct smlt_msg *input);
  */
 errval_t smlt_broadcast_notify(void);
 
+
+/*
+ * ===========================================================================
+ * Smelt broadcast: lower level functions
+ * ===========================================================================
+ */
+
+
 /*
   TODO
   uintptr_t mp_receive_forward(uintptr_t);
   void mp_receive_forward7(uintptr_t*);
   void mp_receive_forward0(void);
+  uintptr_t ab_forward(uintptr_t, coreid_t);
+  uintptr_t ab_forward0(uintptr_t, coreid_t);
+  void ab_forward7(coreid_t sender,
+                 uintptr_t v1,
+                 uintptr_t v2,
+                 uintptr_t v3,
+                 uintptr_t v4,
+                 uintptr_t v5,
+                 uintptr_t v6,
+                 uintptr_t v7,
+                 uintptr_t* msg_buf);
 */
 #endif /* SMLT_BROADCAST_H_ */
