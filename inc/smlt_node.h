@@ -49,6 +49,7 @@ uint32_t smlt_node_get_num_nodes();
 mp_binding *mp_get_parent(coreid_t, int*);
 mp_binding **mp_get_children(coreid_t, int*, int**);
 void mp_connect(coreid_t src, coreid_t dst);
+coreid_t get_sequentializer(void);
 
 
 

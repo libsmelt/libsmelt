@@ -40,4 +40,8 @@ errval_t smlt_reduce_all(struct smlt_msg *input,
                          struct smlt_msg *result);
 
 
+//uintptr_t sync_reduce(uintptr_t);
+//uintptr_t sync_reduce0(uintptr_t);
+
+
 #endif /* SMLT_REDUCTION_H_ */

@@ -15,7 +15,14 @@
  * Smelt configuration
  * ===========================================================================
  */
+#define Q_MAX_CORES         64
+#define QRM_ROUND_MAX        3 // >= 3 - barrier reinitialization problem
+#define SHM_Q_MAX          600
+#define SHM_SIZE     (16*4096) // 4 KB
+#define SEQUENTIALIZER       0 // node that acts as the sequentializer
 
+#define USE_THREADS          1 // switch threads vs. processes
+#define BACK_CHAN            1 // Backward channel from "last node" to 
 
 /*
  * ===========================================================================
@@ -55,5 +62,24 @@ struct smlt_inst *smlt_get_current_instance();
 errval_t smlt_switch_instance();
 
 
+/* TODO :*/
+void __sync_init(int, bool);
+void __sync_init_no_tree(int);
+void __sys_init(void);
 
+int  __thread_init(coreid_t,int);
+int  __thread_end(void);
+
+int  __backend_thread_end(void);
+int  __backend_thread_start(void);
+
+unsigned int  get_thread_id(void);
+coreid_t  get_core_id(void);
+unsigned int  get_num_threads(void);
+bool is_coordinator(coreid_t);
+void add_binding(coreid_t sender, coreid_t receiver, mp_binding *mp);
+mp_binding* get_binding(coreid_t sender, coreid_t receiver);
+
+void pin_thread(coreid_t);
+int __lowlevel_thread_init(int tid);
 #endif /* SMLT_SMLT_H_ */
