@@ -11,7 +11,7 @@
 
 
 /**
- * @brief performs a reduction 
+ * @brief performs a reduction on the current instance
  * 
  * @param msg       input for the reduction
  * @param result    returns the result of the reduction
@@ -22,7 +22,7 @@ errval_t smlt_reduce(struct smlt_msg *input,
                      struct smlt_msg *result);
 
 /**
- * @brief performs a reduction without any payload
+ * @brief performs a reduction without any payload on teh current instance
  *
  * @returns TODO:errval
  */

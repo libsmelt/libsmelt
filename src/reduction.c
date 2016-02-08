@@ -1,7 +1,5 @@
-#include "sync.h"
-#include "topo.h"
-#include "shm.h"
-#include "mp.h"
+#include <smlt.h>
+#include <smlt_reduce.h>
 
 /**
  * \brief
@@ -54,4 +52,66 @@ uintptr_t sync_reduce0(uintptr_t val)
      */
     mp_reduce0();
     return 0;
+}
+
+
+/**
+ * @brief performs a reduction on the current instance
+ * 
+ * @param msg       input for the reduction
+ * @param result    returns the result of the reduction
+ * 
+ * @returns TODO:errval
+ */
+errval_t smlt_reduce(struct smlt_msg *input,
+                     struct smlt_msg *result)
+{
+    if (smlt_current_instance()->has_shm) {
+        shm_reduce(input, result);
+        if (smlt_err_fail(err)) {
+            return err;
+        }
+    }
+
+    return smlt_current_instance()->reduce(input, result);
+}
+
+/**
+ * @brief performs a reduction without any payload on teh current instance
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_reduce_notify(void)
+{
+    errval_t err;
+
+    if (smlt_current_instance()->has_shm) {
+        err = shm_reduce_notify();
+        if (smlt_err_fail(err)) {
+            return err;
+        }
+    }
+
+    return smlt_current_instance()->reduce_notify();
+}
+
+/**
+ * @brief performs a reduction and distributes the result to all nodes
+ * 
+ * @param msg       input for the reduction
+ * @param result    returns the result of the reduction
+ * 
+ * @returns TODO:errval
+ */
+errval_t smlt_reduce_all(struct smlt_msg *input,
+                         struct smlt_msg *result)
+{
+    errval_t err;
+
+    err = smlt_reduce(input, result);
+    if (smlt_err_fail(err)) {
+        return err;
+    }
+
+    return smlt_broadcast(result);
 }
