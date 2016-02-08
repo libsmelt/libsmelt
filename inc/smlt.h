@@ -10,25 +10,17 @@
 #define SMLT_SMLT_H_ 1
 
 
-/*
- * ===========================================================================
- * Smelt configuration
- * ===========================================================================
- */
-#define Q_MAX_CORES         64
-#define QRM_ROUND_MAX        3 // >= 3 - barrier reinitialization problem
-#define SHM_Q_MAX          600
-#define SHM_SIZE     (16*4096) // 4 KB
-#define SEQUENTIALIZER       0 // node that acts as the sequentializer
+#include <smlt_config.h>
+#include <smlt_platform.h>
 
-#define USE_THREADS          1 // switch threads vs. processes
-#define BACK_CHAN            1 // Backward channel from "last node" to 
+
 
 /*
  * ===========================================================================
  * type declarations
  * ===========================================================================
  */
+
 
 
 
