@@ -6,8 +6,8 @@
  * If you do not find this file, copies can be found by writing to:
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
-#ifndef SMLT_THREAD_H_
-#define SMLT_THREAD_H_ 1
+#ifndef SMLT_NODE_H_
+#define SMLT_NODE_H_ 1
 
 /*
  * ===========================================================================
@@ -16,18 +16,18 @@
  */
 
 ///< the smelt thread id        XXX or is this the endpoint id ?
-typedef uint32_t smlt_tid_t;
+typedef uint32_t smlt_nid_t;
 
 /*
  * ===========================================================================
  * thread management functions
  * ===========================================================================
  */ 
-errval_t smlt_thread_create();
+errval_t smlt_node_create();
 
-errval_t smlt_thread_join();
+errval_t smlt_node_join();
 
-errval_t smlt_thread_cancel();
+errval_t smlt_node_cancel();
 
 /*
  * ===========================================================================
@@ -35,14 +35,14 @@ errval_t smlt_thread_cancel();
  * ===========================================================================
  */ 
 
-smlt_tid_t smlt_thread_get_thread_id(void);
+smlt_tid_t smlt_node_get_id(void);
 
 /// xxx we need to have a way to get the <machine:core>
-coreid_t smlt_thread_get_core_id();
+coreid_t smlt_node_get_core_id();
 
-bool smlt_thread_is_coordinator();
+bool smlt_node_is_coordinator();
 
-uint32_t smlt_thread_get_num_thread();
+uint32_t smlt_node_get_num_nodes();
 
 
 
@@ -52,4 +52,4 @@ void mp_connect(coreid_t src, coreid_t dst);
 
 
 
-#endif /* SMLT_THREAD_H_ */
+#endif /* SMLT_NODE_H_ */
