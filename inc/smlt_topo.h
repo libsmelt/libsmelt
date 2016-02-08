@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 ETH Zurich.
+ * Copyright (c) 2016 ETH Zurich.
  * All rights reserved.
  *
  * This file is distributed under the terms in the attached LICENSE file.
@@ -7,8 +7,8 @@
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
 
-#ifndef TOPO_H
-#define TOPO_H 1
+#ifndef SMLT_TOPO_H_
+#define SMLT_TOPO_H_ 1
 
 #include "model_defs.h"
 #include <vector>
@@ -37,4 +37,4 @@ coreid_t topo_last_node(void);
 std::vector<int> **topo_all_leaf_nodes(void);
 int topo_mp_cluster_size(coreid_t coordinator, int clusterid);
 
-#endif /* TOPO_H */
+#endif /* SMLT_TOPO_H_ */
