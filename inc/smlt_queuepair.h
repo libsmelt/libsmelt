@@ -6,10 +6,10 @@
  * If you do not find this file, copies can be found by writing to:
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
-#ifndef SMLT_ENDPOINT_H_
-#define SMLT_ENDPOINT_H_ 1
+#ifndef SMLT_QUEUEPAIR_H_
+#define SMLT_QUEUEPAIR_H_ 1
 
-#include <smlt/queuepair.h> 
+#include <smlt/endpoint.h> 
 
 /*
  * ===========================================================================
