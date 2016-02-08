@@ -12,30 +12,30 @@
 
 /*
  * ===========================================================================
- * Barrelfish
+ * Operating System
  * ===========================================================================
  */
 #if defined(BARRELFISH)
-/// TODO: add platform specific includes
+#include <platforms/barrelfish.h>
+#elif defined(__linux__) || defined(__LINUX__)
+#include <platforms/linux.h>
+#else
+#error "unsupported OS"
+#endif
 
 
 /*
  * ===========================================================================
- * Linux
+ * Architecture
  * ===========================================================================
  */
-#elif defined(__linux__) || defined(__LINUX__)
-/// TODO: add platform specific includes
-
+#if defined(__x86_64__)
+#include <arch/x86_64.h>
+#elif defined(__arm__)
+#include <arch/arm.h>
 #else
- /*
- * ===========================================================================
- * unsupported
- * ===========================================================================
- */
-#error "unsupported OS"
+#error "unsupported architecture"
 #endif
-
 
 
 struct sync_binding;
