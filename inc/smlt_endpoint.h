@@ -167,7 +167,7 @@ static inline errval_t smlt_endpoint_notify(struct smlt_ep *ep)
     SMLT_EP_CHECK(ep, SMLT_EP_DIRECTION_SEND);
 
     /* XXX: maybe provide another function */
-    return ep->send(ep, NULL);
+    return ep->send_notify(ep);
 }
 
 /**

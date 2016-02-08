@@ -6,52 +6,6 @@
  * If you do not find this file, copies can be found by writing to:
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
-#ifndef SMLT_SMLT_H_
-#define SMLT_SMLT_H_ 1
-
-
-#include <smlt_config.h>
-#include <smlt_platform.h>
-
-
-
-/*
- * ===========================================================================
- * type declarations
- * ===========================================================================
- */
-
-
-
-
-/**
- * represents a handle to a smelt instance.
- */
-struct smlt_inst;
-
-/*
- * ===========================================================================
- * function declarations
- * ===========================================================================
- */
-
-/**
- * @brief creates a new smelt instance
- */
-errval_t smlt_instance_create();
-
-/**
- * @brief destroys a smelt instance.
- */
-errval_t smlt_instance_destroy();
-
-
-errval_t smlt_thread_init();
-
-
-struct smlt_inst *smlt_get_current_instance();
-
-errval_t smlt_switch_instance();
 
 
 /*
@@ -71,7 +25,15 @@ errval_t smlt_switch_instance();
  *
  * This function is BLOCKING if the node cannot take new messages
  */
-errval_t smlt_send(smlt_nid_t nid, struct smlt_msg *msg);
+errval_t smlt_send(smlt_nid_t nid, struct smlt_msg *msg)
+{
+    struct smlt_node *node = smlt_get_node(nid);
+    if (node==NULL) {
+        return SMLT_ERR_NODE_INVALD;
+    }
+
+    return smlt_node_send(node, msg);
+}
 
 /**
  * @brief sends a notification (zero payload message) 
@@ -81,7 +43,15 @@ errval_t smlt_send(smlt_nid_t nid, struct smlt_msg *msg);
  * 
  * @returns error value
  */
-errval_t smlt_notify(smlt_nid_t nid);
+errval_t smlt_notify(smlt_nid_t nid)
+{
+    struct smlt_node *node = smlt_get_node(nid);
+    if (node==NULL) {
+        return SMLT_ERR_NODE_INVALD;
+    }
+
+    return smlt_node_notify(node);
+}
 
 /**
  * @brief checks if the a message can be sent on the node
@@ -91,9 +61,16 @@ errval_t smlt_notify(smlt_nid_t nid);
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  */
-bool smlt_can_send(smlt_nid_t nid);
+bool smlt_can_send(smlt_nid_t nid)
+{
+    struct smlt_node *node = smlt_get_node(nid);
+    if (node==NULL) {
+        return false;
+    }
 
-/* TODO: include also non blocking variants ?
+    return smlt_node_can_send(node);;
+}
+
 
 /*
  * ===========================================================================
@@ -101,6 +78,20 @@ bool smlt_can_send(smlt_nid_t nid);
  * ===========================================================================
  */
 
+/**
+ * @brief receives a message or a notification from any incoming channel
+ * 
+ * @param msg   Smelt message argument
+ * 
+ * @returns error value
+ *
+ * this function is BLOCKING if there is no message on the node
+ */
+errval_t smlt_recv_any(struct smlt_msg *msg)
+{
+    /* TODO */
+    assert(!"NUI");
+}
 
 /**
  * @brief receives a message or a notification from the node
@@ -112,7 +103,15 @@ bool smlt_can_send(smlt_nid_t nid);
  *
  * this function is BLOCKING if there is no message on the node
  */
-errval_t smlt_recv(smlt_nid_t nid, struct smlt_msg *msg);
+errval_t smlt_recv(smlt_nid_t nid, struct smlt_msg *msg)
+{
+    struct smlt_node *node = smlt_get_node(nid);
+    if (node==NULL) {
+        return SMLT_ERR_NODE_INVALD;
+    }
+
+    return smlt_node_recv(node, msg);
+}
 
 /**
  * @brief checks if there is a message to be received
@@ -124,29 +123,13 @@ errval_t smlt_recv(smlt_nid_t nid, struct smlt_msg *msg);
  *
  * this invokes either the can_send or can_receive function
  */
-bool smlt_can_recv(smlt_nid_t nid);
+bool smlt_can_recv(smlt_nid_t nid)
+{
+    struct smlt_node *node = smlt_get_node(nid);
+    if (node==NULL) {
+        return false;
+    }
 
+    return smlt_can_receive(node);
+}
 
-
-
-/* TODO :*/
-void __sync_init(int, bool);
-void __sync_init_no_tree(int);
-void __sys_init(void);
-
-int  __thread_init(coreid_t,int);
-int  __thread_end(void);
-
-int  __backend_thread_end(void);
-int  __backend_thread_start(void);
-
-unsigned int  get_thread_id(void);
-coreid_t  get_core_id(void);
-unsigned int  get_num_threads(void);
-bool is_coordinator(coreid_t);
-void add_binding(coreid_t sender, coreid_t receiver, mp_binding *mp);
-mp_binding* get_binding(coreid_t sender, coreid_t receiver);
-
-void pin_thread(coreid_t);
-int __lowlevel_thread_init(int tid);
-#endif /* SMLT_SMLT_H_ */

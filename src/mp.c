@@ -21,62 +21,7 @@ void mp_connect(coreid_t src, coreid_t dst)
 }
 
 
-/**
- * \brief Send a message
- */
-__thread uint64_t num_mp_send = 0;
-void mp_send(coreid_t r, uintptr_t val)
-{
-#ifdef QRM_DBG_ENABLED
-    num_mp_send++;
-#endif
 
-    debug_printfff(DBG__AB, "mp_send to %d - num=%d\n", r, num_mp_send);
-
-    coreid_t s = get_thread_id();
-    mp_binding *b = get_binding(s, r);
-
-    if (b==NULL) {
-        printf("Failed to get binding for %d %d\n", s, r);
-    }
-    dbg_assert (b!=NULL);
-    mp_send_raw(b, val);
-}
-
-
-/**
- * \brief Receive a message from s
- */
-__thread uint64_t num_mp_receive = 0;
-uintptr_t mp_receive(coreid_t s)
-{
-#ifdef QRM_DBG_ENABLED
-    num_mp_receive++;
-#endif
-    debug_printfff(DBG__AB, "mp_receive from %d - %d\n", s, num_mp_receive);
-
-    coreid_t r = get_thread_id();
-    mp_binding *b = get_binding(s, r);
-
-    if (b==NULL) {
-        printf("Failed to get binding for %d %d\n", s, get_thread_id());
-    }
-    dbg_assert (b!=NULL);
-    return mp_receive_raw(b);
-}
-
-bool mp_can_receive(coreid_t s)
-{
-    coreid_t r = get_thread_id();
-    mp_binding *b = get_binding(s, r);
-
-    if (b==NULL) {
-        return false;
-    }
-
-    return mp_can_receive_raw(b);
-
-}
 
 /**
  * \brief Send a multicast
