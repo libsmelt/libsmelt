@@ -50,7 +50,8 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 # flags
 # --------------------------------------------------
 
-COMMONFLAGS +=  -Wall -pthread -fPIC -DVERSION=\"$(GIT_VERSION)\" #-fpic
+COMMONFLAGS += -Wpedantic -Werror -Wall -Wfatal-errors \
+				-pthread -fPIC -DVERSION=\"$(GIT_VERSION)\" 
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
 CFLAGS += -std=c99 $(COMMONFLAGS)
 
@@ -131,7 +132,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
 %.o : %.c
-	$(CC) $(CFLAGS) $(INC) -c $< -o $@
+	$(CC) $(C FLAGS) $(INC) -c $< -o $@
 
 clean:
 	rm -f *.o test/*.o $(TARGET) test/mp-test
