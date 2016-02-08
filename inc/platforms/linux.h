@@ -1,36 +1,15 @@
-#ifndef __LIBSYNC_LINUX
-#define __LIBSYNC_LINUX 1
+#ifndef SMLT_PLATFORM_LINUX_H_
+#define SMLT_PLATFORM_LINUX_H_ 1
 
-#ifdef __cplusplus
-#include <cstdint>
-#include <pthread.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cassert>
-#include <cinttypes>
-#include <cstring>
-#endif
+
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef uintptr_t errval_t;
 
 
 
-#ifdef FFQ
-
-#include "ff_queue.h"
-#include "ffq_conf.h"
-
-typedef struct ffq_pair_state mp_binding;
-
-#else // UMP
-#include "ump_conf.h"
-#include "ump_common.h"
-
-typedef struct ump_pair_state mp_binding;
-
-#endif
-
-#include "cycle.h"
-
-typedef pthread_spinlock_t spinlock_t;
+//typedef pthread_spinlock_t spinlock_t;
 typedef uint32_t coreid_t;
 
 typedef uint64_t cycles_t;
@@ -50,7 +29,6 @@ void bench_init(void);
         exit(1);                                \
     }
 
-#endif
 
 void debug_printf(const char *fmt, ...);
 
@@ -64,4 +42,4 @@ static inline uint64_t rdtscp(void)
 #define bench_tsc() rdtscp()
 
 
-typedef int errval_t;
+#endif /* SMLT_PLATFORM_LINUX_H_ */
