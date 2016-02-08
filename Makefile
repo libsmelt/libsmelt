@@ -132,7 +132,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
 %.o : %.c
-	$(CC) $(C FLAGS) $(INC) -c $< -o $@
+	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
 	rm -f *.o test/*.o $(TARGET) test/mp-test
