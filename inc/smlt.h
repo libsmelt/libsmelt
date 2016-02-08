@@ -12,6 +12,7 @@
 
 #include <smlt_config.h>
 #include <smlt_platform.h>
+#include <smlt_message.h>
 
 
 
@@ -22,7 +23,8 @@
  */
 
 
-
+///< the smelt thread id        XXX or is this the endpoint id ?
+typedef uint32_t smlt_nid_t;
 
 /**
  * represents a handle to a smelt instance.
