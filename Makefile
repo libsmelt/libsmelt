@@ -2,47 +2,69 @@
 
 TARGET=libsync.so
 
-CFILES= \
-	barrier.c \
-	debug.c \
-	linux.c \
-	mp.c \
-	shm.c \
-	sync.c \
-	cwrapper.c\
-	topo.c \
-	tree_setup.c \
-	shm_queue.c \
-	ab.c \
-	reduction.c
+# Source files
+# --------------------------------------------------
+CFILES += $(wildcard src/*.c)
 
+# backend specific source files
+CFILES += $(wildcard src/backends/shm/*.c)
+CFILES += $(wildcard src/backends/ump/*.c)
+CFILES += $(wildcard src/backends/ffq/*.c)
+
+# platform specific source files
+CFILES += $(wildcard src/platforms/linux/*.c)
+
+# architecture specific
+CFILES += $(wildcard src/arch/*.c)
+
+# creating the object files
 OBJS += $(patsubst %.c,%.o,$(CFILES))
-HEADERS=$(wildcard *.h)
 
+
+# headres
+# --------------------------------------------------
+HEADERS=$(wildcard inc/*.h)
+
+# platform specific header files
+HEADERS += $(wildcard inc/backends/shm/*.h)
+HEADERS += $(wildcard inc/backends/ump/*.h)
+HEADERS += $(wildcard inc/backends/ffq/*.h)
+
+# platform specific header files
+HEADERS += $(wildcard inc/platforms/linux/*.h)
+
+# architecture specific 
+HEADERS += $(wildcard inc/arch/*.h)
+
+
+# includes
+# --------------------------------------------------
+INC += -I inc -I inc/platforms/linux -I inc/backends 
+
+
+# versiong
+# --------------------------------------------------
+GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
+
+
+# flags
+# --------------------------------------------------
+
+COMMONFLAGS +=  -Wall -pthread -fPIC -DVERSION=\"$(GIT_VERSION)\" #-fpic
+CXXFLAGS += -std=c++11 $(COMMONFLAGS)
+CFLAGS += -std=c99 $(COMMONFLAGS)
+
+
+# libraries
+# --------------------------------------------------
+LIBS += -lnuma
+
+
+# setting the dependencies
+# --------------------------------------------------
 DEPS = $(OBJS)
 DEPS += $(HEADERS)
 
-# Fast Forward
-# --------------------------------------------------
-# Use Fast-Foward as a Linux message passing backend rather than
-# UMPQ.
-#USE_FFQ=1
-
-UMPQ=../umpq/
-UMP_OBJS += $(UMPQ)/ump_chan.c \
-	$(UMPQ)/ump_conf.c \
-	$(UMPQ)/ump_queue.c \
-	$(UMPQ)/ump_rxchan.c \
-	$(UMPQ)/ump_txchan.c \
-	$(UMPQ)/lxaffnuma.c \
-	$(UMPQ)/parse_int.c
-
-FFQ_OBJS += $(UMPQ)/ffq_conf.c \
-	$(UMPQ)/ff_queue.c \
-	$(UMPQ)/lxaffnuma.c \
-	$(UMPQ)/parse_int.c
-
-GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 
 # Switch buildtype: supported are "debug" and "release"
 # Do this only if not yet defined (e.g. from parent Makefile)
@@ -50,10 +72,6 @@ ifndef BUILDTYPE
 	BUILDTYPE := release
 endif
 
-COMMONFLAGS +=  -Wall -pthread -fPIC #-fpic
-CXXFLAGS += -std=c++11 $(COMMONFLAGS)
-CFLAGS += -std=c99 $(COMMONFLAGS)
-INC += -I inc -I $(UMPQ)
 
 ifeq ($(BUILDTYPE),debug)
 	OPT=-ggdb -O0 -pg -DSYNC_DEBUG -gdwarf-2
@@ -64,44 +82,15 @@ endif
 CXXFLAGS += $(OPT)
 CFLAGS += $(OPT)
 
-# Should a custom libnuma be used?
-ifdef OVERRIDENUMA
-LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
-INC += -I$(LIBNUMABASE)
-LIBS += -L$(LIBNUMABASE)
-endif
-
-ifdef USE_FFQ
-	CXXFLAGS += -DFFQ
-	DEPS += $(FFQ_OBJS)
-	OBJS += $(patsubst %.c,%.o,$(FFQ_OBJS))
-else
-	DEPS += $(UMP_OBJS)
-	OBJS += $(patsubst %.c,%.o,$(UMP_OBJS))
-endif
 
 
-# ParLib
-# --------------------------------------------------
-PARLIB = 1
-ifdef PARLIB
-	PLBASE = contrib/parlib/src
-	CXXFLAGS += -DPARLIB
-	INC += -I$(PLBASE)
-	DEPS += $(PLBASE)/mcs.o
-	OBJS += $(PLBASE)/mcs.o
-endif
-
-ifdef USE_SHOAL
-	LIBSHOAL=../shoal-library/
-	INC +=  -I$(LIBSHOAL)/inc
-	LIBS += -L$(LIBSHOAL)/shoal/ -lshl -llua5.2 -L$(LIBSHOAL)/contrib/papi-5.3.0/src -lpapi -lpfm
-	LIBS += -lpapi -fopenmp
-	CXXFLAGS += -DSHL
-endif
-
-LIBS += -lnuma
-CXXFLAGS += -DVERSION=\"$(GIT_VERSION)\" $(COMMONFLAGS)
+#ifdef USE_SHOAL
+#	LIBSHOAL=../shoal-library/
+#	INC +=  -I$(LIBSHOAL)/inc
+#	LIBS += -L$(LIBSHOAL)/shoal/ -lshl -llua5.2 -L$(LIBSHOAL)/contrib/papi-5.3.0/src -lpapi -lpfm
+#	LIBS += -lpapi -fopenmp
+#	CXXFLAGS += -DSHL
+#endif
 
 all: $(TARGET)
 
@@ -133,19 +122,16 @@ bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.cpp
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) -shared $(CXXFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET)
-	ar  rcs $(TARGET).a  $(OBJS) $(EXTERNAL_OBJS)
+	STATIC=$(patsubst %.so,%.a,$(TARGET))
+	ar  rcs $(STATIC) $(OBJS) $(EXTERNAL_OBJS)
 
 # Compile object files
 # --------------------------------------------------
 %.o : %.cpp
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
-# UMPQ code is C, not C++
-../umpq/%.o: ../umpq/%.c
-	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
-
 %.o : %.c
-	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
+	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
 	rm -f *.o test/*.o $(TARGET) test/mp-test
@@ -156,11 +142,11 @@ debug:
 
 .PHONY: cscope.files
 cscope.files:
-	find . $(UMPQ) -name '*.[ch]' -or -name '*.cpp' -or -name '*.hpp' > $@
+	find . -name '*.[ch]' -or -name '*.cpp' -or -name '*.hpp' > $@
 
 doc: $(HEADERS) $(CFILES)
 	doxygen
 
 .PHONY: install
 install: bench/ab-bench
-	rsync -av bench/ab-bench gottardo:
+	#rsync -av bench/ab-bench gottardo:
