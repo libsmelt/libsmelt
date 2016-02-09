@@ -107,7 +107,7 @@ errval_t smlt_broadcast_notify(void)
 
 /**
  * \brief
- *
+ *  XXX: this should be mergedw ith smlt_broadcast...
  */
 uintptr_t ab_forward(uintptr_t val, coreid_t sender)
 {
@@ -173,3 +173,28 @@ uintptr_t ab_forward(uintptr_t val, coreid_t sender)
     return val;
 
 }
+
+
+/**
+ * \brief Receive a message from the broadcast tree and forward
+ *
+ * \param val The value to be added to the received value before
+ * forwarding. Useful for reductions, but should probably not be here.
+ *
+ * \return The message received from the broadcast tree
+ */
+uintptr_t mp_receive_forward(uintptr_t val)
+{
+    int parent_core;
+
+    mp_binding *b = mp_get_parent(get_thread_id(), &parent_core);
+
+    debug_printfff(DBG__AB, "Receiving from parent %d\n", parent_core);
+    uintptr_t v = mp_receive_raw(b);
+
+    mp_send_ab(v + val);
+
+    return v;
+}
+
+    
