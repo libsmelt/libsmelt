@@ -43,23 +43,25 @@ errval_t smlt_reduce(struct smlt_msg *input,
      * does not matter. If a client would send several messages, we
      * would have circles in the tree.
      */
+
+
+    operation(result, input);
+    uint32_t count;
+    struct smlt_node **nl = smlt_node_get_children(&count);
+
+    // Receive (this will be from several children)
+    // --------------------------------------------------
+    for (uint32_t i = 0; i < count; ++i) {
+        err = smlt_node_recv(nl[i], result);
+        // TODO: error handling
+        result = operation(input, result);
+    }
+
+    // Receive (this will be from several children)
+    // --------------------------------------------------
     struct smlt_node *p = smlt_node_get_parent();
-    if (smlt_node_is_leaf()) {    
-        smlt_node_send(p, input);
-    } else {
-        uint32_t count;
-        struct smlt_node **nl = smlt_node_get_children(&count);
-
-        result = operation(input, NULL);
-        for (uint32_t i = 0; i < count; ++i) {
-            err = smlt_node_recv(nl[i], result);
-            // TODO: error handling
-            result = operation(input, result);
-        }
-
-        if (!smlt_node_is_root()) {
-            smlt_node_send(p, result);
-        }
+    if (p) {    
+        smlt_node_send(p, result);
     }
 
     return SMLT_SUCCESS;
@@ -97,22 +99,23 @@ errval_t smlt_reduce_notify(void)
      * would have circles in the tree.
      */
 
-    struct smlt_node *p = smlt_node_get_parent();
-    if (smlt_node_is_leaf()) {    
-        smlt_node_notify(p);
-    } else {
-        uint32_t count;
-        struct smlt_node **nl = smlt_node_get_children(&count);
 
-        for (uint32_t i = 0; i < count; ++i) {
-            err = smlt_node_recv(nl[i], NULL);
-            // TODO: error handling
-        }
+    // Receive (this will be from several children)
+    // --------------------------------------------------
+    uint32_t count;
+    struct smlt_node **nl = smlt_node_get_children(&count);
 
-        if (!smlt_node_is_root()) {
-            smlt_node_notify(p);
-        }
+    for (uint32_t i = 0; i < count; ++i) {
+        err = smlt_node_recv(nl[i], NULL);
+        // TODO: error handling
     }
+
+    // Send (this should only be sending one message)
+    // --------------------------------------------------
+    struct smlt_node *p = smlt_node_get_parent();
+    if (p) {
+        smlt_node_notify(p);
+    }    
 }
 
 
@@ -137,76 +140,4 @@ errval_t smlt_reduce_all(struct smlt_msg *input,
     }
 
     return smlt_broadcast(result);
-}
-
-
-/**
- * \brief Implement reductions
- *
- * \param val The value to be reduce by this node.
- *
- * \return The result of the reduction, which is only meaningful for
- * the root of the reduction, as given by the tree.
- */
-uintptr_t mp_reduce(uintptr_t val)
-{
-#ifdef HYB
-    if (!topo_does_mp(get_thread_id()))
-        return val;
-#endif
-
-    uintptr_t current_aggregate = val;
-
-    // Receive (this will be from several children)
-    // --------------------------------------------------
-
-    // Determine child bindings
-    struct binding_lst *blst = _mp_get_children_raw(get_thread_id());
-    int numbindings = blst->num;
-
-#ifdef QRM_DBG_ENABLED
-    coreid_t my_core_id = get_thread_id();
-    assert ((numbindings==0 && !topo_does_mp_send(my_core_id, false)) ||
-            (numbindings>0 && topo_does_mp_send(my_core_id, false)));
-
-    if (numbindings!=0) {
-        debug_printfff(DBG__REDUCE, "Receiving on core %d\n", my_core_id);
-    }
-#endif
-
-    // Decide to parents
-    for (int i=0; i<numbindings; i++) {
-
-        uintptr_t v = mp_receive_raw(blst->b_reverse[i]);
-        current_aggregate += v;
-        debug_printfff(DBG__REDUCE, "Receiving %" PRIu64 " from %d\n", v, i);
-
-    }
-
-    debug_printfff(DBG__REDUCE, "Receiving done, value is now %" PRIu64 "\n",
-                       current_aggregate);
-
-    // Send (this should only be sending one message)
-    // --------------------------------------------------
-
-    binding_lst *blst_parent = _mp_get_parent_raw(get_thread_id());
-    int pidx = blst_parent->idx[0];
-
-#ifdef QRM_DBG_ENABLED
-    assert ((pidx!=-1 && topo_does_mp_receive(my_core_id, false)) ||
-            (pidx==-1 && !topo_does_mp_receive(my_core_id, false)));
-
-    assert (pidx!=-1 || my_core_id == get_sequentializer());
-#endif
-
-    if (pidx!=-1) {
-
-        mp_binding *b_parent = blst_parent->b_reverse[0];
-        debug_printfff(DBG__REDUCE, "sending %" PRIu64 " to parent %d\n",
-                       current_aggregate, pidx);
-
-        mp_send_raw(b_parent, current_aggregate);
-    }
-
-    return current_aggregate;
 }
