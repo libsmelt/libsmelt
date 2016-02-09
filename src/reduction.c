@@ -58,15 +58,20 @@ uintptr_t sync_reduce0(uintptr_t val)
 /**
  * @brief performs a reduction on the current instance
  * 
- * @param msg       input for the reduction
- * @param result    returns the result of the reduction
- * 
+ * @param msg        input for the reduction
+ * @param result     returns the result of the reduction
+ * @param operation  function to be called to calculate the aggregate
+ *
  * @returns TODO:errval
  */
 errval_t smlt_reduce(struct smlt_msg *input,
                      struct smlt_msg *result,
                      smlt_reduce_fn_t operation)
 {
+    if (!operation) {
+        return smlt_reduce_notify();
+    }
+
     if (smlt_current_instance()->has_shm) {
         smlt_shm_reduce(input, result);
         if (smlt_err_fail(err)) {
@@ -130,16 +135,19 @@ errval_t smlt_reduce_notify(void)
     }
 }
 
+
 /**
  * @brief performs a reduction and distributes the result to all nodes
  * 
  * @param msg       input for the reduction
  * @param result    returns the result of the reduction
+ * @param operation  function to be called to calculate the aggregate
  * 
  * @returns TODO:errval
  */
 errval_t smlt_reduce_all(struct smlt_msg *input,
-                         struct smlt_msg *result)
+                         struct smlt_msg *result,
+                         smlt_reduce_fn_t operation)
 {
     errval_t err;
 

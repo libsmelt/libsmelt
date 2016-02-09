@@ -11,15 +11,27 @@
 
 
 /**
+ * @brief operation to be called when performing the aggregate
+ *
+ * @param dest  destination message pointer.
+ * @param src   source message
+ *
+ */
+typedef void (*smlt_reduce_fn_t)(struct smlt_msg *dest, struct smlt_msg *src)
+
+
+/**
  * @brief performs a reduction on the current instance
  * 
- * @param msg       input for the reduction
- * @param result    returns the result of the reduction
- * 
+ * @param msg        input for the reduction
+ * @param result     returns the result of the reduction
+ * @param operation  function to be called to calculate the aggregate
+ *
  * @returns TODO:errval
  */
 errval_t smlt_reduce(struct smlt_msg *input,
-                     struct smlt_msg *result);
+                     struct smlt_msg *result,
+                     smlt_reduce_fn_t operation);
 
 /**
  * @brief performs a reduction without any payload on teh current instance
@@ -33,11 +45,13 @@ errval_t smlt_reduce_notify(void);
  * 
  * @param msg       input for the reduction
  * @param result    returns the result of the reduction
+ * @param operation  function to be called to calculate the aggregate
  * 
  * @returns TODO:errval
  */
 errval_t smlt_reduce_all(struct smlt_msg *input,
-                         struct smlt_msg *result);
+                         struct smlt_msg *result,
+                         smlt_reduce_fn_t operation);
 
 
 //uintptr_t sync_reduce(uintptr_t);
