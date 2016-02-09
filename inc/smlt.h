@@ -23,7 +23,7 @@
  */
 
 
-///< the smelt thread id        XXX or is this the endpoint id ?
+///< the smelt node id        XXX or is this the endpoint id ?
 typedef uint32_t smlt_nid_t;
 
 /**
@@ -37,6 +37,22 @@ struct smlt_inst;
  * ===========================================================================
  */
 
+#define SMLT_USE_ALL_CORES ((uint32_t)-1)
+
+/**
+ * @brief initializes the Smelt library
+ *
+ * @param num_proc  the number of processors
+ *
+ * @returns SMLT_SUCCESS on success
+ * 
+ * This has to be executed once per address space. If threads are used
+ * for parallelism, call this only once. With processes, it has to be
+ * executed on each process.
+ */
+errval_t smlt_init(uint32_t num_proc);
+
+
 /**
  * @brief creates a new smelt instance
  */
@@ -47,8 +63,6 @@ errval_t smlt_instance_create();
  */
 errval_t smlt_instance_destroy();
 
-
-errval_t smlt_thread_init();
 
 
 struct smlt_inst *smlt_get_current_instance();
