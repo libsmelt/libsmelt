@@ -14,41 +14,136 @@
  * type declarations
  * ===========================================================================
  */
+struct smlt_node;
 
+/**
+ * arguments passed to the the new smelt node
+ */
+struct smlt_node_args
+{
+    smlt_nid_t id;          ///< the node ID to set
+    coreid_t core;          ///< ID of the core to start the thread on
+    void (*start)(void *)   ///< the start function
+    void *arg;              ///< argument for the start function
+};
 
 
 /*
  * ===========================================================================
- * thread management functions
+ * node management functions
  * ===========================================================================
  */ 
-errval_t smlt_node_create();
 
-errval_t smlt_node_join();
 
-errval_t smlt_node_cancel();
+/**
+ * @brief creates a new smelt node 
+ * 
+ * @param args
+ */
+errval_t smlt_node_create(struct smlt_node_args *args);
+
+/**
+ * @brief waits for the other node to terminate
+ *
+ * @param node the other Smelt node
+ *
+ * @returns  TODO: errval
+ */
+errval_t smlt_node_join(struct smlt_node *node);
+
+
+/**
+ * @brief terminates the othern node and waits for termination
+ *
+ * @param node the other Smelt node
+ *
+ * @returns  TODO: errval
+ */
+errval_t smlt_node_cancel(struct smlt_node *node);
+
 
 /*
  * ===========================================================================
- * thread state functions
+ * node state functions
  * ===========================================================================
  */ 
 
-smlt_tid_t smlt_node_get_id(void);
 
-/// xxx we need to have a way to get the <machine:core>
-coreid_t smlt_node_get_core_id();
+/**
+ * @brief gets the ID of the current node
+ *
+ * @returns integer value representing the node id
+ */
+smlt_nid_t smlt_node_get_id(void);
 
-bool smlt_node_is_coordinator();
+/**
+ * @brief gets the ID of the current node
+ *
+ * @param node  the smelt node
+ *
+ * @returns integer value representing the node id
+ */
+smlt_nid_t smlt_node_get_id_of_node(struct smelt_node *node);
 
+/**
+ * @brief gets the core ID of the current node
+ *
+ * @returns integer value representing the coreid
+ */
+smlt_nid_t smlt_node_get_coreid(void);
+
+/**
+ * @brief gets the ID of the current node
+ *
+ * @param node  the smelt node
+ *
+ * @returns integer value representing the node id
+ */
+smlt_nid_t smlt_node_get_coreid_of_node(struct smelt_node *node);
+
+/**
+ * @brief checks whether the calling node is the root of the tree
+ *
+ * @returns TRUE if the node is the root, FALSE otherwise
+ */
+bool smlt_node_is_root(void);
+
+/**
+ * @brief checks whether the callnig node is a leaf in the tree
+ *
+ * @returns TRUE if the node is a leaf, FALSE otherwise
+ */
+bool smlt_node_is_leaf(void);
+
+/**
+ * @brief gets the parent of the calling node
+ *
+ * @returns pointer to the parent, NULL if the root
+ */
+struct smlt_node *smlt_node_get_parent(void);
+
+/**
+ * @brief gets the child nodes of the calling node
+ *
+ * @param count returns the number of children
+ *
+ * @returns array of pointer to childnodes
+ */
+struct smlt_node **smlt_node_get_children(uint32_t *count);
+
+/**
+ * @brief gets the number of nodes in the system
+ *
+ * @returns integer
+ */
 uint32_t smlt_node_get_num_nodes();
 
 
-
-mp_binding *mp_get_parent(coreid_t, int*);
-mp_binding **mp_get_children(coreid_t, int*, int**);
-void mp_connect(coreid_t src, coreid_t dst);
-coreid_t get_sequentializer(void);
+/*
+ * ===========================================================================
+ * sending function
+ * ===========================================================================
+ */
 
 
 /**
@@ -101,6 +196,7 @@ static inline bool smlt_node_can_send(struct smlt_node *node)
 }
 
 /* TODO: include also non blocking variants ?
+
 
 /*
  * ===========================================================================
