@@ -64,16 +64,36 @@ uintptr_t sync_reduce0(uintptr_t val)
  * @returns TODO:errval
  */
 errval_t smlt_reduce(struct smlt_msg *input,
-                     struct smlt_msg *result)
+                     struct smlt_msg *result,
+                     smlt_reduce_fn_t operation)
 {
     if (smlt_current_instance()->has_shm) {
-        shm_reduce(input, result);
+        smlt_shm_reduce(input, result);
         if (smlt_err_fail(err)) {
             return err;
         }
     }
+    
+    struct smlt_node *p = smlt_node_get_parent();
+    if (smlt_node_is_leaf()) {    
+        smlt_node_send(p, input);
+    } else {
+        uint32_t count;
+        struct smlt_node **nl = smlt_node_get_children(&count);
 
-    return smlt_current_instance()->reduce(input, result);
+        result = operation(input, NULL);
+        for (uint32_t i = 0; i < count; ++i) {
+            err = smlt_node_recv(nl[i], result);
+            // TODO: error handling
+            result = operation(input, result);
+        }
+
+        if (!smlt_node_is_root()) {
+            smlt_node_send(p, result);
+        }
+    }
+
+    return SMLT_SUCCESS;
 }
 
 /**
@@ -92,7 +112,22 @@ errval_t smlt_reduce_notify(void)
         }
     }
 
-    return smlt_current_instance()->reduce_notify();
+    struct smlt_node *p = smlt_node_get_parent();
+    if (smlt_node_is_leaf()) {    
+        smlt_node_notify(p);
+    } else {
+        uint32_t count;
+        struct smlt_node **nl = smlt_node_get_children(&count);
+
+        for (uint32_t i = 0; i < count; ++i) {
+            err = smlt_node_recv(nl[i], NULL);
+            // TODO: error handling
+        }
+
+        if (!smlt_node_is_root()) {
+            smlt_node_notify(p);
+        }
+    }
 }
 
 /**

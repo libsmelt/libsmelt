@@ -25,7 +25,7 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
 
     uint32_t count;
     struct smlt_node **nl = smlt_node_get_children(smlt_node_get_self(),
-                                                  &count);
+                                                   &count);
 
     for (uint32_t i = 0; i < count; ++i) {
         err = smlt_node_send(nl[i], msg);
@@ -41,7 +41,7 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
  *
  * @returns TODO:errval
  */
-errval_t smlt_broadcast_subtree_notify(void)
+errval_t smlt_broadcast_notify_subtree(void)
 {
     errval_t err;
     uint32_t count;
@@ -67,15 +67,17 @@ errval_t smlt_broadcast(struct smlt_msg *msg)
 {
     errval_t err;
 
-    /* send to parent */
-    struct smlt_node *p = smlt_node_get_parent();
-    if (p) {
-        err = smlt_node_send(p, msg);
-        // TODO: error handling
+    if (smlt_node_is_root()) {
+        err = smlt_broadcast_subtree(msg);
+    } else {
+        struct smlt_node *p = smlt_node_get_parent();
+        err = smlt_node_recv(p, msg);
+        /* TODO: ERROR */
+        err = smlt_broadcast_subtree(msg);
+        /* TODO: ERROR */
     }
 
-    return smlt_broadcast_subtree(msg);
-
+    return SMLT_SUCCESS;
 }
 
 /**
@@ -87,15 +89,20 @@ errval_t smlt_broadcast_notify(void)
 {
     errval_t err;
 
-    /* send to parent */
-    struct smlt_node *p = smlt_node_get_parent();
-    if (p) {
-        err = smlt_node_notify(p);
-        // TODO: error handling
+    if (smlt_node_is_root()) {
+        err = smlt_broadcast_notify_subtree(msg);
+    } else {
+        struct smlt_node *p = smlt_node_get_parent();
+        err = smlt_node_recv(p, msg);
+        /* TODO: ERROR */
+        err = smlt_broadcast_notify_subtree(msg);
+        /* TODO: ERROR */
     }
 
     return smlt_broadcast_subtree_notify();
 }
+
+
 
 
 /**
