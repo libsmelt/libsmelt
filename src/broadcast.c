@@ -6,14 +6,98 @@
  * If you do not find this file, copies can be found by writing to:
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
- #include <smlt.h>
+#include <smlt.h>
+#include <smlt_broadcast.h>
 
 
+/**
+ * @brief performs a broadcast to the nodes of the subtree routed at the 
+ *        calling node
+ * 
+ * @param msg       input for the reduction
+ * @param result    returns the result of the reduction
+ * 
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
+{
+    errval_t err;
 
-#include "sync.h"
-#include "topo.h"
-#include "shm.h"
-#include "mp.h"
+    uint32_t count;
+    struct smlt_node **nl = smlt_node_get_children(smlt_node_get_self(),
+                                                  &count);
+
+    for (uint32_t i = 0; i < count; ++i) {
+        err = smlt_node_send(nl[i], msg);
+        // TODO: error handling
+    }
+
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief performs a broadcast without any payload to the subtree routed at
+ *        the calling node
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast_subtree_notify(void)
+{
+    errval_t err;
+    uint32_t count;
+    struct smlt_node **nl = smlt_node_get_children(smlt_node_get_self(),
+                                                  &count);
+
+    for (uint32_t i = 0; i < count; ++i) {
+        err = smlt_node_notify(nl[i]);
+        // TODO: error handling
+    }
+
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief performs a broadcast on the current active instance 
+ * 
+ * @param msg       input for the reduction
+ * @param result    returns the result of the reduction
+ * 
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast(struct smlt_msg *msg)
+{
+    errval_t err;
+
+    /* send to parent */
+    struct smlt_node *p = smlt_node_get_parent(smlt_node_get_self());
+    if (p) {
+        err = smlt_node_send(p, msg);
+        // TODO: error handling
+    }
+
+    return smlt_broadcast_subtree(msg);
+
+}
+
+/**
+ * @brief performs a broadcast without any payload
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast_notify(void)
+{
+    errval_t err;
+
+    /* send to parent */
+    struct smlt_node *p = smlt_node_get_parent(smlt_node_get_self());
+    if (p) {
+        err = smlt_node_notify(p);
+        // TODO: error handling
+    }
+
+    return smlt_broadcast_subtree_notify();
+}
+
 
 /**
  * \brief
@@ -146,80 +230,5 @@ uintptr_t ab_forward0(uintptr_t val, coreid_t sender)
     }
 
     return val;
-
-}
-
-void ab_forward7(coreid_t sender,
-                 uintptr_t v1,
-                 uintptr_t v2,
-                 uintptr_t v3,
-                 uintptr_t v4,
-                 uintptr_t v5,
-                 uintptr_t v6,
-                 uintptr_t v7,
-                 uintptr_t* msg_buf)
-{
-    debug_printfff(DBG__HYBRID_AC, "hybrid_ac entered\n");
-
-    coreid_t my_core_id = get_thread_id();
-    bool does_mp = topo_does_mp_receive(my_core_id, false) ||
-        (topo_does_mp_send(my_core_id, false));
-
-    // Sender forwards message to the root
-    if ((get_thread_id()==sender) &&
-         !(sender == get_sequentializer())) {
-
-        mp_send7(get_sequentializer(), v1, v2, v3, v4,
-                 v5, v6, v7);
-    }
-
-    // Message passing
-    // --------------------------------------------------
-    if (does_mp) {
-
-        debug_printfff(DBG__HYBRID_AC, "Starting message passing .. "
-                       "does_recv=%d does_send=%d - val=%d\n",
-                       topo_does_mp_receive(my_core_id, false),
-                       topo_does_mp_send(my_core_id, false),
-                       v1);
-
-        if (my_core_id == SEQUENTIALIZER) {
-            if (!(sender == SEQUENTIALIZER)) {
-                mp_receive7(sender, msg_buf);
-            }
-            mp_send_ab7(msg_buf[0], msg_buf[1], msg_buf[2], msg_buf[3],
-                        msg_buf[4], msg_buf[5], msg_buf[6]);
-        } else {
-            mp_receive_forward7(msg_buf);
-        }
-    }
-
-    // Shared memory
-    // --------------------------------------------------
-    if (topo_does_shm_send(my_core_id) || topo_does_shm_receive(my_core_id)) {
-
-        if (topo_does_shm_send(my_core_id)) {
-
-            // send
-            // --------------------------------------------------
-
-            debug_printfff(DBG__HYBRID_AC, "Starting SHM .. -- send, \n");
-
-            shm_send(msg_buf[0], msg_buf[1], msg_buf[2], msg_buf[3],
-                     msg_buf[4], msg_buf[5], msg_buf[6]);
-        }
-        if (topo_does_shm_receive(my_core_id)) {
-
-            // receive
-            // --------------------------------------------------
-
-            debug_printfff(DBG__HYBRID_AC, "Starting SHM .. -- receive, \n");
-
-            shm_receive(&msg_buf[0], &msg_buf[1], &msg_buf[2], &msg_buf[3], &msg_buf[4],
-                        &msg_buf[5], &msg_buf[6]);
-        }
-
-        debug_printfff(DBG__HYBRID_AC, "End SHM\n");
-    }
 
 }

@@ -15,19 +15,37 @@
  * ===========================================================================
  */
 
-
 /**
- * @brief performs a broadcast on the current active instance 
+ * @brief performs a broadcast to the nodes of the subtree routed at the 
+ *        calling node
  * 
  * @param msg       input for the reduction
  * @param result    returns the result of the reduction
  * 
  * @returns TODO:errval
  */
-errval_t smlt_broadcast(struct smlt_msg *input);
+errval_t smlt_broadcast_subtree(struct smlt_msg *msg);
 
 /**
- * @brief performs a broadcast without any payload
+ * @brief performs a broadcast without any payload to the subtree routed at
+ *        the calling node
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast_subtree_notify(void);
+
+/**
+ * @brief performs a broadcast to all nodes on the current active instance 
+ * 
+ * @param msg       input for the reduction
+ * @param result    returns the result of the reduction
+ * 
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast(struct smlt_msg *msg);
+
+/**
+ * @brief performs a broadcast without any payload to all nodes
  *
  * @returns TODO:errval
  */
