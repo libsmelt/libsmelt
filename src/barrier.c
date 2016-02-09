@@ -2,6 +2,50 @@
 #include "shm.h"
 #include "barrier.h"
 
+
+/**
+ * @brief destroys a smlt barrier
+ *
+ * @param bar the Smelt barrier to be initialized
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_barrier_init(struct smlt_barrier *bar)
+{
+
+
+}
+
+/**
+ * @brief destroys a smlt barrier
+ *
+ * @param bar the Smelt barrier to destroy
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_barrier_destroy(struct smlt_barrier *bar)
+{
+
+
+}
+
+/**
+ * @brief waits on the supplied barrier
+ *
+ * @param bar the Smelt barrier to wait on
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_barrier_wait(struct smlt_barrier *bar)
+{
+    smlt_reduce_notify();
+    smlt_broadcast_notify();
+}
+
+
+
+
+
 void shl_barrier_shm(int b_count);
 
 /**
@@ -182,4 +226,65 @@ void shl_barrier_shm(int b_count)
     oct_barrier_leave(dummy);
 #endif
     _shl_round = (_shl_round+1) % QRM_ROUND_MAX;
+}
+
+
+void mp_barrier(cycles_t *measurement)
+{
+    coreid_t tid = get_core_id();
+
+#ifdef QRM_DBG_ENABLED
+    ++_num_barrier;
+    uint32_t _num_barrier_recv = _num_barrier;
+#endif
+
+    debug_printfff(DBG__REDUCE, "barrier enter #%d\n", _num_barrier);
+
+    // Recution
+    // --------------------------------------------------
+#ifdef QRM_DBG_ENABLED
+    uint32_t _tmp =
+#endif
+    mp_reduce(_num_barrier);
+
+#ifdef QRM_DBG_ENABLED
+    // Sanity check
+    if (tid==get_sequentializer()) {
+        assert (_tmp == get_num_threads()*_num_barrier);
+    }
+    if (measurement)
+        *measurement = bench_tsc();
+
+#endif
+
+    // Broadcast
+    // --------------------------------------------------
+    if (tid == get_sequentializer()) {
+        mp_send_ab(_num_barrier);
+
+    } else {
+#ifdef QRM_DBG_ENABLED
+        _num_barrier_recv =
+#endif
+            mp_receive_forward(0);
+    }
+
+#ifdef QRM_DBG_ENABLED
+    if (_num_barrier_recv != _num_barrier) {
+    debug_printf("ASSERTION fail %d != %d\n", _num_barrier_recv, _num_barrier);
+    }
+    assert (_num_barrier_recv == _num_barrier);
+
+    // Add a shared memory barrier to absolutely make sure that
+    // everybody finished the barrier before leaving - this simplifies
+    // debugging, as the programm will get stuck if barriers are
+    // broken, rather than some threads (wrongly) continuing and
+    // causing problems somewhere else
+#if 0 // Enable separately
+    debug_printfff(DBG_REDUCE, "finished barrier .. waiting for others\n");
+    shl_barrier_shm(get_num_threads());
+#endif
+#endif
+
+    debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
 }
