@@ -19,6 +19,7 @@ typedef uint64_t errval_t;
 typedef pthread_barrier_t smlt_platform_barrier_t;
 typedef pthread_barrierattr_t smlt_platform_barrierattr_t;
 
+
 /* platform specific lock */
 typedef pthread_spinlock_t smlt_platform_lock_t;
 
