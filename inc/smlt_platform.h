@@ -65,7 +65,7 @@ uint32_t smlt_platform_init(uint32_t num_proc);
  * @returns SMELT_SUCCESS or error value
  */
 errval_t smlt_platform_barrier_init(smlt_platform_barrier_t *bar,
-                                    smlt_platform_barrierattr *attr,
+                                    smlt_platform_barrierattr_t *attr,
                                     uint32_t count);
 
 /**
@@ -75,7 +75,7 @@ errval_t smlt_platform_barrier_init(smlt_platform_barrier_t *bar,
 
  * @returns SMELT_SUCCESS or error value
  */
-errval_t smlt_platform_barrier_destroy(pthread_barrier_t *barrier);
+errval_t smlt_platform_barrier_destroy(smlt_platform_barrier_t *barrier);
 
 /**
  * @brief waits on the barrier untill all threads have entered the barrier
@@ -84,7 +84,12 @@ errval_t smlt_platform_barrier_destroy(pthread_barrier_t *barrier);
 
  * @returns SMELT_SUCCESS or error value
  */
-errval_t smlt_platform_barrier_wait(pthread_barrier_t *barrier);
+errval_t smlt_platform_barrier_wait(smlt_platform_barrier_t *barrier);
+
+
+errval_t smlt_platform_node_start(void);  //int  __backend_thread_start(void);
+errval_t smlt_platform_node_end();          ///int __backend_thread_end(void);
+
 
 
 #endif /* SMLT_PLATFORM_H_ */
