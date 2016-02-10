@@ -1,7 +1,16 @@
+/*
+ * Copyright (c) 2016 ETH Zurich.
+ * All rights reserved.
+ *
+ * This file is distributed under the terms in the attached LICENSE file.
+ * If you do not find this file, copies can be found by writing to:
+ * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
+ */
 #include <smlt.h>
-#include <smlt_reduce.h>
-
-
+#include <smlt_node.h>
+#include <smlt_reduction.h>
+#include <smlt_broadcast.h>
+#include <shm/smlt_shm.h>
 
 
 /**
@@ -17,6 +26,8 @@ errval_t smlt_reduce(struct smlt_msg *input,
                      struct smlt_msg *result,
                      smlt_reduce_fn_t operation)
 {
+    errval_t err;
+
     if (!operation) {
         return smlt_reduce_notify();
     }
@@ -27,9 +38,9 @@ errval_t smlt_reduce(struct smlt_msg *input,
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
 
-    if (smlt_current_instance()->has_shm) {
-        smlt_shm_reduce(input, result);
-        if (smlt_err_fail(err)) {
+    if (smlt_node_does_shared_memory()) {
+        err = smlt_shm_reduce(input, result);
+        if (smlt_err_is_fail(err)) {
             return err;
         }
     }
@@ -53,8 +64,13 @@ errval_t smlt_reduce(struct smlt_msg *input,
     // --------------------------------------------------
     for (uint32_t i = 0; i < count; ++i) {
         err = smlt_node_recv(nl[i], result);
-        // TODO: error handling
-        result = operation(input, result);
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
+        err = operation(input, result);
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
     }
 
     // Receive (this will be from several children)
@@ -82,9 +98,9 @@ errval_t smlt_reduce_notify(void)
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
 
-    if (smlt_current_instance()->has_shm) {
-        err = shm_reduce_notify();
-        if (smlt_err_fail(err)) {
+    if (smlt_node_does_shared_memory()) {
+        err = smlt_shm_reduce_notify();
+        if (smlt_err_is_fail(err)) {
             return err;
         }
     }
@@ -115,7 +131,9 @@ errval_t smlt_reduce_notify(void)
     struct smlt_node *p = smlt_node_get_parent();
     if (p) {
         smlt_node_notify(p);
-    }    
+    }
+
+    return SMLT_SUCCESS;
 }
 
 
@@ -134,8 +152,8 @@ errval_t smlt_reduce_all(struct smlt_msg *input,
 {
     errval_t err;
 
-    err = smlt_reduce(input, result);
-    if (smlt_err_fail(err)) {
+    err = smlt_reduce(input, result, operation);
+    if (smlt_err_is_fail(err)) {
         return err;
     }
 

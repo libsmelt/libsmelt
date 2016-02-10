@@ -17,7 +17,7 @@
  * @param src   source message
  *
  */
-typedef void (*smlt_reduce_fn_t)(struct smlt_msg *dest, struct smlt_msg *src)
+typedef errval_t (*smlt_reduce_fn_t)(struct smlt_msg *dest, struct smlt_msg *src);
 
 
 /**
