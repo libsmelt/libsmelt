@@ -8,6 +8,7 @@
  */
 #include <smlt.h>
 #include <smlt_broadcast.h>
+#include <smlt_node.h>
 
 
 /**
@@ -24,12 +25,13 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
     errval_t err;
 
     uint32_t count;
-    struct smlt_node **nl = smlt_node_get_children(smlt_node_get_self(),
-                                                   &count);
+    struct smlt_node **nl = smlt_node_get_children(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
         err = smlt_node_send(nl[i], msg);
-        // TODO: error handling
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
     }
 
     return SMLT_SUCCESS;
@@ -49,7 +51,9 @@ errval_t smlt_broadcast_notify_subtree(void)
 
     for (uint32_t i = 0; i < count; ++i) {
         err = smlt_node_notify(nl[i]);
-        // TODO: error handling
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
     }
 
     return SMLT_SUCCESS;
@@ -72,9 +76,13 @@ errval_t smlt_broadcast(struct smlt_msg *msg)
     } else {
         struct smlt_node *p = smlt_node_get_parent();
         err = smlt_node_recv(p, msg);
-        /* TODO: ERROR */
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
         err = smlt_broadcast_subtree(msg);
-        /* TODO: ERROR */
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
     }
 
     return SMLT_SUCCESS;
@@ -90,21 +98,23 @@ errval_t smlt_broadcast_notify(void)
     errval_t err;
 
     if (smlt_node_is_root()) {
-        err = smlt_broadcast_notify_subtree(msg);
+        err = smlt_broadcast_notify_subtree();
     } else {
         struct smlt_node *p = smlt_node_get_parent();
-        err = smlt_node_recv(p, msg);
-        /* TODO: ERROR */
-        err = smlt_broadcast_notify_subtree(msg);
-        /* TODO: ERROR */
+        err = smlt_node_recv(p, NULL);
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
+        err = smlt_broadcast_notify_subtree();
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
     }
 
     return smlt_broadcast_subtree_notify();
 }
 
-
-
-
+#if 0
 /**
  * \brief
  *  XXX: this should be mergedw ith smlt_broadcast...
@@ -197,4 +207,4 @@ uintptr_t mp_receive_forward(uintptr_t val)
     return v;
 }
 
-    
+#endif
