@@ -29,7 +29,7 @@ typedef uint32_t smlt_nid_t;
 /**
  * represents a handle to a smelt instance.
  */
-struct smlt_inst;
+struct smlt_instance;
 
 /*
  * ===========================================================================
@@ -43,6 +43,7 @@ struct smlt_inst;
  * @brief initializes the Smelt library
  *
  * @param num_proc  the number of processors
+ * @param eagerly   create an all-to-all connection mesh
  *
  * @returns SMLT_SUCCESS on success
  * 
@@ -50,26 +51,8 @@ struct smlt_inst;
  * for parallelism, call this only once. With processes, it has to be
  * executed on each process.
  */
-errval_t smlt_init(uint32_t num_proc);
+errval_t smlt_init(uint32_t num_proc, bool eagerly);
 
-
-/**
- * @brief creates a new smelt instance
- */
-errval_t smlt_instance_create();
-
-/**
- * @brief destroys a smelt instance.
- */
-errval_t smlt_instance_destroy();
-
-
-
-struct smlt_inst *smlt_get_current_instance(void);
-
-errval_t smlt_switch_instance(void);
-
-errval_t smlt_add_node(void); //void add_binding(coreid_t sender, coreid_t receiver, mp_binding *mp);
 
 struct smlt_node *smlt_get_node_by_id(smlt_nid_t id);
 

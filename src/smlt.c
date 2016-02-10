@@ -20,6 +20,7 @@ uint32_t smlt_gbl_num_proc = 0;
  * @brief initializes the Smelt library
  *
  * @param num_proc  the number of processors
+ * @param eagerly   create an all-to-all connection mesh
  *
  * @returns SMLT_SUCCESS on success
  * 
@@ -27,23 +28,26 @@ uint32_t smlt_gbl_num_proc = 0;
  * for parallelism, call this only once. With processes, it has to be
  * executed on each process.
  */
-errval_t smlt_init(uint32_t num_proc)
+errval_t smlt_init(uint32_t num_proc, bool eagerly)
 {
     /* platform specific initializiation */
     smlt_gbl_num_proc = smlt_platform_init(num_proc);
 
     if (smlt_gbl_num_proc == 0) {
         /* there was an error while initializing */
+        return SMLT_ERR_INIT;
     }
 
     SMLT_DEBUG(SMLT_DBG__INIT, "Initializing Smelt runtime with %PRIu32 nodes\n",
                smlt_gbl_num_proc);
 
     // Debug output
-#ifdef QRM_DBG_ENABLED
-    TODOPRINTF("Debug flag (QRM_DBG_ENABLED) is set - peformace will be reduced\n");
+#ifdef SMLT_DEBUG_ENABLED
+    SMLT_DEBUG(SMLT_DBG_WARN, "Debug flag (SMLT_DEBUG_ENABLED) is set. "
+                               "May cause performance degradation\n");
 #endif
-#ifdef SYNC_DEBUG
+
+#ifdef SYNC_DEBUG_BUILD
     TODOPRINTF("Compiler optimizations are off - "
         "performance will suffer if  BUILDTYPE set to debug (in Makefile)\n");
 #endif
@@ -149,7 +153,7 @@ bool smlt_can_send(smlt_nid_t nid)
 errval_t smlt_recv_any(struct smlt_msg *msg)
 {
     /* TODO */
-    assert(!"NUI");
+    assert(!"NYI");
 
     return SMLT_SUCCESS;
 }
