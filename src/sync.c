@@ -1,14 +1,10 @@
-#include "stdio.h"
-#ifdef BARRELFISH
-#include <barrelfish/barrelfish.h>
-#endif
+int foo;
+
+#if 0
+
+
 #include <numa.h>
 
-#include "shm.h"
-#include "sync.h"
-#include "topo.h"
-#include "internal.h"
-#include "mp.h"
 
 __thread int tid;
 static coreid_t nproc;
@@ -213,3 +209,4 @@ bool is_coordinator(coreid_t c)
 {
     return c == get_sequentializer();
 }
+#endif

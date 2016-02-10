@@ -1,12 +1,7 @@
 #include <stdio.h>
 
-#include "internal.h"
-#include "sync.h"
-#include "topo.h"
-#include "barrier.h"
-#include "topo.h"
-#include "mp.h"
-#include "model_defs.h"
+#include <smlt.h>
+
 
 enum state {
     STATE_NONE,
@@ -22,13 +17,13 @@ enum state qrm_st[Q_MAX_CORES];
  * This is currently not clean, as it requires n^2 entries in the
  * buffer for n cores.
  */
-mp_binding** bindings = NULL;
+//mp_binding** bindings = NULL;
 
 __thread uint32_t tree_num_peers;
 
 __thread int num_acks;
 
-struct shl_barrier_t tree_setup_barrier;
+//struct shl_barrier_t tree_setup_barrier;
 
 /**
  * \brief This file provides functionality to setup the tree.
@@ -196,6 +191,7 @@ __thread coreid_t connect_cb_core_id;
  */
 void tree_init_bindings(void)
 {
+    /*
     if (bindings==NULL) {
 
         debug_printfff(DBG__BINDING, "Allocating memory for bindings\n");
@@ -203,6 +199,7 @@ void tree_init_bindings(void)
                                          (get_num_threads()*get_num_threads()));
         assert (bindings!=NULL);
     }
+    */
 }
 
 /*
@@ -211,6 +208,7 @@ void tree_init_bindings(void)
  */
 int tree_init(const char *qrm_my_name)
 {
+    /*
     _tree_prepare();
     num_acks = 0;
 
@@ -220,7 +218,7 @@ int tree_init(const char *qrm_my_name)
     }
 
     _tree_export(qrm_my_name);
-
+     */
     return 0;
 }
 
@@ -249,6 +247,7 @@ void tree_reset(void)
 /*     _bindings[core] = b; */
 /* } */
 
+#if TEMP_DISABLED
 void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
 {
     if (bindings==NULL) {
@@ -262,6 +261,7 @@ void add_binding(coreid_t sender, coreid_t receiver, mp_binding *b)
                    "Adding binding for %d, %d\n", sender, receiver);
     bindings[sender*get_num_threads()+receiver] = b;
 }
+
 
 mp_binding* get_binding(coreid_t sender, coreid_t receiver)
 {
@@ -446,3 +446,4 @@ binding_lst *_mp_get_parent_raw(coreid_t c)
 {
     return parent_bindings+c;
 }
+#endif

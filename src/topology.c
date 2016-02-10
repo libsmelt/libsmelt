@@ -1,18 +1,26 @@
-#include "sync.h"
-#include "topo.h"
+/*
+ * Copyright (c) 2016 ETH Zurich.
+ * All rights reserved.
+ *
+ * This file is distributed under the terms in the attached LICENSE file.
+ * If you do not find this file, copies can be found by writing to:
+ * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
+ */
+#include <smlt.h>
+#include <smlt_topology.h>
 
-// Include the pre-generated model
-#include "model.h"
 
-#include <vector>
-#include <algorithm>
+
+
+
+
 
 // --------------------------------------------------
 // Data structures - shared
 
 int *topo = NULL;
-static int topo_idx = -1;
-static int model_generated = 0;
+//static int topo_idx = -1;
+#if 0
 
 // --------------------------------------------------
 // Functions
@@ -41,6 +49,8 @@ void switch_topo(void)
     }
 }
 
+
+static int model_generated = 0;
 static void _debug_print_curr_model(void)
 {
 #ifdef QRM_DBG_ENABLED
@@ -64,7 +74,11 @@ static void _debug_print_curr_model(void)
  */
 static void _build_model(coreid_t num_threads)
 {
-    int *_topo = (int*) (malloc(sizeof(int)*(num_threads*num_threads)));
+
+    int *topo = smlt_platform_alloc(sizeof(int) * ( num_threads * num_threads),
+                                    SMLT_DEFAULT_ALIGNMENT, true);
+
+    //int *_topo = (int*) (malloc(sizeof(int)*(num_threads*num_threads)));
 
     printw("No model given, building a binary tree for machine\n");
 
@@ -243,59 +257,7 @@ int topo_is_parent_real(coreid_t core, coreid_t parent)
 }
 
 
-/**
- * \brief Check whether a node sends messages according to the current
- * model.
- *
- * If <core> does an mp_send, there is at least one other node that
- * has <core> as a parent.
- *
- * \param include_leafs Consider communication from leaf nodes to
- * sequentializer as message passing links
- */
-bool topo_does_mp_send(coreid_t core, bool include_leafs)
-{
-    // All last nodes will send messages
-    if (topo_is_leaf_node(core) && include_leafs) {
-        return true;
-    }
 
-    // Is the node a parent of any other node?
-    for (unsigned i=0; i<topo_num_cores(); i++) {
-
-        if (topo_is_child(core, i)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * \brief Check whether a node receives messages according to the
- * current model.
- *
- * \param include_leafs Consider communication from leaf nodes to
- * sequentializer as message passing links
- */
-bool topo_does_mp_receive(coreid_t core, bool include_leafs)
-{
-    // The sequentializer has to receive messages
-    if (core == get_sequentializer() && include_leafs) {
-        return true;
-    }
-
-    // Is the node receiving from any other node
-    for (unsigned i=0; i<topo_num_cores(); i++) {
-
-        if (topo_is_child(i, core)) {
-
-            return true;
-        }
-    }
-
-    return false;
-}
 
 const char* topo_get_name(void)
 {
@@ -344,38 +306,6 @@ coreid_t topo_last_node(void)
     return last_nodes[get_topo_idx()];
 }
 
-std::vector<int> **topo_all_leaf_nodes(void)
-{
-    return all_leaf_nodes;
-}
-
-bool topo_does_shm_send(coreid_t core)
-{
-    for (unsigned i=0; i<topo_num_cores(); i++) {
-
-        if (topo_get(core, i)>=SHM_MASTER_START &&
-            topo_get(core, i)<SHM_MASTER_MAX) {
-
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool topo_does_shm_receive(coreid_t core)
-{
-    for (unsigned i=0; i<topo_num_cores(); i++) {
-
-        if (topo_get(core, i)>=SHM_SLAVE_START &&
-            topo_get(core, i)<SHM_SLAVE_MAX) {
-
-            return true;
-        }
-    }
-
-    return false;
-}
 
 
 
@@ -417,7 +347,4 @@ int topo_mp_cluster_size(coreid_t coordinator, int clusterid)
     return num;
 }
 
-bool topo_does_mp(coreid_t core)
-{
-    return topo_does_mp_send(core, false) || topo_does_mp_receive(core, false);
-}
+#endif
