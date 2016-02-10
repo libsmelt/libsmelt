@@ -31,7 +31,7 @@
  */
 struct smlt_barrier 
 {
-
+    bool use_payload;
 
 };
 

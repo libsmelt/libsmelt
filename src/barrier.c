@@ -1,6 +1,16 @@
-#include "sync.h"
-#include "shm.h"
-#include "barrier.h"
+/*
+ * Copyright (c) 2016 ETH Zurich.
+ * All rights reserved.
+ *
+ * This file is distributed under the terms in the attached LICENSE file.
+ * If you do not find this file, copies can be found by writing to:
+ * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
+ */
+#include <smlt.h>
+#include <smlt_barrier.h>
+#include <smlt_reduction.h>
+#include <smlt_broadcast.h>
+#include <shm/smlt_shm.h>
 
 
 /**
@@ -13,6 +23,7 @@
 errval_t smlt_barrier_init(struct smlt_barrier *bar)
 {
 
+    return SMLT_SUCCESS;
 
 }
 
@@ -26,7 +37,7 @@ errval_t smlt_barrier_init(struct smlt_barrier *bar)
 errval_t smlt_barrier_destroy(struct smlt_barrier *bar)
 {
 
-
+    return SMLT_SUCCESS;
 }
 
 /**
@@ -40,6 +51,7 @@ errval_t smlt_barrier_wait(struct smlt_barrier *bar)
 {
     smlt_reduce_notify();
     smlt_broadcast_notify();
+    return SMLT_SUCCESS;
 }
 
 
@@ -74,12 +86,12 @@ int shl_barrier_init(shl_barrier_t *barrier,
 {
     //    assert (idx_max==0); // only one barrier at a time.
 
-    printf("shl_barrier_init count %d\n", count);
+//    printf("shl_barrier_init count %d\n", count);
 
     assert (idx_max==0 || barrier_num==count);
 
     if (idx_max>0) {
-        printf("WARNING: Mapping multiple barriers to the same implementation\n");
+  //      printf("WARNING: Mapping multiple barriers to the same implementation\n");
     }
 
     barrier_num = count;
@@ -100,10 +112,10 @@ int shl_barrier_wait(shl_barrier_t *barrier)
 int shl_hybrid_barrier(void* bla)
 {
     // Reduce
-    sync_reduce(1);
+    //sync_reduce(1);
 
     // Broadcast
-    ab_forward(1, get_sequentializer());
+    //ab_forward(1, get_sequentializer());
 
     return 0;
 }
@@ -111,14 +123,15 @@ int shl_hybrid_barrier(void* bla)
 int shl_hybrid_barrier0(void* bla)
 {
     // Reduce
-    sync_reduce0(1);
+   // sync_reduce0(1);
 
     // Broadcast
-    ab_forward0(1, get_sequentializer());
+    //ab_forward0(1, get_sequentializer());
 
     return 0;
 }
 
+#if 0
 
 static __thread int _shl_round = 0;
 void shl_barrier_shm(int b_count)
@@ -288,3 +301,4 @@ void mp_barrier(cycles_t *measurement)
 
     debug_printfff(DBG__REDUCE, "barrier complete #%d\n", _num_barrier);
 }
+#endif
