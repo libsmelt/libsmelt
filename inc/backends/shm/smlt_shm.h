@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 ETH Zurich.
+ * Copyright (c) 2016 ETH Zurich.
  * All rights reserved.
  *
  * This file is distributed under the terms in the attached LICENSE file.
@@ -10,12 +10,7 @@
 #define SYNC_SHM_H 1
 
 #include <inttypes.h>
-#include "sync.h"
 
-int init_master_share(void);
-int map_master_share(void);
-
-// Layout of the shared page
 union quorum_share {
     // Structure
     struct {
@@ -31,7 +26,7 @@ union quorum_share {
 
         // Several counters on the same cache-line, but we don't care
         // as different counters are never used concurrently anyway
-        spinlock_t __attribute__ ((aligned(64))) lock;
+        smlt_platform_lock_t __attribute__ ((aligned(64))) lock;
 
         // --  8 bytes
 
@@ -72,6 +67,23 @@ union quorum_share {
         pthread_barrier_t sync_barrier;
     } data;
 };
+
+
+errval_t smlt_shm_reduce(struct smlt_msg *input, struct smlt_msg *output);
+errval_t smlt_shm_reduce_notify(void);
+
+
+
+errval_t smlt_shm_init_master_share(void);
+union quorum_share*smlt_shm_get_master_share(void);
+
+#if 0
+
+int init_master_share(void);
+int map_master_share(void);
+
+// Layout of the shared page
+
 
 
 union quorum_share* get_master_share(void);
@@ -196,5 +208,5 @@ int shm_cluster_get_unique_reader_id(unsigned cid,
 
 
 uintptr_t shm_reduce(uintptr_t);
-
+#endif
 #endif /* SYNC_SHM_H */

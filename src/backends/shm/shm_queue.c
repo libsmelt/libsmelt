@@ -1,10 +1,5 @@
-/**
- * \file
- * \brief Implementation of shared memory qeueue writer
- */
-
 /*
- * Copyright (c) 2015, ETH Zurich.
+ * Copyright (c) 2016, ETH Zurich.
  * All rights reserved.
  *
  * This file is distributed under the terms in the attached LICENSE file.
@@ -13,6 +8,8 @@
  * Attn: Systems Group.
  */
 
+#include <smlt.h>
+#include <shm/smlt_shm.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -21,8 +18,7 @@
 #include <sched.h>
 #include <stdbool.h>
 
-#include "shm.h"
-
+#if 0
 
 //#define DEBUG_SHM
 #define END 1
@@ -221,3 +217,4 @@ void shm_receive_raw(struct shm_queue* context,
 
 }
 
+#endif

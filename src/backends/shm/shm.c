@@ -1,8 +1,5 @@
-#include "sync.h"
-#include "internal.h"
-#include "shm.h"
-#include "model_defs.h"
-#include "topo.h"
+#include <smlt.h>
+#include <shm/smlt_shm.h>
 
 #ifdef BARRELFISH
 #include <barrelfish/barrelfish.h>
@@ -41,7 +38,7 @@ void** cluster_bufs;
  * Will overflow, but that is okay given that the type of the local
  * and global round variable is the same (uint8)
  */
-static __thread uint8_t red_round = 0; // XXX HAS to be uint8
+//static __thread uint8_t red_round = 0; // XXX HAS to be uint8
 
 int init_master_share(void)
 {
@@ -101,8 +98,9 @@ union quorum_share* get_master_share(void)
 void shm_init(void)
 {
     // Should be called from sequentializer
-    assert (get_thread_id() == get_sequentializer());
+    //assert (get_thread_id() == get_sequentializer());
 
+#if 0
     // --> per-thread state:
     // Allocate space for shared-memory data structures
     clusters = new struct shm_queue* [topo_num_cores()];
@@ -160,7 +158,7 @@ void shm_init(void)
 #endif
         assert (reductions[cidx]!=NULL);
     }
-
+#endif
 }
 
 /**
@@ -172,6 +170,7 @@ void shm_init(void)
  */
 void shm_switch_topo(void)
 {
+#if 0
     int num_clusters;
     int *model_ids;
     int *cluster_ids;
@@ -254,10 +253,12 @@ void shm_switch_topo(void)
     }
 
     debug_printfff(DBG__SWITCH_TOPO, "shm_switch_topo done\n");
+#endif
 }
 
 int shm_does_shm(coreid_t core)
 {
+#if 0
     for (unsigned x=0; x<topo_num_cores(); x++) {
 
         int value = topo_get(core, x);
@@ -269,8 +270,9 @@ int shm_does_shm(coreid_t core)
             return 1;
         }
     }
-
+#endif
     return 0;
+
 }
 
 
@@ -281,6 +283,7 @@ int shm_does_shm(coreid_t core)
  */
 int shm_is_cluster_coordinator(coreid_t core)
 {
+#if 0
     int value;
     for (unsigned x=0; x<topo_num_cores(); x++) {
 
@@ -291,8 +294,9 @@ int shm_is_cluster_coordinator(coreid_t core)
             return value-SHM_MASTER_START;
         }
     }
-
+#endif
     return -1;
+
 }
 
 void shm_get_clusters_for_core (int core,
@@ -300,6 +304,7 @@ void shm_get_clusters_for_core (int core,
                                 int **model_ids,
                                 int **cluster_ids) {
 
+#if 0
      int i = 0;
 
     *model_ids = (int*) malloc(sizeof(int)*topo_num_topos()*get_max_num_clusters());
@@ -344,9 +349,11 @@ void shm_get_clusters_for_core (int core,
     }
 
     *num_clusters = i;
+#endif
 }
 
 
+#if 0
 void shm_get_clusters (int* num_clusters,
                        int **model_ids,
                        int **cluster_ids) {
@@ -609,3 +616,4 @@ uintptr_t shm_reduce(uintptr_t val)
     return current_aggregate;
 
 }
+#endif
