@@ -125,6 +125,10 @@ bool smlt_node_is_root(void);
  */
 bool smlt_node_is_leaf(void);
 
+bool smlt_node_does_message_passing(void);
+
+bool smlt_node_does_shared_memory(void);
+
 /**
  * @brief gets the parent of the calling node
  *
