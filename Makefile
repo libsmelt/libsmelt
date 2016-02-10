@@ -1,6 +1,8 @@
 # Makefile for libsync
 
-TARGET=libsync.so
+CC=gcc
+
+TARGET=libsmltrt.so
 
 # Source files
 # --------------------------------------------------
@@ -65,6 +67,7 @@ LIBS += -lnuma
 # --------------------------------------------------
 DEPS = $(OBJS)
 DEPS += $(HEADERS)
+DEPS += Makefile
 
 
 # Switch buildtype: supported are "debug" and "release"
@@ -75,7 +78,7 @@ endif
 
 
 ifeq ($(BUILDTYPE),debug)
-	OPT=-ggdb -O0 -pg -DSYNC_DEBUG -gdwarf-2
+	OPT=-ggdb -O0 -pg -DSYNC_DEBUG_BUILD -gdwarf-2
 else
 	OPT=-O3 -ggdb
 endif
@@ -93,7 +96,8 @@ CFLAGS += $(OPT)
 #	CXXFLAGS += -DSHL
 #endif
 
-all: $(TARGET)
+all: test/nodes-test
+#$(TARGET)
 
 test: test/mp-test
 
@@ -104,6 +108,9 @@ test/mp-test: $(DEPS) $(EXTERNAL_OBJS) test/mp-test.cpp
 
 test/ping-pong: $(DEPS) $(EXTERNAL_OBJS) test/ping-pong.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/ping-pong.cpp -o $@
+
+test/nodes-test: test/nodes-test.c $(TARGET)
+	$(CC) $(CFLAGS) $(INC) -L./ test/nodes-test.c -o $@ -lsmltrt
 
 # Benchmarks
 # --------------------------------------------------
@@ -122,21 +129,19 @@ bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.cpp
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
-	$(CXX) -shared $(CXXFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET)
-	STATIC=$(patsubst %.so,%.a,$(TARGET))
-	ar  rcs $(STATIC) $(OBJS) $(EXTERNAL_OBJS)
+	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET)
+	ar rcs $(patsubst %.so,%.a,$(TARGET)) $(OBJS) $(EXTERNAL_OBJS)
 
 # Compile object files
 # --------------------------------------------------
-%.o : %.cpp
+%.o : %.cpp Makefile
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@
 
-%.o : %.c
+%.o : %.c Makefile
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f *.o test/*.o $(TARGET) test/mp-test
-	$(MAKE) -C $(UMPQ) clean
+	rm -f *.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test
 
 debug:
 	echo $(HEADERS)
