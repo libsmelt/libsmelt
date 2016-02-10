@@ -72,8 +72,8 @@ errval_t smlt_topology_destroy(struct smlt_topology *topology);
  *
  * @return SMELT_SUCCESS or error value
  */
-errval_t smlt_topology_switch(struct smelt_topology *new_topo,
-                              struct smelt_topology **ret_old);
+errval_t smlt_topology_switch(struct smlt_topology *new_topo,
+                              struct smlt_topology **ret_old);
 
 /**
  * @brief gets the current active Smelt topology
@@ -97,7 +97,7 @@ struct smlt_topology *smlt_topology_get_active(void);
  *
  * @return string representation
  */
-const char *smlt_topology_get_name(struct smelt_topology *topo);
+const char *smlt_topology_get_name(struct smlt_topology *topo);
 
 /**
  * @brief gets an array of nodes
@@ -106,7 +106,7 @@ const char *smlt_topology_get_name(struct smelt_topology *topo);
  *
  * @return pointer to a nodes array
  */
-struct smelt_node **smlt_topology_get_nodes(struct smelt_topology *topo);
+struct smelt_node **smlt_topology_get_nodes(struct smlt_topology *topo);
 
 /**
  * @brief gets the number of nodes in the topology
@@ -115,7 +115,7 @@ struct smelt_node **smlt_topology_get_nodes(struct smelt_topology *topo);
  *
  * @return number of nodes
  */
-uint32_t smlt_topology_get_num_nodes(struct smelt_topology *topo);
+uint32_t smlt_topology_get_num_nodes(struct smlt_topology *topo);
 
 /**
  * @brief gets the cluster size
