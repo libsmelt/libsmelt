@@ -16,10 +16,12 @@ typedef uint64_t errval_t;
 
 
 /* platform specific barrier */
-#define smlt_platform_barrier_t pthread_barrier_t
-#define smlt_platform_barrierattr_t pthread_barrierattr_t
+typedef pthread_barrier_t smlt_platform_barrier_t;
+typedef pthread_barrierattr_t smlt_platform_barrierattr_t;
 
-//typedef pthread_spinlock_t spinlock_t;
+/* platform specific lock */
+typedef pthread_spinlock_t smlt_platform_lock_t;
+
 typedef uint32_t coreid_t;
 
 typedef uint64_t cycles_t;
