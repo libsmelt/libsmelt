@@ -72,7 +72,7 @@ void smlt_message_free(struct smlt_msg *msg);
 
 /*
  * ===========================================================================
- * operations
+ * payload operations
  * ===========================================================================
  */
 
@@ -99,8 +99,8 @@ uint32_t smlt_message_write(struct smlt_msg *msg,
  *
  * @returns number of bytes written
  */
-uint32_t smlt_message_read(struct smlt_message *msg,
-                            void *data, uint32_t size);
+uint32_t smlt_message_read(struct smlt_msg *msg,
+                           void *data, uint32_t size);
 
 
 /*

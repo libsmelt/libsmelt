@@ -9,12 +9,17 @@
 #ifndef SMLT_NODE_H_
 #define SMLT_NODE_H_ 1
 
+#include <smlt_queuepair.h>
+
 /*
  * ===========================================================================
  * type declarations
  * ===========================================================================
  */
-struct smlt_node;
+struct smlt_node
+{
+    struct smlt_qp qp;
+};
 
 /**
  * arguments passed to the the new smelt node
@@ -23,9 +28,11 @@ struct smlt_node_args
 {
     smlt_nid_t id;          ///< the node ID to set
     coreid_t core;          ///< ID of the core to start the thread on
-    void (*start)(void *)   ///< the start function
+    void (*start)(void *);  ///< the start function
     void *arg;              ///< argument for the start function
 };
+
+#define SMLT_NODE_CHECK(_node)
 
 
 /*
@@ -62,6 +69,9 @@ errval_t smlt_node_join(struct smlt_node *node);
 errval_t smlt_node_cancel(struct smlt_node *node);
 
 
+errval_t smlt_node_init(void); // int  __thread_init(coreid_t,int);
+errval_t smlt_node_end(void); //int  __thread_end(void);
+
 /*
  * ===========================================================================
  * node state functions
@@ -83,7 +93,7 @@ smlt_nid_t smlt_node_get_id(void);
  *
  * @returns integer value representing the node id
  */
-smlt_nid_t smlt_node_get_id_of_node(struct smelt_node *node);
+smlt_nid_t smlt_node_get_id_of_node(struct smlt_node *node);
 
 /**
  * @brief gets the core ID of the current node
@@ -99,7 +109,7 @@ smlt_nid_t smlt_node_get_coreid(void);
  *
  * @returns integer value representing the node id
  */
-smlt_nid_t smlt_node_get_coreid_of_node(struct smelt_node *node);
+smlt_nid_t smlt_node_get_coreid_of_node(struct smlt_node *node);
 
 /**
  * @brief checks whether the calling node is the root of the tree
@@ -195,7 +205,7 @@ static inline bool smlt_node_can_send(struct smlt_node *node)
     return smlt_queuepair_can_send(&node->qp);
 }
 
-/* TODO: include also non blocking variants ?
+/* TODO: include also non blocking variants ? */
 
 
 /*

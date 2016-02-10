@@ -9,9 +9,9 @@
 #ifndef SMLT_SMLT_H_
 #define SMLT_SMLT_H_ 1
 
-
 #include <smlt_config.h>
 #include <smlt_platform.h>
+#include <smlt_error.h>
 #include <smlt_message.h>
 
 
@@ -65,10 +65,13 @@ errval_t smlt_instance_destroy();
 
 
 
-struct smlt_inst *smlt_get_current_instance();
+struct smlt_inst *smlt_get_current_instance(void);
 
-errval_t smlt_switch_instance();
+errval_t smlt_switch_instance(void);
 
+errval_t smlt_add_node(void); //void add_binding(coreid_t sender, coreid_t receiver, mp_binding *mp);
+
+struct smlt_node *smlt_get_node_by_id(smlt_nid_t id);
 
 /*
  * ===========================================================================
@@ -109,7 +112,7 @@ errval_t smlt_notify(smlt_nid_t nid);
  */
 bool smlt_can_send(smlt_nid_t nid);
 
-/* TODO: include also non blocking variants ?
+/* TODO: include also non blocking variants ? */
 
 /*
  * ===========================================================================
@@ -143,26 +146,4 @@ errval_t smlt_recv(smlt_nid_t nid, struct smlt_msg *msg);
 bool smlt_can_recv(smlt_nid_t nid);
 
 
-
-
-/* TODO :*/
-void __sync_init(int, bool);
-void __sync_init_no_tree(int);
-void __sys_init(void);
-
-int  __thread_init(coreid_t,int);
-int  __thread_end(void);
-
-int  __backend_thread_end(void);
-int  __backend_thread_start(void);
-
-unsigned int  get_thread_id(void);
-coreid_t  get_core_id(void);
-unsigned int  get_num_threads(void);
-bool is_coordinator(coreid_t);
-void add_binding(coreid_t sender, coreid_t receiver, mp_binding *mp);
-mp_binding* get_binding(coreid_t sender, coreid_t receiver);
-
-void pin_thread(coreid_t);
-int __lowlevel_thread_init(int tid);
 #endif /* SMLT_SMLT_H_ */

@@ -63,7 +63,7 @@ errval_t smlt_broadcast_notify(void);
 
 /*
   TODO
-  uintptr_t mp_receive_forward(uintptr_t);
+  uintptr_t mp_receive_forward(uintptr_t);  
   uintptr_t ab_forward(uintptr_t, coreid_t);
 */
 #endif /* SMLT_BROADCAST_H_ */

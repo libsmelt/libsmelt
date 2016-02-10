@@ -9,7 +9,7 @@
 #ifndef SMLT_QUEUEPAIR_H_
 #define SMLT_QUEUEPAIR_H_ 1
 
-#include <smlt/endpoint.h> 
+#include <smlt_endpoint.h>
 
 /*
  * ===========================================================================
@@ -17,7 +17,7 @@
  * ===========================================================================
  */
  #define SMLT_QP_CHECK(qp) \
-    assert(qp && qp->rt_ep && qp->tx_ep)
+    assert(qp)
 
 /*
  * ===========================================================================
@@ -55,7 +55,7 @@ struct smlt_qp
   * @returns 0
   */
 errval_t smlt_queuepair_create(smlt_ep_type_t type,
-                              struct smlt_ep **ret_ep);
+                               struct smlt_ep **ret_ep);
 
  /**
   * @brief destroys the queuepair 
@@ -84,12 +84,12 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp);
  *
  * This function is BLOCKING if the queuepair cannot take new messages
  */
-static inline errval_t smlt_queuepair_send(struct smlt_qp *ep, 
+static inline errval_t smlt_queuepair_send(struct smlt_qp *qp,
                                            struct smlt_msg *msg)
 {
-    SMLT_QP_CHECK(ep);
+    SMLT_QP_CHECK(qp);
     
-    return smlt_queuepair_send(&qp->tx_ep, msg);
+    return smlt_endpoint_send(&qp->tx_ep, msg);
 }
 
 /**
@@ -102,10 +102,10 @@ static inline errval_t smlt_queuepair_send(struct smlt_qp *ep,
  */
 static inline errval_t smlt_queuepair_notify(struct smlt_qp *qp)
 {
-    SMLT_QP_CHECK(ep);
+    SMLT_QP_CHECK(qp);
 
     /* XXX: maybe provide another function */
-    return smlt_queuepair_notify(&qp->tx_ep);
+    return smlt_endpoint_notify(&qp->tx_ep);
 }
 
 /**
@@ -118,12 +118,12 @@ static inline errval_t smlt_queuepair_notify(struct smlt_qp *qp)
  */
 static inline bool smlt_queuepair_can_send(struct smlt_qp *qp)
 {
-    SMLT_QP_CHECK(ep);
+    SMLT_QP_CHECK(qp);
     
-    return smlt_queuepair_can_send(&qp->tx_ep);
+    return smlt_endpoint_can_send(&qp->tx_ep);
 }
 
-/* TODO: include also non blocking variants ?
+/* TODO: include also non blocking variants ? */
 
 /*
  * ===========================================================================
@@ -145,9 +145,9 @@ static inline bool smlt_queuepair_can_send(struct smlt_qp *qp)
 static inline errval_t smlt_queuepair_recv(struct smlt_qp *qp, 
                                            struct smlt_msg *msg)
 {
-    SMLT_QP_CHECK(ep);
+    SMLT_QP_CHECK(qp);
     
-    return smlt_queuepair_recv(&qp->rx_ep, msg);
+    return smlt_endpoint_recv(&qp->rx_ep, msg);
 }
 
 /**
@@ -162,9 +162,9 @@ static inline errval_t smlt_queuepair_recv(struct smlt_qp *qp,
  */
 static inline bool smlt_queuepair_can_recv(struct smlt_qp *qp)
 {
-    SMLT_QP_CHECK(ep);
+    SMLT_QP_CHECK(qp);
 
-    return smlt_queuepair_can_recv(&qp->rx_ep);
+    return smlt_endpoint_can_recv(&qp->rx_ep);
 }
 
 

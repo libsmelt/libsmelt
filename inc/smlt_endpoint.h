@@ -15,7 +15,7 @@
  * ===========================================================================
  */
  #define SMLT_EP_CHECK(ep, dir) \
-    assert(ep && ep->state == SMLT_EP_ST_ONLINE && ep->direction == dir)
+    assert(ep && ep->state == SMLT_EP_STATE_ONLINE && ep->direction == dir)
 
 /*
  * ===========================================================================
@@ -67,6 +67,8 @@ typedef enum {
  */
 typedef errval_t (*smlt_ep_op_fn_t)(struct smlt_ep *ep, struct smlt_msg *msg);
 
+typedef errval_t (*smlt_ep_notify_fn_t)(struct smlt_ep *ep);
+
 /**
  * @brief type definition for the CHECK function of the endpoint. 
  * 
@@ -77,7 +79,7 @@ typedef errval_t (*smlt_ep_op_fn_t)(struct smlt_ep *ep, struct smlt_msg *msg);
  *
  * this invokes either the can_send or can_receive function
  */
-typedef bool (*smlt_ep_check_fn_t)(struct smlt_ep *ep, struct smlt_msg *msg);
+typedef bool (*smlt_ep_check_fn_t)(struct smlt_ep *ep);
 
 /**
  * represents a Smelt endpoint
@@ -89,14 +91,15 @@ struct smlt_ep
     smlt_ep_type_t type;            ///< backend type of the endpoint
     union {
         struct {                          
-            smlt_ep_op_fn_t send;           ///< send operation
+            smlt_ep_op_fn_t do_send;           ///< send operation
+            smlt_ep_notify_fn_t notify;
             smlt_ep_check_fn_t can_send;    ///< checks if can be send
-        };
+        } send;
         struct {
-            smlt_ep_op_fn_t recv;           ///< recv operation
+            smlt_ep_op_fn_t do_recv;           ///< recv operation
             smlt_ep_check_fn_t can_recv;    ///< checksi if can be received
-        } ;
-    };
+        } recv;
+    } f;
     errval_t error;                 ///< error value that occured
     /* type specific endpoint */
 };
@@ -151,7 +154,7 @@ static inline errval_t smlt_endpoint_send(struct smlt_ep *ep,
 {
     SMLT_EP_CHECK(ep, SMLT_EP_DIRECTION_SEND);
     
-    return ep->send(ep, msg);
+    return ep->f.send.do_send(ep, msg);
 }
 
 /**
@@ -167,7 +170,7 @@ static inline errval_t smlt_endpoint_notify(struct smlt_ep *ep)
     SMLT_EP_CHECK(ep, SMLT_EP_DIRECTION_SEND);
 
     /* XXX: maybe provide another function */
-    return ep->send_notify(ep);
+    return ep->f.send.notify(ep);
 }
 
 /**
@@ -182,10 +185,10 @@ static inline bool smlt_endpoint_can_send(struct smlt_ep *ep)
 {
     SMLT_EP_CHECK(ep, SMLT_EP_DIRECTION_SEND);
     
-    return ep->can_send(ep);
+    return ep->f.send.can_send(ep);
 }
 
-/* TODO: include also non blocking variants ?
+/* TODO: include also non blocking variants ? */
 
 /*
  * ===========================================================================
@@ -209,7 +212,7 @@ static inline errval_t smlt_endpoint_recv(struct smlt_ep *ep,
 {
     SMLT_EP_CHECK(ep, SMLT_EP_DIRECTION_RECV);
     
-    return ep->recv(ep, msg);
+    return ep->f.recv.do_recv(ep, msg);
 }
 
 /**
@@ -226,7 +229,7 @@ static inline bool smlt_endpoint_can_recv(struct smlt_ep *ep)
 {
     SMLT_EP_CHECK(ep, SMLT_EP_DIRECTION_RECV);
 
-    return ep->can_recv(ep);
+    return ep->f.recv.can_recv(ep);
 }
 
 
