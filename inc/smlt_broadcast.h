@@ -34,7 +34,7 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg);
  *
  * @returns TODO:errval
  */
-errval_t smlt_broadcast_subtree_notify(void);
+errval_t smlt_broadcast_notify_subtree(void);
 
 /**
  * @brief performs a broadcast to all nodes on the current active instance 

@@ -111,7 +111,7 @@ errval_t smlt_broadcast_notify(void)
         }
     }
 
-    return smlt_broadcast_subtree_notify();
+    return smlt_broadcast_notify_subtree();
 }
 
 #if 0
