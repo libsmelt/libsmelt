@@ -9,13 +9,12 @@
 #ifndef INTERNAL_DEBUG_H
 #define INTERNAL_DEBUG_H 1
 
-#include "sync.h"
-#include "shm.h"
+#include "debug.h"
 
-struct shm_context {
-
-    
-};
+//struct shm_context {//
+//
+ //
+//};
 
 /**
  * \brief Per-thread context of libsync.
@@ -46,14 +45,41 @@ void setup_tree_from_model(void);
  */
 struct binding_lst {
     unsigned int num;
-    mp_binding **b;
-    mp_binding **b_reverse;
+  //  mp_binding **b;
+  //  mp_binding **b_reverse;
     int *idx;
 };
 
-binding_lst *_mp_get_parent_raw(coreid_t c);
-binding_lst *_mp_get_children_raw(coreid_t c);
+//binding_lst *_mp_get_parent_raw(coreid_t c);
+//binding_lst *_mp_get_children_raw(coreid_t c);
 
-void _setup_chanels(int src, int dst);
+//void _setup_chanels(int src, int dst);
+
+/*
+ * =============================================================================
+ * Node functions
+ * =============================================================================
+ */
+
+/*
+ * =============================================================================
+ * Platform specific functions
+ * =============================================================================
+ */
+
+
+/**
+ * @brief executed when the Smelt thread is initialized
+ *
+ * @return SMLT_SUCCESS on ok
+ */
+errval_t smlt_platform_thread_start_hook(void);
+
+/**
+ * @brief executed when the Smelt thread terminates
+ *
+ * @return SMLT_SUCCESS on ok
+ */
+errval_t smlt_platform_thread_end_hook(void);
 
 #endif /* INTERNAL_DEBUG_H */

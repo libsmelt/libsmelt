@@ -9,6 +9,9 @@
 #ifndef SMLT_PLATFORM_H_
 #define SMLT_PLATFORM_H_ 1
 
+/* forward declaration */
+struct smlt_node;
+
 /*
  * ===========================================================================
  * Operating System
@@ -92,16 +95,64 @@ errval_t smlt_platform_lock_init(smlt_platform_lock_t *lock);
 void smlt_platform_lock_acquire(smlt_platform_lock_t *lock);
 void smlt_platfrom_lock_release(smlt_platform_lock_t *lock);
 
-
 /*
  * ===========================================================================
- * Starting of nodes
+ * Thread Control
  * ===========================================================================
  */
 
+/**
+ * @brief pins the calling thread to the given core
+ *
+ * @param core  ID of the core to pint the thread to
+ *
+ * @return SMLT_SUCCESS or error value
+ */
+errval_t smlt_platform_pin_thread(coreid_t core);
 
-errval_t smlt_platform_node_start(void);  //int  __backend_thread_start(void);
-errval_t smlt_platform_node_end();          ///int __backend_thread_end(void);
+
+/*
+ * ===========================================================================
+ * Platform specific Smelt node management
+ * ===========================================================================
+ */
+
+/**
+ * @brief handles the platform specific initialization of the Smelt node
+ *
+ * @param node  the node to be created
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_create(struct smlt_node *node);
+
+/**
+ * @brief Starts the platform specific execution of the Smelt node
+ *
+ * @param node  the Smelt node
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_start(struct smlt_node *node);
+
+/**
+ * @brief waits for the Smelt node to be done with execution
+ *
+ * @param node  the Smelt node
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_join(struct smlt_node *node);
+
+/**
+ * @brief cancles the execution of the Smelt node
+ *
+ * @param node  The Smelt node
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_cancel(struct smlt_node *node);
+
 
 /*
  * ===========================================================================
