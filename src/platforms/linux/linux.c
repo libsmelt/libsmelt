@@ -107,6 +107,9 @@ errval_t smlt_platform_barrier_wait(smlt_platform_barrier_t *barrier)
  */
 errval_t smlt_platform_pin_thread(coreid_t core)
 {
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "platform: pinning thread to core %" PRIu32 " \n",
+               core);
+
     cpu_set_t cpu_mask;
     int err;
 
@@ -178,9 +181,11 @@ errval_t smlt_platform_node_create(struct smlt_node *node)
 
 static void *smlt_platform_node_start_wrapper(void *arg)
 {
-    SMLT_DEBUG(SMLT_DBG__PLATFORM, "thread started execution\n");
-
     struct smlt_node *node = arg;
+
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "platform: thread started execution id=%" PRIu32 "\n",
+               smlt_node_get_id_of_node(node));
+
 
     /* initializing smelt node */
     smlt_node_exec_start(node);
@@ -203,7 +208,9 @@ static void *smlt_platform_node_start_wrapper(void *arg)
  */
 errval_t smlt_platform_node_start(struct smlt_node *node)
 {
-    SMLT_DEBUG(SMLT_DBG__PLATFORM, "platform: starting node\n")
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "platform: starting node with id=%" PRIu32 "\n",
+               smlt_node_get_id_of_node(node));
+
     int err = pthread_create(&node->handle, NULL, smlt_platform_node_start_wrapper,
                              node);
     if (err) {
@@ -222,6 +229,12 @@ errval_t smlt_platform_node_start(struct smlt_node *node)
  */
 errval_t smlt_platform_node_join(struct smlt_node *node)
 {
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "platform: joining node with id=%" PRIu32 "\n",
+               smlt_node_get_id_of_node(node));
+    int err = pthread_join(node->handle, NULL);
+    if (err) {
+        return -1;
+    }
     return SMLT_SUCCESS;
 }
 

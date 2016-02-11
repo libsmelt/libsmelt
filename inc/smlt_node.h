@@ -161,7 +161,10 @@ smlt_nid_t smlt_node_get_id(void);
  *
  * @returns integer value representing the node id
  */
-smlt_nid_t smlt_node_get_id_of_node(struct smlt_node *node);
+static inline smlt_nid_t smlt_node_get_id_of_node(struct smlt_node *node)
+{
+    return node->id;
+}
 
 /**
  * @brief gets the ID of the current node

@@ -75,7 +75,7 @@ errval_t smlt_node_start(struct smlt_node *node, smlt_node_start_fn_t fn, void *
  */
 errval_t smlt_node_join(struct smlt_node *node)
 {
-    return SMLT_SUCCESS;
+    return smlt_platform_node_join(node);
 }
 
 
@@ -114,6 +114,8 @@ errval_t smlt_node_lowlevel_init(smlt_nid_t nid)
     if (smlt_node_self != NULL) {
         core = smlt_node_self->core;
     }
+
+    SMLT_DEBUG(SMLT_DBG__NODE, "lowlevel thread init \n");
 
     err = smlt_platform_pin_thread(core);
     if (smlt_err_is_fail(err)) {
