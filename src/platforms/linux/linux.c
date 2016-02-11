@@ -11,9 +11,7 @@
 #include <smlt_node.h>
 #include "../../internal.h"
 
-
 #include <sched.h>
-#include <errno.h>
 
 #include <stdarg.h>
 #include <numa.h>
@@ -28,6 +26,8 @@
  */
 uint32_t smlt_platform_init(uint32_t num_proc)
 {
+    SMLT_DEBUG(SMLT_DBG__INIT, "platform specific initialization (Linux)\n");
+
     if (numa_available() != 0) {
         SMLT_ERROR("NUMA is not available!\n");
         return 0;
@@ -38,7 +38,11 @@ uint32_t smlt_platform_init(uint32_t num_proc)
     SMLT_NOTICE("UMP sleep disabled\n");
 #endif
 
-    return 0;
+    if (num_proc > numa_num_possible_cpus()) {
+        num_proc = numa_num_possible_cpus();
+    }
+
+    return num_proc;
 }
 
 /*
@@ -199,6 +203,7 @@ static void *smlt_platform_node_start_wrapper(void *arg)
  */
 errval_t smlt_platform_node_start(struct smlt_node *node)
 {
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "platform: starting node\n")
     int err = pthread_create(&node->handle, NULL, smlt_platform_node_start_wrapper,
                              node);
     if (err) {
@@ -231,6 +236,65 @@ errval_t smlt_platform_node_cancel(struct smlt_node *node)
 {
 
     return SMLT_SUCCESS;
+}
+
+
+/*
+ * ===========================================================================
+ * Memory allocation abstraction
+ * ===========================================================================
+ */
+
+
+/**
+ * @brief allocates a buffer reachable by all nodes on this machine
+ *
+ * @param bytes         number of bytes to allocate
+ * @param align         align the buffer to a multiple bytes
+ * @param do_clear      if TRUE clear the buffer (zero it)
+ *
+ * @returns pointer to newly allocated buffer
+ *
+ * When processes are used this buffer will be mapped to all processes.
+ * The memory is allocated from any numa node
+ */
+void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
+{
+    SMLT_WARNING("%s not fully implemented! (alignment)\n", __FUNCTION__);
+    if (do_clear) {
+        return calloc(1, bytes);
+    }
+    return malloc(bytes);
+}
+
+/**
+ * @brief allocates a buffer reachable by all nodes on this machine on a NUMA node
+ *
+ * @param bytes     number of bytes to allocate
+ * @param align     align the buffer to a multiple bytes
+ * @param node      which numa node to allocate the buffer
+ * @param do_clear  if TRUE clear the buffer (zero it)
+ *
+ * @returns pointer to newly allocated buffer
+ *
+ * When processes are used this buffer will be mapped to all processes.
+ * The memory is allocated form the specified NUMA node
+ */
+void *smlt_platform_alloc_on_node(uint64_t bytes, uintptr_t align, uint8_t node,
+                                  bool do_clear)
+{
+    SMLT_WARNING("%s not fully implemented! (NUMA node)\n", __FUNCTION__);
+    return smlt_platform_alloc(bytes, align, do_clear);
+}
+
+/**
+ * @brief frees the buffer
+ *
+ * @param buf   the buffer to be freed
+ */
+void smlt_platform_free(void *buf)
+{
+    free(buf);
 }
 
 #if 0

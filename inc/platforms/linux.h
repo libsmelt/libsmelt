@@ -1,8 +1,9 @@
 #ifndef SMLT_PLATFORM_LINUX_H_
 #define SMLT_PLATFORM_LINUX_H_ 1
 
-
+#define _GNU_SOURCE
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <assert.h>
