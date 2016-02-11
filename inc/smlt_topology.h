@@ -127,5 +127,11 @@ uint32_t smlt_topology_get_num_nodes(struct smlt_topology *topo);
  */
 uint32_t smlt_topology_get_cluster_size(coreid_t coordinator, int clusterid);
 
+/**
+ * @brief gets the number of nodes in the system
+ *
+ * @returns integer
+ */
+uint32_t smlt_topology_get_num_nodes();
 
 #endif /* SMLT_TOPOLOGY_H_ */

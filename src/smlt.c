@@ -92,6 +92,7 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
         if (smlt_err_is_fail(err)) {
             // XXX
             SMLT_ERROR("failed to create the node\n");
+            return smlt_err_push(err, SMLT_ERR_NODE_CREATE);
         }
         smlt_gbl_all_node_count++;
     }

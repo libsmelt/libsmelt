@@ -25,7 +25,11 @@ enum smlt_err_code {
     SMLT_ERR_NODE_INVALD = 1,  ///< there is no such node
     SMLT_ERR_INIT        = 2,
     SMLT_ERR_MALLOC_FAIL = 3, ///< the allocation of memory failed
-    SMLT_ERR_INVAL       = 4 ///< invalid argument
+    SMLT_ERR_INVAL       = 4, ///< invalid argument
+    SMLT_ERR_NODE_START  = 5,
+    SMLT_ERR_NODE_CREATE = 6,
+    SMLT_ERR_NODE_JOIN   = 7,
+
 };
 
 /*
