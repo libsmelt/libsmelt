@@ -141,7 +141,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f *.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test
+	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test
 
 debug:
 	echo $(HEADERS)
