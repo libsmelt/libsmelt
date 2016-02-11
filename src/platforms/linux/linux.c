@@ -8,7 +8,8 @@
  */
 
 #include <smlt.h>
-
+#include <smlt_node.h>
+#include "../../internal.h"
 
 
 #include <sched.h>
@@ -17,6 +18,28 @@
 #include <stdarg.h>
 #include <numa.h>
 
+
+/**
+ * @brief initializes the platform specific backend
+ *
+ * @param num_proc  the requested number of processors
+ *
+ * @returns the number of available processors
+ */
+uint32_t smlt_platform_init(uint32_t num_proc)
+{
+    if (numa_available() != 0) {
+        SMLT_ERROR("NUMA is not available!\n");
+        return 0;
+    }
+#ifdef SMLT_UMP_ENABLE_SLEEP
+    SMLT_WARNING("UMP sleep is enabled - this is buggy\n");
+#else
+    SMLT_NOTICE("UMP sleep disabled\n");
+#endif
+
+    return 0;
+}
 
 /*
  * ===========================================================================
@@ -64,6 +87,151 @@ errval_t smlt_platform_barrier_wait(smlt_platform_barrier_t *barrier)
     return pthread_barrier_wait(barrier);
 }
 
+
+/*
+ * ===========================================================================
+ * Thread Control
+ * ===========================================================================
+ */
+
+/**
+ * @brief pins the calling thread to the given core
+ *
+ * @param core  ID of the core to pint the thread to
+ *
+ * @return SMLT_SUCCESS or error value
+ */
+errval_t smlt_platform_pin_thread(coreid_t core)
+{
+    cpu_set_t cpu_mask;
+    int err;
+
+    CPU_ZERO(&cpu_mask);
+    CPU_SET(core, &cpu_mask);
+
+    err = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
+    if (err) {
+        SMLT_ERROR("sched_setaffinity");
+        exit(1);
+    }
+
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief executed when the Smelt thread is initialized
+ *
+ * @return SMLT_SUCCESS on ok
+ */
+errval_t smlt_platform_thread_start_hook(void)
+{
+#ifdef UMP_DBG_COUNT
+#ifdef FFQ
+#else
+    ump_start();
+#endif
+#endif
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief executed when the Smelt thread terminates
+ *
+ * @return SMLT_SUCCESS on ok
+ */
+errval_t smlt_platform_thread_end_hook(void)
+{
+#ifdef UMP_DBG_COUNT
+#ifdef FFQ
+#else
+    ump_end();
+#endif
+#endif
+    return SMLT_SUCCESS;
+}
+
+/*
+ * ===========================================================================
+ * Platform specific Smelt node management
+ * ===========================================================================
+ */
+
+/**
+ * @brief handles the platform specific initialization of the Smelt node
+ *
+ * @param node  the node to be created
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_create(struct smlt_node *node)
+{
+    /*
+     * Create the platform specific data structures here
+     * i.e. bindings / sockets / file descriptors etc.
+     */
+    return SMLT_SUCCESS;
+}
+
+static void *smlt_platform_node_start_wrapper(void *arg)
+{
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "thread started execution\n");
+
+    struct smlt_node *node = arg;
+
+    /* initializing smelt node */
+    smlt_node_exec_start(node);
+
+    void *result = smlt_node_run(node);
+
+    /* ending Smelt node */
+    smlt_node_exec_end(node);
+
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "thread ended execution\n");
+    return result;
+}
+
+/**
+ * @brief Starts the platform specific execution of the Smelt node
+ *
+ * @param node  the Smelt node
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_start(struct smlt_node *node)
+{
+    int err = pthread_create(&node->handle, NULL, smlt_platform_node_start_wrapper,
+                             node);
+    if (err) {
+        return -1;
+    }
+
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief waits for the Smelt node to be done with execution
+ *
+ * @param node  the Smelt node
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_join(struct smlt_node *node)
+{
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief cancles the execution of the Smelt node
+ *
+ * @param node  The Smelt node
+ *
+ * @return SMELT_SUCCESS or error value
+ */
+errval_t smlt_platform_node_cancel(struct smlt_node *node)
+{
+
+    return SMLT_SUCCESS;
+}
 
 #if 0
 
@@ -340,55 +508,8 @@ void debug_printf(const char *fmt, ...)
     printf(str, sizeof(str));
 }
 
-void pin_thread(coreid_t cpu)
-{
-    debug_printfff(DBG__INIT, "Pinning thread %d to core %d\n",
-                   get_thread_id(), cpu);
 
-    cpu_set_t cpu_mask;
-    int err;
 
-    CPU_ZERO(&cpu_mask);
-    CPU_SET(cpu, &cpu_mask);
 
-    err = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    if (err) {
-        perror("sched_setaffinity");
-        exit(1);
-    }
-}
-
-void __sys_init(void)
-{
-#ifdef UMP_ENABLE_SLEEP
-    printf("\033[1;31mWarning:\033[0m UMP sleep is enabled - this is buggy\n");
-#else
-    printf("UMP sleep disabled\n");
-#endif
-    assert (numa_available()==0);
-
-}
-
-int __backend_thread_start(void)
-{
-#ifdef UMP_DBG_COUNT
-#ifdef FFQ
-#else
-    ump_start();
-#endif
-#endif
-    return 0;
-}
-
-int __backend_thread_end(void)
-{
-#ifdef UMP_DBG_COUNT
-#ifdef FFQ
-#else
-    ump_end();
-#endif
-#endif
-    return 0;
-}
 #endif
