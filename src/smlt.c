@@ -16,6 +16,10 @@ uint8_t smlt_initialized = 0;
 
 uint32_t smlt_gbl_num_proc = 0;
 
+static struct smlt_node *smlt_gbl_all_nodes;
+static uint32_t smlt_gbl_all_node_count;
+
+
 /**
  * @brief initializes the Smelt library
  *
@@ -30,32 +34,35 @@ uint32_t smlt_gbl_num_proc = 0;
  */
 errval_t smlt_init(uint32_t num_proc, bool eagerly)
 {
+    errval_t err;
+
+    SMLT_DEBUG(SMLT_DBG__INIT, "Initializing Smelt runtime, eager_setup=%" PRIu32
+               "\n", eagerly);
+
     /* platform specific initializiation */
     smlt_gbl_num_proc = smlt_platform_init(num_proc);
 
+    SMLT_DEBUG(SMLT_DBG__INIT, "Setting number of nodes to %" PRIu32
+               ", requested = %" PRIu32 "\n", smlt_gbl_num_proc, num_proc);
+
     if (smlt_gbl_num_proc == 0) {
+        SMLT_ERROR("Platform initialization failed\n");
         /* there was an error while initializing */
         return SMLT_ERR_INIT;
     }
 
-    SMLT_DEBUG(SMLT_DBG__INIT, "Initializing Smelt runtime with %PRIu32 nodes\n",
-               smlt_gbl_num_proc);
-
     // Debug output
 #ifdef SMLT_DEBUG_ENABLED
-    SMLT_DEBUG(SMLT_DBG_WARN, "Debug flag (SMLT_DEBUG_ENABLED) is set. "
-                               "May cause performance degradation\n");
+    SMLT_WARNING("Debug flag (SMLT_DEBUG_ENABLED) is set.\n");
 #endif
 
 #ifdef SYNC_DEBUG_BUILD
-    TODOPRINTF("Compiler optimizations are off - "
-        "performance will suffer if  BUILDTYPE set to debug (in Makefile)\n");
+    SMLT_WARNING("Compiler optimizations are off\n");
 #endif
 
     // Master share allows simple barriers; needed for boot-strapping
     SMLT_DEBUG(SMLT_DBG__INIT, "Initializing master share .. \n");
 
-    errval_t err;
     err = smlt_shm_init_master_share();
     if (smlt_err_is_fail(err)) {
         return err;
@@ -64,12 +71,59 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
     // Initialize barrier
     smlt_platform_barrier_init(&smlt_shm_get_master_share()->data.sync_barrier,
                                NULL, smlt_gbl_num_proc);
-    
+
+    smlt_gbl_all_nodes = smlt_platform_alloc(SMLT_NODE_SIZE(smlt_gbl_num_proc),
+                                             SMLT_CACHELINE_SIZE, true);
+    if (smlt_gbl_all_nodes == NULL) {
+        /* TODO: cleanup master share */
+        SMLT_ERROR("failed to allocate the node\n");
+        return SMLT_ERR_MALLOC_FAIL;
+    }
+
+    SMLT_DEBUG(SMLT_DBG__INIT, "Creating %" PRIu32 " nodes\n", smlt_gbl_num_proc);
+
+    /* creating the nodes */
+    for (uint32_t i=0; i<smlt_gbl_num_proc; i++) {
+        struct smlt_node_args args = {
+            .id = i,
+            .core = i
+        };
+        err = smlt_node_create(&smlt_gbl_all_nodes[i], &args);
+        if (smlt_err_is_fail(err)) {
+            // XXX
+            SMLT_ERROR("failed to create the node\n");
+        }
+        smlt_gbl_all_node_count++;
+    }
+
     smlt_initialized = 1;
 
     return SMLT_SUCCESS;
 }
 
+/**
+ * @brief obtains the node based on the id
+ *
+ * @param id    node id
+ *
+ * @return pointer ot the Smelt node
+ */
+struct smlt_node *smlt_get_node_by_id(smlt_nid_t id)
+{
+    if (id < smlt_gbl_all_node_count) {
+        return &smlt_gbl_all_nodes[id];
+    }
+    return NULL;
+}
+
+errval_t smlt_add_node(struct smlt_node *node)
+{
+
+    // smlt_node_set_id(smlt_all_node_count++);
+    // smlt_all_nodes[smlt_node_get_id(node)] = node;
+
+     return SMLT_SUCCESS;
+}
 
 /*
  * ===========================================================================

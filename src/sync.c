@@ -93,62 +93,6 @@ void __sync_init_no_tree(int _nproc)
     tree_init_bindings();
 }
 
-/**
- * \brief Initialize sync library.
- *
- * Has to be executed by each thread exactly once. One of the threads
- * has to have id 0, since this causes additional initialization.
- *
- * Internally calls __lowlevel_thread_init. In addition to that,
- * initializes a broadcast tree from given model.
- *
- * \param _tid The id of the thread
- *
- * \param nproc Number of participants in synchronization - in shared
- *     memory implementations, this is redundant, as already given by
- *     __sync_init.
- */
-int __thread_init(coreid_t _tid, int _nproc)
-{
-    __lowlevel_thread_init(_tid);
-
-#if !defined(USE_THREADS)
-    assert (!"NYI: do initialization in EACH process");
-    __sync_init(); // XXX untested
-#endif
-
-    // Busy wait for master share to be mounted
-    while (!get_master_share()) ;
-
-    // Message passing part
-    // --------------------------------------------------
-
-    char *_tmp = (char*) malloc(1000);
-    sprintf(_tmp, "sync%d", _tid);
-
-    if (_tid == get_sequentializer()) {
-
-        // Message passing initialization
-        // --------------------------------------------------
-
-        tree_init(_tmp);
-
-        tree_reset();
-        tree_connect("DUMMY");
-
-        // Build associated broadcast tree
-        setup_tree_from_model();
-    }
-
-    // Shared memory initialization
-    // --------------------------------------------------
-    shm_switch_topo();
-
-
-    pthread_barrier_wait(&get_master_share()->data.sync_barrier);
-    return 0;
-}
-
 
 /**
  * \brief Initialize thread for use of sync library.
@@ -182,17 +126,6 @@ unsigned int get_thread_id(void)
     return tid;
 }
 
-/**
- * \brief De-initialzie threads
- *
- */
-int __thread_end(void)
-{
-    __backend_thread_end();
-
-    debug_printfff(DBG__INIT, "Thread %d ending %d\n", tid, mp_get_counter("barriers"));
-    return 0;
-}
 
 unsigned int get_num_threads(void)
 {

@@ -11,9 +11,12 @@
 
 #include <smlt_queuepair.h>
 
-/*
- * flags
+/**
+ * @brief
+ * @param arg
  */
+typedef void *(*smlt_node_start_fn_t)(void *arg);
+
 
 /*
  * ===========================================================================
@@ -22,12 +25,20 @@
  */
 struct smlt_node
 {
-    struct smlt_qp qp;
     smlt_nid_t id;
     coreid_t core;
+
+    struct smlt_qp qp;  // XXX: we need multiple queue pairs here
+
+    smlt_platform_node_handle_t handle;
+    smlt_node_start_fn_t fn;
+    void *arg;
+ //   cycles_t tsc_start;
+
     struct smlt_node *parent;
     struct smlt_node **children;
     uint32_t num_children;
+
     /* flags */
     uint8_t mp_recv;
     uint8_t mp_send;
@@ -44,12 +55,11 @@ struct smlt_node_args
 {
     smlt_nid_t id;          ///< the node ID to set
     coreid_t core;          ///< ID of the core to start the thread on
-    void (*start)(void *);  ///< the start function
-    void *arg;              ///< argument for the start function
 };
 
 #define SMLT_NODE_CHECK(_node)
 
+#define SMLT_NODE_SIZE(_num) (_num * sizeof(struct smlt_node))
 
 /*
  * ===========================================================================
@@ -60,10 +70,25 @@ struct smlt_node_args
 
 /**
  * @brief creates a new smelt node 
- * 
- * @param args
+ *
+ * @param node  Smelt node to initialize
+ * @param args  arguments for the creation
+ *
  */
-errval_t smlt_node_create(struct smlt_node_args *args);
+errval_t smlt_node_create(struct smlt_node *node,
+                          struct smlt_node_args *args);
+
+/**
+ * @brief starts the execution of the Smelt node
+ *
+ * @param node  the Smelt node
+ * @param fn    function to call
+ * @param arg   argument of the function
+ *
+ * @return SMELT_SUCCESS if the node has been started
+ *         error value otherwise
+ */
+errval_t smlt_node_start(struct smlt_node *node, smlt_node_start_fn_t fn, void *arg);
 
 /**
  * @brief waits for the other node to terminate
@@ -84,9 +109,36 @@ errval_t smlt_node_join(struct smlt_node *node);
  */
 errval_t smlt_node_cancel(struct smlt_node *node);
 
+/**
+ * @brief runs the start function of the node
+ *
+ * @param node  the Smelt ndoe
+ *
+ * @return foo bar
+ */
+static inline void *smlt_node_run(struct smlt_node *node)
+{
+    return node->fn(node);
+}
 
-errval_t smlt_node_init(void); // int  __thread_init(coreid_t,int);
-errval_t smlt_node_end(void); //int  __thread_end(void);
+/**
+ * @brief this function has to be called when the thread is executed first
+ *
+ * @param node  the Smelt node
+ *
+ * @return SMLT_SUCCESS
+ */
+errval_t smlt_node_exec_start(struct smlt_node *node); // int  __thread_init(coreid_t,int);
+
+/**
+ * @brief this function has to be called when the thread is executed first
+ *
+ * @param node  the Smelt node
+ *
+ * @return SMLT_SUCCESS
+ */
+errval_t smlt_node_exec_end(struct smlt_node *node); //int  __thread_end(void);
+
 
 /*
  * ===========================================================================
