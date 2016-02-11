@@ -12,6 +12,10 @@
 #include <smlt_queuepair.h>
 
 /*
+ * flags
+ */
+
+/*
  * ===========================================================================
  * type declarations
  * ===========================================================================
@@ -19,7 +23,19 @@
 struct smlt_node
 {
     struct smlt_qp qp;
+    smlt_nid_t id;
+    coreid_t core;
+    struct smlt_node *parent;
+    struct smlt_node **children;
+    uint32_t num_children;
+    /* flags */
+    uint8_t mp_recv;
+    uint8_t mp_send;
+    uint8_t shm_send;
+    uint8_t shm_recv;
 };
+
+extern __thread struct smlt_node *smlt_node_self;
 
 /**
  * arguments passed to the the new smelt node
@@ -96,45 +112,76 @@ smlt_nid_t smlt_node_get_id(void);
 smlt_nid_t smlt_node_get_id_of_node(struct smlt_node *node);
 
 /**
- * @brief gets the core ID of the current node
- *
- * @returns integer value representing the coreid
- */
-smlt_nid_t smlt_node_get_coreid(void);
-
-/**
  * @brief gets the ID of the current node
  *
  * @param node  the smelt node
  *
  * @returns integer value representing the node id
  */
-smlt_nid_t smlt_node_get_coreid_of_node(struct smlt_node *node);
+static inline smlt_nid_t smlt_node_get_coreid_of_node(struct smlt_node *node)
+{
+    return node->core;
+}
+
+/**
+ * @brief gets the core ID of the current node
+ *
+ * @returns integer value representing the coreid
+ */
+static inline smlt_nid_t smlt_node_get_coreid(void)
+{
+    return smlt_node_get_coreid_of_node(smlt_node_self);
+}
 
 /**
  * @brief checks whether the calling node is the root of the tree
  *
  * @returns TRUE if the node is the root, FALSE otherwise
  */
-bool smlt_node_is_root(void);
+static inline bool smlt_node_is_root(void)
+{
+    return (smlt_node_self->parent == NULL);
+}
 
 /**
  * @brief checks whether the callnig node is a leaf in the tree
  *
  * @returns TRUE if the node is a leaf, FALSE otherwise
  */
-bool smlt_node_is_leaf(void);
+static inline bool smlt_node_is_leaf(void)
+{
+    return (smlt_node_self->children == NULL);
+}
 
-bool smlt_node_does_message_passing(void);
+/**
+ * @brief checks if the node does message passing
+ *
+ * @return TRUE if the node sends or receives messages
+ */
+static inline bool smlt_node_does_message_passing(void)
+{
+    return (smlt_node_self->mp_send || smlt_node_self->mp_recv);
+}
 
-bool smlt_node_does_shared_memory(void);
+/**
+ * @brief checks fi the nodes does shared memory operations
+ *
+ * @return TRUE if the node uses a shared memory queue
+ */
+static inline bool smlt_node_does_shared_memory(void)
+{
+    return (smlt_node_self->shm_send || smlt_node_self->shm_recv);
+}
 
 /**
  * @brief gets the parent of the calling node
  *
  * @returns pointer to the parent, NULL if the root
  */
-struct smlt_node *smlt_node_get_parent(void);
+static inline struct smlt_node *smlt_node_get_parent(void)
+{
+    return smlt_node_self->parent;
+}
 
 /**
  * @brief gets the child nodes of the calling node
@@ -143,14 +190,13 @@ struct smlt_node *smlt_node_get_parent(void);
  *
  * @returns array of pointer to childnodes
  */
-struct smlt_node **smlt_node_get_children(uint32_t *count);
-
-/**
- * @brief gets the number of nodes in the system
- *
- * @returns integer
- */
-uint32_t smlt_node_get_num_nodes();
+static inline struct smlt_node **smlt_node_get_children(uint32_t *count)
+{
+    if (count) {
+        *count = smlt_node_self->num_children;
+    }
+    return smlt_node_self->children;
+}
 
 
 /*
