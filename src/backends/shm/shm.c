@@ -1,5 +1,6 @@
 #include <smlt.h>
 #include <shm/smlt_shm.h>
+#include "../../internal.h"
 
 #ifdef BARRELFISH
 #include <barrelfish/barrelfish.h>
@@ -40,8 +41,14 @@ void** cluster_bufs;
  */
 //static __thread uint8_t red_round = 0; // XXX HAS to be uint8
 
-int init_master_share(void)
+/**
+ * @brief initializes the shared frame for a cluster
+ *
+ * @return SMLT_SUCCESS
+ */
+errval_t smlt_shm_init_master_share(void)
 {
+    SMLT_DEBUG(SMLT_DBG__SHM, "initialize master share\n");
 #ifdef BARRELFISH
     errval_t err;
 
@@ -62,19 +69,37 @@ int init_master_share(void)
 
     return !err_is_ok(err);
 #else
-    if (master_share)
-        return 0;
+    if (master_share) {
+        SMLT_DEBUG(SMLT_DBG__SHM, "master share already initialized\n");
+        return SMLT_SUCCESS;
+    }
 
     // Sanity checks
     assert (SHM_SIZE % BASE_PAGE_SIZE==0);
     assert (sizeof(union quorum_share)<=SHM_SIZE);
 
-    master_share = (union quorum_share*) malloc(SHM_SIZE);
-    assert (master_share!=NULL);
+    master_share = smlt_platform_alloc(SHM_SIZE, SMLT_DEFAULT_ALIGNMENT, true);
 
-    return 0;
+    if (master_share == NULL) {
+        return SMLT_ERR_MALLOC_FAIL;
+    }
+
+    SMLT_DEBUG(SMLT_DBG__SHM, "master share initialized to %p\n", master_share);
+
+    return SMLT_SUCCESS;
 #endif
 }
+
+/**
+ * @brief obtains a pointer to the shared frame
+ *
+ * @return pointer to the shared frame
+ */
+union quorum_share*smlt_shm_get_master_share(void)
+{
+    return master_share;
+}
+
 
 int map_master_share(void)
 {
@@ -85,10 +110,6 @@ int map_master_share(void)
     return 0;
 }
 
-union quorum_share* get_master_share(void)
-{
-    return master_share;
-}
 
 /**
  * \Global initialization
@@ -353,11 +374,11 @@ void shm_get_clusters_for_core (int core,
 }
 
 
-#if 0
+
 void shm_get_clusters (int* num_clusters,
                        int **model_ids,
                        int **cluster_ids) {
-
+#if 0
      int i = 0;
 
     *model_ids = (int*) malloc(sizeof(int)*topo_num_topos()*get_max_num_clusters());
@@ -404,10 +425,12 @@ void shm_get_clusters (int* num_clusters,
     }
 
     *num_clusters = i;
+#endif
 }
 
 coreid_t shm_get_coordinator_for_cluster(int cluster)
 {
+#if 0
     for (unsigned x=0; x<topo_num_cores(); x++) {
         for (unsigned y=0; y<topo_num_cores(); y++) {
 
@@ -419,11 +442,13 @@ coreid_t shm_get_coordinator_for_cluster(int cluster)
             }
         }
     }
+#endif
     return -1;
 }
 
 coreid_t shm_get_coordinator_for_cluster_in_model(int cluster, int model)
 {
+#if 0
     for (unsigned x=0; x<topo_num_cores(); x++) {
         for (unsigned y=0; y<topo_num_cores(); y++) {
 
@@ -435,6 +460,7 @@ coreid_t shm_get_coordinator_for_cluster_in_model(int cluster, int model)
             }
         }
     }
+#endif
     return -1;
 }
 
@@ -445,10 +471,11 @@ void shm_receive(uintptr_t *p1,
                  uintptr_t *p5,
                  uintptr_t *p6,
                  uintptr_t *p7) {
-
+#if 0
     // Find the cluster
     struct shm_queue *q = clusters[get_thread_id()];
     shm_receive_raw (q, p1, p2, p3, p4, p5, p6, p7);
+#endif
 }
 
 void shm_send(uintptr_t p1,
@@ -458,9 +485,10 @@ void shm_send(uintptr_t p1,
               uintptr_t p5,
               uintptr_t p6,
               uintptr_t p7) {
-
+#if 0
     struct shm_queue *q = clusters[get_thread_id()];
     shm_send_raw (q, p1, p2, p3, p4, p5, p6, p7);
+#endif
 }
 
 /**
@@ -476,6 +504,7 @@ void shm_send(uintptr_t p1,
 int shm_cluster_get_unique_reader_id(unsigned cid,
                                      coreid_t reader)
 {
+#if 0
     unsigned val = cid + SHM_MASTER_START;
     int ret = -1;
 
@@ -492,7 +521,7 @@ int shm_cluster_get_unique_reader_id(unsigned cid,
             return ret;
         }
     }
-
+#endif
     return -1;
 }
 
@@ -501,9 +530,11 @@ int shm_cluster_get_unique_reader_id(unsigned cid,
  */
 static inline void shm_reduce_add(uint64_t *sum, uint64_t *value)
 {
+#if 0
     __sync_add_and_fetch(sum, *value);
+#endif
 }
-
+#if 0
 /**
  *\ brief Atomically update shared state of reduction
  *
@@ -512,6 +543,7 @@ static inline void shm_reduce_add(uint64_t *sum, uint64_t *value)
  */
 static uintptr_t shm_reduce_write(uintptr_t value)
 {
+
     debug_printfff(DBG__REDUCE, "core %d waiting to start with round %d\n",
                  get_core_id(), red_round);
 
@@ -536,16 +568,15 @@ static uintptr_t shm_reduce_write(uintptr_t value)
 
     // Switch to the next round
     red_round++;
-
     return 0;
 }
-
 
 /**
  * \brief Writer: wait for results of children
  */
 static uint64_t shm_reduce_sum_children(void)
 {
+
     coreid_t my_core_id = get_thread_id();
 
     // Find cluster share
@@ -578,21 +609,25 @@ static uint64_t shm_reduce_sum_children(void)
     red_state->reduction_round++;
 
     return r;
-}
 
+}
+#endif
 
 /**
- * \brief Reduce cluster
+ * @brief does a reduction on a shared memory region
  *
- * \return The sum of all children for the cluster head, 0 otherwise.
+ * @param input     input message for this node
+ * @param output    the returned aggregated value
+ *
+ * @return SMLT_SUCCESS or error avalue
  */
-uintptr_t shm_reduce(uintptr_t val)
+errval_t smlt_shm_reduce(struct smlt_msg *input, struct smlt_msg *output)
 {
+#if 0
     uintptr_t current_aggregate = val;
 
     // Leaf nodes send messagas
     if (topo_does_shm_receive(get_thread_id())) {
-
         shm_reduce_write(val);
         return 0;
     }
@@ -614,6 +649,39 @@ uintptr_t shm_reduce(uintptr_t val)
     }
 
     return current_aggregate;
-
-}
 #endif
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief does a reduction of notifications on a shared memory region
+ *
+ *
+ * @return SMLT_SUCCESS or error avalue
+ */
+errval_t smlt_shm_reduce_notify(void)
+{
+#if 0
+    uintptr_t current_aggregate = val;
+
+    // Leaf nodes send messagas
+    if (topo_does_shm_receive(get_thread_id())) {
+
+        shm_reduce_write(val);
+        return 0;
+    }
+
+    // Coordinator of each cluster
+    if (topo_does_shm_send(get_thread_id())) {
+
+        debug_printfff(DBG__REDUCE,
+                       "cluster coordinator %d looking for share\n",
+                       get_thread_id());
+
+        current_aggregate = shm_reduce_sum_children();
+
+    }
+#endif
+    return SMLT_SUCCESS;
+}
+

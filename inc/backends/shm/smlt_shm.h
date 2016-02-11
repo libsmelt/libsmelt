@@ -68,13 +68,49 @@ union quorum_share {
     } data;
 };
 
+/*
+ * ==============================================================================
+ * Reductions
+ * ==============================================================================
+ */
 
+/**
+ * @brief does a reduction on a shared memory region
+ *
+ * @param input     input message for this node
+ * @param output    the returned aggregated value
+ *
+ * @return SMLT_SUCCESS or error avalue
+ */
 errval_t smlt_shm_reduce(struct smlt_msg *input, struct smlt_msg *output);
+
+/**
+ * @brief does a reduction of notifications on a shared memory region
+ *
+ *
+ * @return SMLT_SUCCESS or error avalue
+ */
 errval_t smlt_shm_reduce_notify(void);
 
 
+/*
+ * ==============================================================================
+ * Management of the shared frame
+ * ==============================================================================
+ */
 
+/**
+ * @brief initializes the shared frame for a cluster
+ *
+ * @return SMLT_SUCCESS
+ */
 errval_t smlt_shm_init_master_share(void);
+
+/**
+ * @brief obtains a pointer to the shared frame
+ *
+ * @return pointer to the shared frame
+ */
 union quorum_share*smlt_shm_get_master_share(void);
 
 #if 0
