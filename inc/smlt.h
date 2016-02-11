@@ -53,7 +53,13 @@ struct smlt_instance;
  */
 errval_t smlt_init(uint32_t num_proc, bool eagerly);
 
-
+/**
+ * @brief obtains the node based on the id
+ *
+ * @param id    node id
+ *
+ * @return pointer ot the Smelt node
+ */
 struct smlt_node *smlt_get_node_by_id(smlt_nid_t id);
 
 /*

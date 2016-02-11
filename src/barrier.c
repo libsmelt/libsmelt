@@ -131,11 +131,12 @@ int shl_hybrid_barrier0(void* bla)
     return 0;
 }
 
-#if 0
 
-static __thread int _shl_round = 0;
+
+
 void shl_barrier_shm(int b_count)
 {
+#if 0
 #if defined(QRM_DBG_ENABLED)
     assert(_shl_round<QRM_ROUND_MAX);
 #endif
@@ -239,9 +240,11 @@ void shl_barrier_shm(int b_count)
     oct_barrier_leave(dummy);
 #endif
     _shl_round = (_shl_round+1) % QRM_ROUND_MAX;
+#endif
 }
 
-
+#if 0
+static __thread int _shl_round = 0;
 void mp_barrier(cycles_t *measurement)
 {
     coreid_t tid = get_core_id();

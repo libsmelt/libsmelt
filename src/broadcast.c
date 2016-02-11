@@ -7,8 +7,8 @@
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
 #include <smlt.h>
-#include <smlt_broadcast.h>
 #include <smlt_node.h>
+#include <smlt_broadcast.h>
 
 
 /**

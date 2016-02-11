@@ -21,9 +21,22 @@
  * Specifies the error values that can occur
  */
 enum smlt_err_code {
-    SMLT_SUCCESS = 0  ///< function call succeeded
+    SMLT_SUCCESS         = 0,  ///< function call succeeded
+    SMLT_ERR_NODE_INVALD = 1,  ///< there is no such node
+    SMLT_ERR_INIT        = 2,
 };
 
+/*
+ * ===========================================================================
+ * Macros
+ * ===========================================================================
+ */
+#define SMLT_EXPECT_SUCCESS(_err, ...) \
+    do {                                \
+        if (smlt_err_is_fail(err)) {    \
+                                        \
+        }                               \
+    } while(0);                         \
 
 /*
  * ===========================================================================
