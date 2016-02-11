@@ -29,14 +29,16 @@ void smlt_debug_print(uint32_t subs, const char *fmt, ...)
         len = snprintf(str, sizeof(str), "\033[1;33mWARNING:\033[0m ");
     } else if (subs & SMLT_DBG_NOTICE) {
         len = snprintf(str, sizeof(str), "\033[1;36mNOTICE:\033[0m ");
+    } else {
+        len = snprintf(str, sizeof(str), "smlt: ");
     }
 
     /* TODO: include submodule */
-
     if (len < sizeof(str)) {
         va_start(argptr, fmt);
         vsnprintf(str + len, sizeof(str) - len, fmt, argptr);
         va_end(argptr);
     }
+
     printf(str, sizeof(str));
 }

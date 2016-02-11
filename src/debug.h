@@ -30,7 +30,9 @@
 #define SMLT_DBG__BINDING       (1<<8)
 #define SMLT_DBG__UMP           (1<<9)
 #define SMLT_DBG__FFQ          (1<<10)
-#define SMLT_DBG__ALL          ((1 << 11) -1)
+#define SMLT_DBG__PLATFORM     (1<<11)
+#define SMLT_DBG__NODE          (1<<12)
+#define SMLT_DBG__ALL          ((1 << 13) -1)
 #define SMLT_DBG__BARRIER      (DBG__AB | DBG__REDUCE)
 
 // Mask for selectively enabling debug output
@@ -50,6 +52,14 @@
 #define SMLT_DEBUG(_subs, _fmt, ...) void()
 #endif
 
+#define SMLT_ERROR(...) smlt_debug_print(SMLT_DBG_ERR,  __VA_ARGS__);
+#define SMLT_WARNING(...) smlt_debug_print(SMLT_DBG_WARN,  __VA_ARGS__);
+#define SMLT_NOTICE(...) smlt_debug_print(SMLT_DBG_NOTICE,  __VA_ARGS__);
+#define SMLT_ABORT(...)             \
+    do {                            \
+        SMLT_ERROR(__VA_ARGS__);    \
+        exit(1);                    \
+    } while(0);                     \
 
 /*
  * ===========================================================================
