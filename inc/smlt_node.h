@@ -117,7 +117,10 @@ errval_t smlt_node_cancel(struct smlt_node *node);
  */
 static inline void *smlt_node_run(struct smlt_node *node)
 {
-    return node->fn(node);
+    if (node->fn) {
+        return node->fn(node);
+    }
+    return NULL;
 }
 
 /**

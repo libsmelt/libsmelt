@@ -45,6 +45,9 @@ errval_t smlt_node_create(struct smlt_node **node,
         return SMLT_ERR_MALLOC_FAIL;
     }
 
+    SMLT_DEBUG(SMLT_DBG__NODE, "created node id=%" PRIu32 " @ %p\n", args->id,
+               (void *)new_node);
+
     new_node->id = args->id;
     new_node->core = args->core;
 
