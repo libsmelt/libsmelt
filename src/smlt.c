@@ -266,3 +266,14 @@ bool smlt_can_recv(smlt_nid_t nid)
     return smlt_node_can_recv(node);
 }
 
+/**
+ * @brief returns the number of processes (or threads) running
+ * 
+ * @returns number of processes/threads participating
+ *
+ * this invokes either the can_send or can_receive function
+ */
+uint32_t smlt_get_num_proc(void)
+{
+    return smlt_gbl_num_proc;
+}

@@ -25,7 +25,7 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
 {
     errval_t err;
 
-    uint32_t count;
+    uint32_t count = 0;
     struct smlt_node **nl = smlt_topology_get_children(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
@@ -47,7 +47,7 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
 errval_t smlt_broadcast_notify_subtree(void)
 {
     errval_t err;
-    uint32_t count;
+    uint32_t count = 0;
     struct smlt_node **nl = smlt_topology_get_children(&count);
 
     for (uint32_t i = 0; i < count; ++i) {

@@ -73,6 +73,11 @@ errval_t smlt_topology_init(void)
 errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
                               struct smlt_topology **ret_topology)
 {
+    if (model == NULL) {
+        
+    } else {
+
+    }
     return SMLT_SUCCESS;
 }
 

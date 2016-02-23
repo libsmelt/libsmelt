@@ -58,7 +58,7 @@ errval_t smlt_reduce(struct smlt_msg *input,
 
 
     operation(result, input);
-    uint32_t count;
+    uint32_t count = 0;
     struct smlt_node **nl = smlt_topology_get_children(&count);
 
     // Receive (this will be from several children)
@@ -119,7 +119,7 @@ errval_t smlt_reduce_notify(void)
 
     // Receive (this will be from several children)
     // --------------------------------------------------
-    uint32_t count;
+    uint32_t count = 0;
     struct smlt_node **nl = smlt_topology_get_children(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
