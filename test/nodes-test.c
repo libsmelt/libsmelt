@@ -97,10 +97,15 @@ int main(int argc, char **argv)
     }
     printf("num_runs = %d (from first argument)\n", num_runs);
 
-    smlt_init(NUM_THREADS, true);
 
-    pthread_t ptds[NUM_THREADS];
-    int tids[NUM_THREADS];
+    errval_t err;
+    err = smlt_init(NUM_THREADS, true);
+    if (smlt_err_is_fail(err)) {
+        printf("FAILED TO INITIALIZE !\n");
+        return 1;
+    }
+    struct smlt_node *node;
+
 
     for (int j=0; j<NUM_EXP; j++) {
 
@@ -110,13 +115,17 @@ int main(int argc, char **argv)
 
         // Create
         for (int i=0; i<NUM_THREADS; i++) {
-            tids[i] = i;
-            pthread_create(ptds+i, NULL, workers[j], (void*) (tids+i));
+           node = smlt_get_node_by_id(i);
+           err = smlt_node_start(node, workers[j], NULL);
+           if (smlt_err_is_fail(err)) {
+               // XXX
+           }
         }
 
         // Join
         for (int i=0; i<NUM_THREADS; i++) {
-            pthread_join(ptds[i], NULL);
+            node = smlt_get_node_by_id(i);
+            smlt_node_join(node);
         }
     }
 
