@@ -1,7 +1,12 @@
-#include "sync.h"
+#include <stdio.h>
+
+#if 0
 #include "cwrapper.h"
 #include "mp.h"
-#include <stdio.h>
+
+
+
+
 
 __thread int th_initialized = 0;
 
@@ -22,3 +27,4 @@ void c__sync_init(int _nproc, bool init_model)
 {
     return __sync_init(_nproc, init_model);
 }
+#endif
