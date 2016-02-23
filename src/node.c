@@ -9,10 +9,11 @@
 
 #include <smlt.h>
 #include <smlt_node.h>
+#include <smlt_topology.h>
 #include "internal.h"
 
 __thread struct smlt_node *smlt_node_self;
-
+__thread smlt_nid_t smlt_node_self_id;
 
 /*
  * ==============================================================================
@@ -27,19 +28,34 @@ __thread struct smlt_node *smlt_node_self;
  * @param args  arguments for the creation
  *
  */
-errval_t smlt_node_create(struct smlt_node *node,
+errval_t smlt_node_create(struct smlt_node **node,
                           struct smlt_node_args *args)
 {
+    errval_t err;
+
     SMLT_DEBUG(SMLT_DBG__NODE, "creating new node id=%" PRIu32 "\n", args->id);
 
     if (!node) {
         return SMLT_ERR_INVAL;
     }
 
-    node->id = args->id;
-    node->core = args->core;
+    struct smlt_node *new_node = smlt_platform_alloc(SMLT_NODE_SIZE(args->num_nodes),
+                                                     SMLT_CACHELINE_SIZE, true);
+    if (!new_node) {
+        return SMLT_ERR_MALLOC_FAIL;
+    }
 
-    return smlt_platform_node_create(node);
+    new_node->id = args->id;
+    new_node->core = args->core;
+
+    err = smlt_platform_node_create(new_node);
+    if (smlt_err_is_fail(err)) {
+        return err;
+    }
+
+    *node = new_node;
+
+    return SMLT_SUCCESS;
 }
 
 
@@ -115,8 +131,6 @@ errval_t smlt_node_lowlevel_init(smlt_nid_t nid)
         core = smlt_node_self->core;
     }
 
-    SMLT_DEBUG(SMLT_DBG__NODE, "lowlevel thread init \n");
-
     err = smlt_platform_pin_thread(core);
     if (smlt_err_is_fail(err)) {
         // XXX:
@@ -160,7 +174,7 @@ errval_t smlt_node_exec_start(struct smlt_node *node)
     //char *_tmp = (char*) malloc(1000);
     //sprintf(_tmp, "smlt-%d", node->id);
 
-    if (smlt_node_is_root()) {
+    if (smlt_topology_is_root()) {
         // Message passing initialization
         // --------------------------------------------------
 

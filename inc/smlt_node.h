@@ -28,25 +28,22 @@ struct smlt_node
     smlt_nid_t id;
     coreid_t core;
 
-    struct smlt_qp qp;  // XXX: we need multiple queue pairs here
-
     smlt_platform_node_handle_t handle;
     smlt_node_start_fn_t fn;
     void *arg;
  //   cycles_t tsc_start;
-
-    struct smlt_node *parent;
-    struct smlt_node **children;
-    uint32_t num_children;
 
     /* flags */
     uint8_t mp_recv;
     uint8_t mp_send;
     uint8_t shm_send;
     uint8_t shm_recv;
+
+    struct smlt_qp qp[];  // XXX: we need multiple queue pairs here
 };
 
 extern __thread struct smlt_node *smlt_node_self;
+extern __thread smlt_nid_t smlt_node_self_id; ///< caches the node id
 
 /**
  * arguments passed to the the new smelt node
@@ -55,11 +52,13 @@ struct smlt_node_args
 {
     smlt_nid_t id;          ///< the node ID to set
     coreid_t core;          ///< ID of the core to start the thread on
+    uint32_t num_nodes;     ///< number of nodes in the system
 };
 
 #define SMLT_NODE_CHECK(_node)
 
-#define SMLT_NODE_SIZE(_num) (_num * sizeof(struct smlt_node))
+#define SMLT_NODE_SIZE(_num) ((sizeof(struct smlt_node)          \
+                                 + _num * sizeof(struct smlt_qp)))
 
 /*
  * ===========================================================================
@@ -75,7 +74,7 @@ struct smlt_node_args
  * @param args  arguments for the creation
  *
  */
-errval_t smlt_node_create(struct smlt_node *node,
+errval_t smlt_node_create(struct smlt_node **node,
                           struct smlt_node_args *args);
 
 /**
@@ -188,70 +187,6 @@ static inline smlt_nid_t smlt_node_get_coreid(void)
     return smlt_node_get_coreid_of_node(smlt_node_self);
 }
 
-/**
- * @brief checks whether the calling node is the root of the tree
- *
- * @returns TRUE if the node is the root, FALSE otherwise
- */
-static inline bool smlt_node_is_root(void)
-{
-    return (smlt_node_self->parent == NULL);
-}
-
-/**
- * @brief checks whether the callnig node is a leaf in the tree
- *
- * @returns TRUE if the node is a leaf, FALSE otherwise
- */
-static inline bool smlt_node_is_leaf(void)
-{
-    return (smlt_node_self->children == NULL);
-}
-
-/**
- * @brief checks if the node does message passing
- *
- * @return TRUE if the node sends or receives messages
- */
-static inline bool smlt_node_does_message_passing(void)
-{
-    return (smlt_node_self->mp_send || smlt_node_self->mp_recv);
-}
-
-/**
- * @brief checks fi the nodes does shared memory operations
- *
- * @return TRUE if the node uses a shared memory queue
- */
-static inline bool smlt_node_does_shared_memory(void)
-{
-    return (smlt_node_self->shm_send || smlt_node_self->shm_recv);
-}
-
-/**
- * @brief gets the parent of the calling node
- *
- * @returns pointer to the parent, NULL if the root
- */
-static inline struct smlt_node *smlt_node_get_parent(void)
-{
-    return smlt_node_self->parent;
-}
-
-/**
- * @brief gets the child nodes of the calling node
- *
- * @param count returns the number of children
- *
- * @returns array of pointer to childnodes
- */
-static inline struct smlt_node **smlt_node_get_children(uint32_t *count)
-{
-    if (count) {
-        *count = smlt_node_self->num_children;
-    }
-    return smlt_node_self->children;
-}
 
 
 /*
@@ -276,7 +211,7 @@ static inline errval_t smlt_node_send(struct smlt_node *node,
 {
     SMLT_NODE_CHECK(node);
     
-    return smlt_queuepair_send(&node->qp, msg);
+    return smlt_queuepair_send(&node->qp[smlt_node_self_id], msg);
 }
 
 /**
@@ -292,7 +227,7 @@ static inline errval_t smlt_node_notify(struct smlt_node *node)
     SMLT_NODE_CHECK(node);
 
     /* XXX: maybe provide another function */
-    return smlt_queuepair_notify(&node->qp);
+    return smlt_queuepair_notify(&node->qp[smlt_node_self_id]);
 }
 
 /**
@@ -307,7 +242,7 @@ static inline bool smlt_node_can_send(struct smlt_node *node)
 {
     SMLT_NODE_CHECK(node);
     
-    return smlt_queuepair_can_send(&node->qp);
+    return smlt_queuepair_can_send(&node->qp[smlt_node_self_id]);
 }
 
 /* TODO: include also non blocking variants ? */
@@ -335,7 +270,7 @@ static inline errval_t smlt_node_recv(struct smlt_node *node,
 {
     SMLT_NODE_CHECK(node);
     
-    return smlt_queuepair_recv(&node->qp, msg);
+    return smlt_queuepair_recv(&node->qp[smlt_node_self_id], msg);
 }
 
 /**
@@ -352,7 +287,7 @@ static inline bool smlt_node_can_recv(struct smlt_node *node)
 {
     SMLT_NODE_CHECK(node);
 
-    return smlt_queuepair_can_recv(&node->qp);
+    return smlt_queuepair_can_recv(&node->qp[smlt_node_self_id]);
 }
 
 

@@ -140,4 +140,75 @@ uint32_t smlt_topology_get_cluster_size(coreid_t coordinator, int clusterid);
  */
 uint32_t smlt_topology_get_num_nodes();
 
+/**
+ * @brief checks whether the calling node is the root of the tree
+ *
+ * @returns TRUE if the node is the root, FALSE otherwise
+ */
+static inline bool smlt_topology_is_root(void)
+{
+    return 0;
+    //return (smlt_node_self->parent == NULL);
+}
+
+/**
+ * @brief checks whether the callnig node is a leaf in the tree
+ *
+ * @returns TRUE if the node is a leaf, FALSE otherwise
+ */
+static inline bool smlt_topology_is_leaf(void)
+{
+    return 0;
+    //return (smlt_node_self->children == NULL);
+}
+
+/**
+ * @brief checks if the node does message passing
+ *
+ * @return TRUE if the node sends or receives messages
+ */
+static inline bool smlt_topology_does_message_passing(void)
+{
+    return (smlt_node_self->mp_send || smlt_node_self->mp_recv);
+}
+
+/**
+ * @brief checks fi the nodes does shared memory operations
+ *
+ * @return TRUE if the node uses a shared memory queue
+ */
+static inline bool smlt_topology_does_shared_memory(void)
+{
+    return (smlt_node_self->shm_send || smlt_node_self->shm_recv);
+}
+
+/**
+ * @brief gets the parent of the calling node
+ *
+ * @returns pointer to the parent, NULL if the root
+ */
+static inline struct smlt_node *smlt_topology_get_parent(void)
+{
+    return NULL;
+    //return smlt_node_self->parent;
+}
+
+/**
+ * @brief gets the child nodes of the calling node
+ *
+ * @param count returns the number of children
+ *
+ * @returns array of pointer to childnodes
+ */
+static inline struct smlt_node **smlt_node_get_children(uint32_t *count)
+{
+    /*
+    if (count) {
+        *count = smlt_node_self->num_children;
+    }
+    return smlt_node_self->children;
+    */
+    return NULL;
+}
+
 #endif /* SMLT_TOPOLOGY_H_ */

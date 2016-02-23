@@ -17,7 +17,7 @@ uint8_t smlt_initialized = 0;
 
 uint32_t smlt_gbl_num_proc = 0;
 
-static struct smlt_node *smlt_gbl_all_nodes;
+static struct smlt_node **smlt_gbl_all_nodes;
 static uint32_t smlt_gbl_all_node_count;
 
 
@@ -61,11 +61,12 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
     SMLT_WARNING("Compiler optimizations are off\n");
 #endif
 
-    // Initialize barrier
-    smlt_platform_barrier_init(&smlt_shm_get_master_share()->data.sync_barrier,
-                               NULL, smlt_gbl_num_proc);
+    SMLT_DEBUG(SMLT_DBG__INIT, "Allocating %" PRIu64 " bytes for %" PRIu32 " nodes "
+               "smlt_node=%" PRIu64 ", smlt_qp=%" PRIu64 "\n",
+               SMLT_NODE_SIZE(smlt_gbl_num_proc), smlt_gbl_num_proc,
+               sizeof(struct smlt_node), sizeof(struct smlt_qp));
 
-    smlt_gbl_all_nodes = smlt_platform_alloc(SMLT_NODE_SIZE(smlt_gbl_num_proc),
+    smlt_gbl_all_nodes = smlt_platform_alloc(smlt_gbl_num_proc * sizeof(void *),
                                              SMLT_CACHELINE_SIZE, true);
     if (smlt_gbl_all_nodes == NULL) {
         /* TODO: cleanup master share */
@@ -82,13 +83,18 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
         return smlt_err_push(err, SMLT_ERR_SHM_INIT);
     }
 
+    // Initialize barrier
+    smlt_platform_barrier_init(&smlt_shm_get_master_share()->data.sync_barrier,
+                               NULL, smlt_gbl_num_proc);
+
     /* creating the nodes */
 
     SMLT_DEBUG(SMLT_DBG__INIT, "Creating %" PRIu32 " nodes\n", smlt_gbl_num_proc);
     for (uint32_t i=0; i<smlt_gbl_num_proc; i++) {
         struct smlt_node_args args = {
             .id = i,
-            .core = i
+            .core = i,
+            .num_nodes = smlt_gbl_num_proc,
         };
         err = smlt_node_create(&smlt_gbl_all_nodes[i], &args);
         if (smlt_err_is_fail(err)) {
@@ -119,7 +125,7 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
 struct smlt_node *smlt_get_node_by_id(smlt_nid_t id)
 {
     if (id < smlt_gbl_all_node_count) {
-        return &smlt_gbl_all_nodes[id];
+        return smlt_gbl_all_nodes[id];
     }
     return NULL;
 }
