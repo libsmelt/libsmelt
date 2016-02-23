@@ -8,6 +8,7 @@
  */
 #include <smlt.h>
 #include <smlt_node.h>
+#include <smlt_topology.h>
 #include <smlt_broadcast.h>
 
 
@@ -25,7 +26,7 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
     errval_t err;
 
     uint32_t count;
-    struct smlt_node **nl = smlt_node_get_children(&count);
+    struct smlt_node **nl = smlt_topology_get_children(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
         err = smlt_node_send(nl[i], msg);
@@ -47,7 +48,7 @@ errval_t smlt_broadcast_notify_subtree(void)
 {
     errval_t err;
     uint32_t count;
-    struct smlt_node **nl = smlt_node_get_children(&count);
+    struct smlt_node **nl = smlt_topology_get_children(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
         err = smlt_node_notify(nl[i]);
@@ -71,10 +72,10 @@ errval_t smlt_broadcast(struct smlt_msg *msg)
 {
     errval_t err;
 
-    if (smlt_node_is_root()) {
+    if (smlt_topology_is_root()) {
         err = smlt_broadcast_subtree(msg);
     } else {
-        struct smlt_node *p = smlt_node_get_parent();
+        struct smlt_node *p = smlt_topology_get_parent();
         err = smlt_node_recv(p, msg);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
@@ -97,10 +98,10 @@ errval_t smlt_broadcast_notify(void)
 {
     errval_t err;
 
-    if (smlt_node_is_root()) {
+    if (smlt_topology_is_root()) {
         err = smlt_broadcast_notify_subtree();
     } else {
-        struct smlt_node *p = smlt_node_get_parent();
+        struct smlt_node *p = smlt_topology_get_parent();
         err = smlt_node_recv(p, NULL);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling

@@ -169,7 +169,8 @@ static inline bool smlt_topology_is_leaf(void)
  */
 static inline bool smlt_topology_does_message_passing(void)
 {
-    return (smlt_node_self->mp_send || smlt_node_self->mp_recv);
+    return 0;
+    //return (smlt_node_self->mp_send || smlt_node_self->mp_recv);
 }
 
 /**
@@ -179,7 +180,8 @@ static inline bool smlt_topology_does_message_passing(void)
  */
 static inline bool smlt_topology_does_shared_memory(void)
 {
-    return (smlt_node_self->shm_send || smlt_node_self->shm_recv);
+    return 0;
+    //return (smlt_node_self->shm_send || smlt_node_self->shm_recv);
 }
 
 /**
@@ -200,7 +202,7 @@ static inline struct smlt_node *smlt_topology_get_parent(void)
  *
  * @returns array of pointer to childnodes
  */
-static inline struct smlt_node **smlt_node_get_children(uint32_t *count)
+static inline struct smlt_node **smlt_topology_get_children(uint32_t *count)
 {
     /*
     if (count) {

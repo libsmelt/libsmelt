@@ -8,6 +8,7 @@
  */
 #include <smlt.h>
 #include <smlt_node.h>
+#include <smlt_topology.h>
 #include <smlt_reduction.h>
 #include <smlt_broadcast.h>
 #include <shm/smlt_shm.h>
@@ -38,7 +39,7 @@ errval_t smlt_reduce(struct smlt_msg *input,
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
 
-    if (smlt_node_does_shared_memory()) {
+    if (smlt_topology_does_shared_memory()) {
         err = smlt_shm_reduce(input, result);
         if (smlt_err_is_fail(err)) {
             return err;
@@ -58,7 +59,7 @@ errval_t smlt_reduce(struct smlt_msg *input,
 
     operation(result, input);
     uint32_t count;
-    struct smlt_node **nl = smlt_node_get_children(&count);
+    struct smlt_node **nl = smlt_topology_get_children(&count);
 
     // Receive (this will be from several children)
     // --------------------------------------------------
@@ -75,7 +76,7 @@ errval_t smlt_reduce(struct smlt_msg *input,
 
     // Receive (this will be from several children)
     // --------------------------------------------------
-    struct smlt_node *p = smlt_node_get_parent();
+    struct smlt_node *p = smlt_topology_get_parent();
     if (p) {    
         smlt_node_send(p, result);
     }
@@ -98,7 +99,7 @@ errval_t smlt_reduce_notify(void)
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
 
-    if (smlt_node_does_shared_memory()) {
+    if (smlt_topology_does_shared_memory()) {
         err = smlt_shm_reduce_notify();
         if (smlt_err_is_fail(err)) {
             return err;
@@ -119,7 +120,7 @@ errval_t smlt_reduce_notify(void)
     // Receive (this will be from several children)
     // --------------------------------------------------
     uint32_t count;
-    struct smlt_node **nl = smlt_node_get_children(&count);
+    struct smlt_node **nl = smlt_topology_get_children(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
         err = smlt_node_recv(nl[i], NULL);
@@ -128,7 +129,7 @@ errval_t smlt_reduce_notify(void)
 
     // Send (this should only be sending one message)
     // --------------------------------------------------
-    struct smlt_node *p = smlt_node_get_parent();
+    struct smlt_node *p = smlt_topology_get_parent();
     if (p) {
         smlt_node_notify(p);
     }
