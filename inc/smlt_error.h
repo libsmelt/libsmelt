@@ -26,9 +26,22 @@ enum smlt_err_code {
     SMLT_ERR_INIT        = 2,
     SMLT_ERR_MALLOC_FAIL = 3, ///< the allocation of memory failed
     SMLT_ERR_INVAL       = 4, ///< invalid argument
+
+    /* platform errors */
+    SMLT_ERR_PLATFORM_INIT,
+
+    /* topology errors */
+    SMLT_ERR_TOPOLOGY_INIT,
+
+    /* node errors */
     SMLT_ERR_NODE_START  = 5,
     SMLT_ERR_NODE_CREATE = 6,
     SMLT_ERR_NODE_JOIN   = 7,
+
+    /* backends */
+
+    /* shared memory error */
+    SMLT_ERR_SHM_INIT    = 8,
 
 };
 

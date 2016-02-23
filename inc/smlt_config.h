@@ -27,4 +27,7 @@
 #define USE_THREADS          1 // switch threads vs. processes
 #define BACK_CHAN            1 // Backward channel from "last node" to 
 
+
+#define SMLT_EAGER_NODE_CREATION 1
+
 #endif /* SMLT_CONFIG_H_ */

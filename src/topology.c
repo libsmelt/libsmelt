@@ -9,9 +9,84 @@
 #include <smlt.h>
 #include <smlt_topology.h>
 
+/**
+ * this is a node in the current topology
+ */
+struct smlt_topology_node
+{
+    struct smlt_topology *topology;         ///< backpointer to the topology
+    struct smlt_topology_node *parent;      ///< pointer to the parent node
+    struct smlt_topology_node **children;   ///< array of children
+    struct smlt_queuepair **qp;             ///< queuepairs
+    uint32_t num_children;                  ///<
+};
+
+
+/**
+ * represents a smelt topology
+ */
+struct smlt_topology
+{
+    char *name;                             ///< name
+    struct smlt_topology_node *root;        ///< pointer to the root node
+    struct smlt_topology_node all_nodes[];   ///< array of all nodes
+};
 
 
 
+struct smlt_topology *smlt_gbl_topology;
+struct smlt_topology smlt_gbl_topology_default;
+
+/**
+ * @brief initializes the topology subsystem
+ *
+ * @return SMLT_SUCCESS or error value
+ */
+errval_t smlt_topology_init(void)
+{
+
+    /*
+    _tree_prepare();
+
+    if (get_thread_id()==0) {
+
+        shl_barrier_init(&tree_setup_barrier, NULL, get_num_threads());
+    }
+
+    _tree_export(qrm_my_name);
+     */
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief creates a new Smelt topology out of the model parameter
+ *
+ * @param model         the model input data from the simulator
+ * @param length        length of the model input
+ * @param name          name of the topology
+ * @param ret_topology  returned pointer to the topology
+ *
+ * @return SMELT_SUCCESS or error value
+ *
+ * If the model is NULL, then a binary tree will be generated
+ */
+errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
+                              struct smlt_topology **ret_topology)
+{
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief destroys a smelt topology.
+ *
+ * @param topology  the Smelt topology to destroy
+ *
+ * @return SMELT_SUCCESS or error vlaue
+ */
+errval_t smlt_topology_destroy(struct smlt_topology *topology)
+{
+    return SMLT_SUCCESS;
+}
 
 
 
@@ -346,5 +421,165 @@ int topo_mp_cluster_size(coreid_t coordinator, int clusterid)
 
     return num;
 }
+
+#endif
+
+#if 0
+/**
+ * \brief Build a broadcast tree based on the model
+ *
+ * The model is currently given as a matrix, where an integer value
+ * !=0 at position x,y represents a link in the overlay network.
+ *
+ * Parse model array. The list of children will be setup according to
+ * the numbers given in the model matrix. The neighbor with the
+ * smallest integer value will be scheduled first. Parents are encoded
+ * with number 99 in the matrix.
+ */
+void smlt_topology_create(void)
+{
+    // Allocate memory for child and parent binding storage
+    if (!child_bindings) {
+
+        // Children
+        child_bindings = (struct binding_lst*)
+            malloc(sizeof(struct binding_lst)*topo_num_cores());
+        assert (child_bindings!=NULL);
+
+        // Parents
+        parent_bindings = (struct binding_lst*)
+            malloc(sizeof(struct binding_lst)*topo_num_cores());
+        assert(parent_bindings!=NULL);
+    }
+
+    // Sanity check
+    if (get_num_threads()!=topo_num_cores()) {
+        printf("threads: %d/ topo: %d\n", get_num_threads(), topo_num_cores());
+        USER_PANIC("Cannot parse model. Number of cores does not match\n");
+    }
+
+    assert (is_coordinator(get_thread_id()));
+
+    int* tmp = new int[topo_num_cores()];
+    int tmp_parent = -1;
+
+    debug_printfff(DBG__BINDING, "tree setup: start ------------------------------\n");
+
+    // Find children
+    for (coreid_t s=0; s<topo_num_cores(); s++) { // foreach sender
+
+        unsigned num = 0;
+
+        for (coreid_t i=1; i<topo_num_cores(); i++) { // + possible outward index
+            for (coreid_t r=0; r<topo_num_cores(); r++) {
+
+                // Is this the i-th outgoing connection?
+                if (topo_get(s, r) == (int64_t) i) {
+
+                    assert (r>=0);
+                    debug_printfff(DBG__BINDING,
+                                   "tree setup: found binding(%d) %d->%d with %d\n",
+                                   num, s, r, i);
+
+                    tmp[num++] = r;
+                }
+
+                if (topo_is_parent_real(r, s)) {
+
+                    tmp_parent = r;
+                }
+            }
+        }
+
+        // Otherwise parent was not found
+        bool does_mp = topo_does_mp_send(s, false) ||
+            topo_does_mp_receive(s, false);
+        assert (tmp_parent >= 0 || s == get_sequentializer() || !does_mp);
+
+        // Create permanent list of bindings for that core
+        mp_binding **_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
+        mp_binding **_r_bindings = (mp_binding**) malloc(sizeof(mp_binding*)*num);
+        assert (_bindings!=NULL && _r_bindings!=NULL);
+
+        // .. and core IDs
+        int *_idx = (int*) malloc(sizeof(int)*num);
+        assert (_idx!=NULL);
+
+        // Retrieve and store bindings
+        for (unsigned j=0; j<num; j++) {
+
+            debug_printfff(DBG__BINDING,
+                           "tree setup: adding binding(%d) %d->%d\n",
+                           j, s, tmp[j]);
+
+            _bindings[j] =   get_binding(s, tmp[j]);
+            _r_bindings[j] = get_binding(tmp[j], s);
+
+            assert(_bindings[j]!=NULL && _r_bindings[j]!=NULL);
+
+            _idx[j] = tmp[j];
+        }
+
+        // Remember children
+        child_bindings[s] = {
+            .num = num,
+            .b = _bindings,
+            .b_reverse = _r_bindings,
+            .idx = _idx
+        };
+
+        if (tmp_parent>=0) {
+            debug_printfff(DBG__INIT, "Setting parent of %d to %d\n", s, tmp_parent);
+
+            mp_binding **_bindings_p = (mp_binding**) malloc(sizeof(mp_binding*)*2);
+            assert (_bindings!=NULL);
+
+            int *_idx_p = (int*) malloc(sizeof(int)*1);
+            assert (_idx_p!=NULL);
+
+            // Binding to parent in both directions
+            _bindings_p[0] = get_binding(tmp_parent, s);
+            _bindings_p[1] = get_binding(s, tmp_parent);
+            _idx_p[0] = tmp_parent;
+
+            parent_bindings[s] = (struct binding_lst) {
+                .num = 1,
+                .b = _bindings_p,
+                .b_reverse = _bindings_p + 1,
+                .idx = _idx_p
+            };
+        }
+        else {
+            int *_idx_p = (int*) malloc(sizeof(int)*1);
+            assert (_idx_p!=NULL);
+
+            _idx_p[0] = -1;
+
+            parent_bindings[s] = (struct binding_lst) {
+                .num = 0,
+                .b = NULL,
+                .b_reverse = NULL,
+                .idx = _idx_p
+            };
+
+        }
+    }
+    debug_printfff(DBG__BINDING, "tree setup: end --------------------\n");
+    delete[] tmp;
+}
+
+void tree_init_bindings(void)
+{
+    /*
+    if (bindings==NULL) {
+
+        debug_printfff(DBG__BINDING, "Allocating memory for bindings\n");
+        bindings = (mp_binding**) calloc(sizeof(mp_binding*),
+                                         (get_num_threads()*get_num_threads()));
+        assert (bindings!=NULL);
+    }
+    */
+}
+
 
 #endif

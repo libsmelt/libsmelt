@@ -31,6 +31,12 @@ struct smlt_topology;
  * ===========================================================================
  */
 
+/**
+ * @brief initializes the topology subsystem
+ *
+ * @return SMLT_SUCCESS or error value
+ */
+errval_t smlt_topology_init(void);
 
 /**
  * @brief creates a new Smelt topology out of the model parameter

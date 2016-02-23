@@ -11,6 +11,7 @@
 
 /* forward declaration */
 struct smlt_node;
+struct smlt_topology;
 
 /*
  * ===========================================================================
@@ -198,5 +199,21 @@ void *smlt_platform_alloc_on_node(uint64_t bytes, uintptr_t align, uint8_t node,
  * @param buf   the buffer to be freed
  */
 void smlt_platform_free(void *buf);
+
+
+/*
+ * ===========================================================================
+ * Topology Setup
+ * ===========================================================================
+ */
+
+/**
+ * @brief platform specific topology preparation
+ *
+ * @param topo  pointer ot the topology
+ *
+ * @return SMLT_SUCCESS or error value
+ */
+errval_t smlt_platform_topology_prepare(struct smlt_topology *topo);
 
 #endif /* SMLT_PLATFORM_H_ */

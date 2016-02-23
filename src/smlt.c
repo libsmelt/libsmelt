@@ -9,6 +9,7 @@
 
 #include <smlt.h>
 #include <smlt_node.h>
+#include <smlt_topology.h>
 #include <shm/smlt_shm.h>
 #include  "debug.h"
 
@@ -48,7 +49,7 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
     if (smlt_gbl_num_proc == 0) {
         SMLT_ERROR("Platform initialization failed\n");
         /* there was an error while initializing */
-        return SMLT_ERR_INIT;
+        return SMLT_ERR_PLATFORM_INIT;
     }
 
     // Debug output
@@ -59,14 +60,6 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
 #ifdef SYNC_DEBUG_BUILD
     SMLT_WARNING("Compiler optimizations are off\n");
 #endif
-
-    // Master share allows simple barriers; needed for boot-strapping
-    SMLT_DEBUG(SMLT_DBG__INIT, "Initializing master share .. \n");
-
-    err = smlt_shm_init_master_share();
-    if (smlt_err_is_fail(err)) {
-        return err;
-    }
 
     // Initialize barrier
     smlt_platform_barrier_init(&smlt_shm_get_master_share()->data.sync_barrier,
@@ -80,9 +73,18 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
         return SMLT_ERR_MALLOC_FAIL;
     }
 
-    SMLT_DEBUG(SMLT_DBG__INIT, "Creating %" PRIu32 " nodes\n", smlt_gbl_num_proc);
+    // Master share allows simple barriers; needed for boot-strapping
+    SMLT_DEBUG(SMLT_DBG__INIT, "Initializing master share .. \n");
+
+    err = smlt_shm_init_master_share();
+    if (smlt_err_is_fail(err)) {
+        SMLT_ERROR("failed to initialize the master share\n");
+        return smlt_err_push(err, SMLT_ERR_SHM_INIT);
+    }
 
     /* creating the nodes */
+
+    SMLT_DEBUG(SMLT_DBG__INIT, "Creating %" PRIu32 " nodes\n", smlt_gbl_num_proc);
     for (uint32_t i=0; i<smlt_gbl_num_proc; i++) {
         struct smlt_node_args args = {
             .id = i,
@@ -90,11 +92,16 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
         };
         err = smlt_node_create(&smlt_gbl_all_nodes[i], &args);
         if (smlt_err_is_fail(err)) {
-            // XXX
             SMLT_ERROR("failed to create the node\n");
             return smlt_err_push(err, SMLT_ERR_NODE_CREATE);
         }
         smlt_gbl_all_node_count++;
+    }
+
+    /* initialize the topology subsystem */
+    err = smlt_topology_init();
+    if (smlt_err_is_fail(err)) {
+        return smlt_err_push(err, SMLT_ERR_TOPOLOGY_INIT);
     }
 
     smlt_initialized = 1;

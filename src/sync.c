@@ -23,38 +23,12 @@ static coreid_t nproc;
 void __sync_init(int _nproc, bool init_model)
 {
 
-    __sys_init();
-
-    if (_nproc == -1) {
-        debug_printf("Getting number of processors from libnuma\n");
-        _nproc = numa_num_configured_cpus();
-    }
 
     nproc = _nproc;
     debug_printf("Initializing libsync: model: %d nodes, %d threads\n",
                  topo_num_cores(), nproc);
     debug_printf("Model is for machine: %s\n", MACHINE);
-    char *ic_driver = const_cast<char*>("UMPQ");
-#ifdef FFQ
-    ic_driver = const_cast<char*>("FFQ");
-#endif
 
-    debug_printf("Sequentializer is: %d\n", get_sequentializer());
-    debug_printf("Interconnect driver is: %s\n", ic_driver);
-    debug_printf("Buffer size (#entries): %d\n", UMP_QUEUE_SIZE);
-
-    // Debug output
-#ifdef QRM_DBG_ENABLED
-    printw("Debug flag (QRM_DBG_ENABLED) is set - peformace will be reduced\n");
-#endif
-#ifdef SYNC_DEBUG
-    printw("Compiler optimizations are off - "
-        "performance will suffer if  BUILDTYPE set to debug (in Makefile)\n");
-#endif
-
-    // Master share allows simple barriers; needed for boot-strapping
-    debug_printfff(DBG__INIT, "Initializing master share .. \n");
-    init_master_share();
 
     // Initialize model
     if (init_model) {
