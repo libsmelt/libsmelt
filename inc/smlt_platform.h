@@ -216,4 +216,37 @@ void smlt_platform_free(void *buf);
  */
 errval_t smlt_platform_topology_prepare(struct smlt_topology *topo);
 
+
+/*
+ * ===========================================================================
+ * Platform specific NUMA implementation
+ * ===========================================================================
+ */
+/**
+ * @brief getting the cores ids of a NUMA cluster
+ *
+ * @param cluster_id        the id of the NUMA node
+ *
+ * @return array of core ids that are within the NUMA node
+ */
+errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id, 
+                                        coreid_t** cores,
+                                        uint32_t* size);
+
+/**
+ * @brief getting the NUMA node id of a core id
+ *
+ * @param core_id        the id of the core
+ *
+ * @return id of the NUMA node
+ */
+uint8_t smlt_platform_cluster_of_core(coreid_t core_id);
+
+/**
+ * @brief returns the number of clusters
+ *
+ * @return  the number of clusters
+ */
+uint32_t smlt_platform_num_clusters(void);
+
 #endif /* SMLT_PLATFORM_H_ */

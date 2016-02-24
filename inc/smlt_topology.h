@@ -51,7 +51,7 @@ errval_t smlt_topology_init(void);
  * If the model is NULL, then a binary tree will be generated
  */
 errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
-                              struct smlt_topology **ret_topology);
+                              struct smlt_topology *ret_topology);
 
 /**
  * @brief destroys a smelt topology.

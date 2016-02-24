@@ -8,6 +8,7 @@
  */
 #include <smlt.h>
 #include <smlt_topology.h>
+#include "debug.h"
 
 /**
  * this is a node in the current topology
@@ -17,8 +18,9 @@ struct smlt_topology_node
     struct smlt_topology *topology;         ///< backpointer to the topology
     struct smlt_topology_node *parent;      ///< pointer to the parent node
     struct smlt_topology_node **children;   ///< array of children
-    struct smlt_queuepair *qp;              ///< queuepairs 
-                                            ///< qp[0]->parent qp[1..n] child
+    uint32_t chanel_type;                   ///< queuepairs 
+    smlt_nid_t node_id;                     ///< qp[0]->parent qp[1..n] child
+    uint32_t array_index;                   ///< Invalid if root
     uint32_t num_children;                  ///<
 };
 
@@ -30,18 +32,13 @@ struct smlt_topology
 {
     const char *name;                             ///< name
     struct smlt_topology_node *root;        ///< pointer to the root node
+    uint32_t num_nodes;
     struct smlt_topology_node all_nodes[];   ///< array of all nodes
 };
 
-
-
-struct smlt_topology *smlt_gbl_topology;
-struct smlt_topology smlt_gbl_topology_default;
-
-
 //prototypes
-static void smlt_topology_create_cluster_tree(struct smlt_topology **topology,
-                                              uint32_t num_threads);
+static void smlt_topology_create_binary_tree(struct smlt_topology *topology,
+                                             uint32_t num_threads);
 
 /**
  * @brief initializes the topology subsystem
@@ -77,14 +74,19 @@ errval_t smlt_topology_init(void)
  * If the model is NULL, then a binary tree will be generated
  */
 errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
-                              struct smlt_topology **ret_topology)
+                              struct smlt_topology *ret_topology)
 {
-    *ret_topology = (struct smlt_topology*) 
-                    smlt_platform_alloc(sizeof(struct smlt_topology),
-                                         SMLT_DEFAULT_ALIGNMENT, true);
-    (*ret_topology)->name = name;
+    SMLT_DEBUG(SMLT_DBG__INIT, "Creating topo_node  \n");
+    ret_topology = (struct smlt_topology*) 
+                    smlt_platform_alloc(sizeof(struct smlt_topology)+
+                                        sizeof(struct smlt_topology_node)*
+                                        smlt_get_num_proc(),
+                                        SMLT_DEFAULT_ALIGNMENT, true);
+    
+    ret_topology->name = name;
+    ret_topology->num_nodes = smlt_get_num_proc();
     if (model == NULL) {
-        smlt_topology_create_cluster_tree(ret_topology, smlt_get_num_proc());      
+        smlt_topology_create_binary_tree(ret_topology, smlt_get_num_proc());      
     } else {
         
     }
@@ -104,7 +106,7 @@ errval_t smlt_topology_destroy(struct smlt_topology *topology)
 }
 
 /**
- * \brief Build a cluster tree model for the current machine.
+ * \brief Build a binary tree model for the current machine.
  *
  * @param topology      returned pointer to the topology
  * @param num_threads   number of threads/processes in the model
@@ -112,12 +114,54 @@ errval_t smlt_topology_destroy(struct smlt_topology *topology)
  *
  * @return SMELT_SUCCESS or error value 
  */
-static void smlt_topology_create_cluster_tree(struct smlt_topology **topology,
+static void smlt_topology_create_binary_tree(struct smlt_topology *topology,
                                              uint32_t num_threads)
 {
-    assert (*topology!=NULL);
+    assert (topology!=NULL);
     // Fill model    
-
+    topology->root = &(topology->all_nodes[0]);    
+   
+    for (int i = 0; i < num_threads;i++) {
+        
+        SMLT_DEBUG(SMLT_DBG__INIT, "Creating topo_node %d \n", i);
+        struct smlt_topology_node* node = &topology->all_nodes[i];
+        node->topology = topology;
+        if (i == 0) {
+            node->parent = NULL;
+            SMLT_DEBUG(SMLT_DBG__INIT,"Parent NULL \n");
+        } else {
+            if ((i % 2) == 0) {
+                node->parent = &(topology->all_nodes[(i/2)-1]);
+                node->array_index = 1;
+                SMLT_DEBUG(SMLT_DBG__INIT,"Parent %d \n", (i/2)-1);
+            } else {
+                node->parent = &(topology->all_nodes[(i/2)]);
+                node->array_index = 0;
+                SMLT_DEBUG(SMLT_DBG__INIT,"Parent %d \n", (i/2));
+            }
+        }
+        
+        if (i*2+1 < num_threads) {
+            node->children = (struct smlt_topology_node**)
+                             smlt_platform_alloc(sizeof(struct smlt_topology_node*)*2,
+                                                 SMLT_DEFAULT_ALIGNMENT, true);
+            node->children[0] = &topology->all_nodes[i*2+1];
+            node->node_id = i;
+            SMLT_DEBUG(SMLT_DBG__INIT,"Child left %d \n", i*2+1);
+            node->num_children =1;
+            if (i*2+2 < num_threads) {
+                node->children[1] = &topology->all_nodes[i*2+2];
+                node->num_children = 2;
+                SMLT_DEBUG(SMLT_DBG__INIT,"Child right %d \n", i*2+2);
+            }
+            // TODO set chanel type;
+        } else {
+            SMLT_DEBUG(SMLT_DBG__INIT,"Leaf \n");
+            node->children = NULL;
+            node->num_children = 0;
+            node->node_id = i;
+        }
+    }
 }
 
 

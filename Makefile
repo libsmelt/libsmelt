@@ -96,7 +96,7 @@ CFLAGS += $(OPT)
 #	CXXFLAGS += -DSHL
 #endif
 
-all: test/nodes-test
+all: test/nodes-test test/topo-create-test
 #$(TARGET)
 
 test: test/mp-test
@@ -111,6 +111,9 @@ test/ping-pong: $(DEPS) $(EXTERNAL_OBJS) test/ping-pong.cpp
 
 test/nodes-test: test/nodes-test.c $(TARGET)
 	$(CC) $(CFLAGS) $(INC) -L./ test/nodes-test.c -o $@ -lsmltrt
+
+test/topo-create-test: test/topo-create-test.c
+	$(CC) $(CFLAGS) $(INC) -L./ test/topo-create-test.c -o $@ -lsmltrt
 
 # Benchmarks
 # --------------------------------------------------
@@ -141,7 +144,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test
+	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test test/topo-create-test
 
 debug:
 	echo $(HEADERS)

@@ -333,11 +333,36 @@ uint32_t smlt_platform_num_clusters(void)
  *
  * @return array of core ids that are within the NUMA node
  */
-coreid_t* smlt_platform_cores_of_cluster(uint8_t cluster_id, 
-                                         coreid_t* cores,
-                                         uint32_t size)
+errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id, 
+                                        coreid_t** cores,
+                                        uint32_t* size)
 {
-   return NULL;
+    int max_nodes = numa_num_configured_nodes()+1;
+    int num_cores = numa_num_configured_cpus()+1;
+    int node_size = num_cores/max_nodes;
+
+    coreid_t* result = (coreid_t*) malloc(sizeof(coreid_t)*node_size);
+    
+    assert(result != NULL);
+    struct bitmask* node = numa_allocate_cpumask();  
+    
+    if (!numa_node_to_cpus(cluster_id, node)) {
+        int j = 0;
+        for (int i = 0; i < num_cores;i++) {
+            if (numa_bitmask_isbitset(node, i)) {
+               result[j] = i;
+               j++;
+            }   
+        }
+        *cores = result;
+        *size = node_size;
+        
+        return SMLT_SUCCESS;
+    } else {
+        *cores = NULL;
+        *size = 0;
+        return SMLT_ERR_TOPOLOGY_INIT;
+    }
 }
 
 /**
@@ -349,7 +374,7 @@ coreid_t* smlt_platform_cores_of_cluster(uint8_t cluster_id,
  */
 uint8_t smlt_platform_cluster_of_core(coreid_t core_id)
 {
-    return 0;
+    return numa_node_of_cpu(core_id);
 }
 
 #if 0
