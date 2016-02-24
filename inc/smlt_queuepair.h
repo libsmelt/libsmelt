@@ -36,6 +36,7 @@ struct smlt_qp
     struct smlt_ep rx_ep;
 
     errval_t error;                 ///< error value that occured
+
     /* type specific queue pair */
 };
 
@@ -55,7 +56,7 @@ struct smlt_qp
   * @returns 0
   */
 errval_t smlt_queuepair_create(smlt_ep_type_t type,
-                               struct smlt_ep **ret_ep);
+                               struct smlt_qp *qp);
 
  /**
   * @brief destroys the queuepair 
