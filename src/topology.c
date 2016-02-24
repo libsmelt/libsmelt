@@ -165,6 +165,156 @@ static void smlt_topology_create_binary_tree(struct smlt_topology *topology,
 }
 
 
+/*
+ * ===========================================================================
+ * topology nodes
+ * ===========================================================================
+ */
+
+
+/**
+ * @brief returns the first topology node
+ *
+ * @param topo  the Smelt topology
+ *
+ * @return Pointer to the smelt topology node
+ */
+struct smlt_topology_node *smlt_topology_get_first_node(struct smlt_topology *topo)
+{
+    return topo->all_nodes;
+}
+
+/**
+ * @brief gets the next topology node in the topology
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+struct smlt_topology_node *smlt_topology_node_next(struct smlt_topology_node *node)
+{
+    return node + 1;
+}
+
+/**
+ * @brief gets the parent topology ndoe
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+struct smlt_topology_node *smlt_topology_node_parent(struct smlt_topology_node *node)
+{
+    return node->parent;
+}
+
+/**
+ * @brief checks if the topology node is the last
+ *
+ * @param node the topology node
+ *
+ * @return TRUE if the node is the last, false otherwise
+ */
+bool smlt_topology_node_is_last(struct smlt_topology_node *node)
+{
+    return (node == &node->topology->all_nodes[node->topology->num_nodes-1]);
+}
+
+/**
+ * @brief checks if the topology node is the root
+ *
+ * @param node the topology node
+ *
+ * @return TRUE if the node is the root, false otherwise
+ */
+bool smlt_topology_node_is_root(struct smlt_topology_node *node)
+{
+    return (node->parent == NULL);
+}
+
+/**
+ * @brief checks if the topology node is a leaf
+ *
+ * @param node the topology node
+ *
+ * @return TRUE if the node is a leaf, false otherwise
+ */
+bool smlt_topology_node_is_leaf(struct smlt_topology_node *node)
+{
+    return (node->num_children == 0);
+}
+
+/**
+ * @brief obtains the child index (the order of the children) from the node
+ *
+ * @param node  the topology ndoe
+ *
+ * @return child index
+ */
+uint32_t smlt_topology_node_get_child_idx(struct smlt_topology_node *node)
+{
+    return node->array_index;
+}
+
+/**
+ * @brief gets the number of nodes with the the given idx
+ *
+ * @param node  the topology node
+ *
+ * @return numebr of children
+ */
+uint32_t smlt_topology_node_get_num_children(struct smlt_topology_node *node)
+{
+    return node->num_children;
+}
+
+/**
+ * @brief obtainst he associated node id of the topology node
+ *
+ * @param node  the Smelt topology node
+ *
+ * @return Smelt node id
+ */
+smlt_nid_t smlt_topology_node_get_id(struct smlt_topology_node *node)
+{
+    return node->node_id;
+}
+
+
+/*
+ * ===========================================================================
+ * queries
+ * ===========================================================================
+ */
+
+
+/**
+ * @brief obtains the name of the topology
+ *
+ * @param topo  the Smelt topology
+ *
+ * @return string representation
+ */
+const char *smlt_topology_get_name(struct smlt_topology *topo)
+{
+    return topo->name;
+}
+
+
+/**
+ * @brief gets the number of nodes in the topology
+ *
+ * @param topo  the Smelt topology
+ *
+ * @return number of nodes
+ */
+uint32_t smlt_topology_get_num_nodes(struct smlt_topology *topo)
+{
+    return topo->num_nodes;
+}
+
+
+
 // --------------------------------------------------
 // Data structures - shared
 

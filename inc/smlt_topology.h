@@ -20,6 +20,7 @@
  * represents a handle to a smelt topology.
  */
 struct smlt_topology;
+struct smlt_topology_node;
 
 ///< refer to the current smelt topology
 #define SMLT_TOPOLOGY_CURRENT NULL;
@@ -65,28 +66,92 @@ errval_t smlt_topology_destroy(struct smlt_topology *topology);
 
 /*
  * ===========================================================================
- * switching and obtainig the current topology
+ * topology nodes
  * ===========================================================================
  */
 
 
 /**
- * @brief switches the Smelt tree topology
+ * @brief returns the first topology node
  *
- * @param new_topo  new topology to be set
- * @param ret_old   returns the old topology if non-null
+ * @param topo  the Smelt topology
  *
- * @return SMELT_SUCCESS or error value
+ * @return Pointer to the smelt topology node
  */
-errval_t smlt_topology_switch(struct smlt_topology *new_topo,
-                              struct smlt_topology **ret_old);
+struct smlt_topology_node *smlt_topology_get_first_node(struct smlt_topology *topo);
 
 /**
- * @brief gets the current active Smelt topology
+ * @brief gets the next topology node in the topology
  *
- * @return pointer to the current Smelt topology
+ * @param node the current topology node
+ *
+ * @return
  */
-struct smlt_topology *smlt_topology_get_active(void);
+struct smlt_topology_node *smlt_topology_node_next(struct smlt_topology_node *node);
+
+/**
+ * @brief gets the parent topology ndoe
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+struct smlt_topology_node *smlt_topology_node_parent(struct smlt_topology_node *node);
+
+/**
+ * @brief checks if the topology node is the last
+ *
+ * @param node the topology node
+ *
+ * @return TRUE if the node is the last, false otherwise
+ */
+bool smlt_topology_node_is_last(struct smlt_topology_node *node);
+
+/**
+ * @brief checks if the topology node is the root
+ *
+ * @param node the topology node
+ *
+ * @return TRUE if the node is the root, false otherwise
+ */
+bool smlt_topology_node_is_root(struct smlt_topology_node *node);
+
+/**
+ * @brief checks if the topology node is a leaf
+ *
+ * @param node the topology node
+ *
+ * @return TRUE if the node is a leaf, false otherwise
+ */
+bool smlt_topology_node_is_leaf(struct smlt_topology_node *node);
+
+/**
+ * @brief obtains the child index (the order of the children) from the node
+ *
+ * @param node  the topology ndoe
+ *
+ * @return child index
+ */
+uint32_t smlt_topology_node_get_child_idx(struct smlt_topology_node *node);
+
+
+/**
+ * @brief gets the number of nodes with the the given idx
+ *
+ * @param node  the topology node
+ *
+ * @return numebr of children
+ */
+uint32_t smlt_topology_node_get_num_children(struct smlt_topology_node *node);
+
+/**
+ * @brief obtainst he associated node id of the topology node
+ *
+ * @param node  the Smelt topology node
+ *
+ * @return Smelt node id
+ */
+smlt_nid_t smlt_topology_node_get_id(struct smlt_topology_node *node);
 
 
 /*
@@ -105,14 +170,6 @@ struct smlt_topology *smlt_topology_get_active(void);
  */
 const char *smlt_topology_get_name(struct smlt_topology *topo);
 
-/**
- * @brief gets an array of nodes
- *
- * @param topo  the Smelt topology
- *
- * @return pointer to a nodes array
- */
-struct smelt_node **smlt_topology_get_nodes(struct smlt_topology *topo);
 
 /**
  * @brief gets the number of nodes in the topology
@@ -122,6 +179,7 @@ struct smelt_node **smlt_topology_get_nodes(struct smlt_topology *topo);
  * @return number of nodes
  */
 uint32_t smlt_topology_get_num_nodes(struct smlt_topology *topo);
+
 
 /**
  * @brief gets the cluster size
@@ -133,34 +191,6 @@ uint32_t smlt_topology_get_num_nodes(struct smlt_topology *topo);
  */
 uint32_t smlt_topology_get_cluster_size(coreid_t coordinator, int clusterid);
 
-/**
- * @brief gets the number of nodes in the system
- *
- * @returns integer
- */
-uint32_t smlt_topology_get_num_nodes();
-
-/**
- * @brief checks whether the calling node is the root of the tree
- *
- * @returns TRUE if the node is the root, FALSE otherwise
- */
-static inline bool smlt_topology_is_root(void)
-{
-    return 0;
-    //return (smlt_node_self->parent == NULL);
-}
-
-/**
- * @brief checks whether the callnig node is a leaf in the tree
- *
- * @returns TRUE if the node is a leaf, FALSE otherwise
- */
-static inline bool smlt_topology_is_leaf(void)
-{
-    return 0;
-    //return (smlt_node_self->children == NULL);
-}
 
 /**
  * @brief checks if the node does message passing
