@@ -134,5 +134,13 @@ errval_t smlt_recv(smlt_nid_t nid, struct smlt_msg *msg);
  */
 bool smlt_can_recv(smlt_nid_t nid);
 
+/**
+ * @brief returns the number of processes (or threads) running
+ * 
+ * @returns number of processes/threads participating
+ *
+ * this invokes either the can_send or can_receive function
+ */
+uint32_t smlt_get_num_proc(void);
 
 #endif /* SMLT_SMLT_H_ */
