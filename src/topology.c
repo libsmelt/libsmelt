@@ -17,7 +17,8 @@ struct smlt_topology_node
     struct smlt_topology *topology;         ///< backpointer to the topology
     struct smlt_topology_node *parent;      ///< pointer to the parent node
     struct smlt_topology_node **children;   ///< array of children
-    struct smlt_queuepair **qp;             ///< queuepairs
+    struct smlt_queuepair *qp;              ///< queuepairs 
+                                            ///< qp[0]->parent qp[1..n] child
     uint32_t num_children;                  ///<
 };
 
@@ -27,7 +28,7 @@ struct smlt_topology_node
  */
 struct smlt_topology
 {
-    char *name;                             ///< name
+    const char *name;                             ///< name
     struct smlt_topology_node *root;        ///< pointer to the root node
     struct smlt_topology_node all_nodes[];   ///< array of all nodes
 };
@@ -36,6 +37,11 @@ struct smlt_topology
 
 struct smlt_topology *smlt_gbl_topology;
 struct smlt_topology smlt_gbl_topology_default;
+
+
+//prototypes
+static void smlt_topology_create_cluster_tree(struct smlt_topology **topology,
+                                              uint32_t num_threads);
 
 /**
  * @brief initializes the topology subsystem
@@ -73,10 +79,14 @@ errval_t smlt_topology_init(void)
 errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
                               struct smlt_topology **ret_topology)
 {
+    *ret_topology = (struct smlt_topology*) 
+                    smlt_platform_alloc(sizeof(struct smlt_topology),
+                                         SMLT_DEFAULT_ALIGNMENT, true);
+    (*ret_topology)->name = name;
     if (model == NULL) {
-        
+        smlt_topology_create_cluster_tree(ret_topology, smlt_get_num_proc());      
     } else {
-
+        
     }
     return SMLT_SUCCESS;
 }
@@ -93,6 +103,22 @@ errval_t smlt_topology_destroy(struct smlt_topology *topology)
     return SMLT_SUCCESS;
 }
 
+/**
+ * \brief Build a cluster tree model for the current machine.
+ *
+ * @param topology      returned pointer to the topology
+ * @param num_threads   number of threads/processes in the model
+ * @param name          name of the topology
+ *
+ * @return SMELT_SUCCESS or error value 
+ */
+static void smlt_topology_create_cluster_tree(struct smlt_topology **topology,
+                                             uint32_t num_threads)
+{
+    assert (*topology!=NULL);
+    // Fill model    
+
+}
 
 
 // --------------------------------------------------

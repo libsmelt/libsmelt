@@ -310,6 +310,48 @@ void smlt_platform_free(void *buf)
     free(buf);
 }
 
+/*
+ * ===========================================================================
+ * Platform specific NUMA implementation 
+ * ===========================================================================
+ */
+
+/**
+ * @brief returns the number of clusters
+ *
+ * @return  the number of clusters
+ */
+uint32_t smlt_platform_num_clusters(void)
+{
+    return (uint32_t) numa_num_configured_nodes();     
+}
+
+/**
+ * @brief getting the cores ids of a NUMA cluster
+ *
+ * @param cluster_id        the id of the NUMA node
+ *
+ * @return array of core ids that are within the NUMA node
+ */
+coreid_t* smlt_platform_cores_of_cluster(uint8_t cluster_id, 
+                                         coreid_t* cores,
+                                         uint32_t size)
+{
+   return NULL;
+}
+
+/**
+ * @brief getting the NUMA node id of a core id
+ *
+ * @param core_id        the id of the core
+ *
+ * @return id of the NUMA node
+ */
+uint8_t smlt_platform_cluster_of_core(coreid_t core_id)
+{
+    return 0;
+}
+
 #if 0
 
 
