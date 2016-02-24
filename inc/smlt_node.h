@@ -17,7 +17,6 @@
  */
 typedef void *(*smlt_node_start_fn_t)(void *arg);
 
-
 /*
  * ===========================================================================
  * type declarations
@@ -98,7 +97,6 @@ errval_t smlt_node_start(struct smlt_node *node, smlt_node_start_fn_t fn, void *
  */
 errval_t smlt_node_join(struct smlt_node *node);
 
-
 /**
  * @brief terminates the othern node and waits for termination
  *
@@ -107,6 +105,14 @@ errval_t smlt_node_join(struct smlt_node *node);
  * @returns  TODO: errval
  */
 errval_t smlt_node_cancel(struct smlt_node *node);
+
+
+/*
+ * ===========================================================================
+ * node runtime
+ * ===========================================================================
+ */
+
 
 /**
  * @brief runs the start function of the node
@@ -152,13 +158,6 @@ errval_t smlt_node_exec_end(struct smlt_node *node); //int  __thread_end(void);
 /**
  * @brief gets the ID of the current node
  *
- * @returns integer value representing the node id
- */
-smlt_nid_t smlt_node_get_id(void);
-
-/**
- * @brief gets the ID of the current node
- *
  * @param node  the smelt node
  *
  * @returns integer value representing the node id
@@ -166,6 +165,16 @@ smlt_nid_t smlt_node_get_id(void);
 static inline smlt_nid_t smlt_node_get_id_of_node(struct smlt_node *node)
 {
     return node->id;
+}
+
+/**
+ * @brief gets the ID of the current node
+ *
+ * @returns integer value representing the node id
+ */
+static inline smlt_nid_t smlt_node_get_id(void)
+{
+    return smlt_node_get_id_of_node(smlt_node_self);
 }
 
 /**
@@ -191,6 +200,11 @@ static inline smlt_nid_t smlt_node_get_coreid(void)
 }
 
 
+void smlt_node_print_name(void);
+
+void smlt_node_print_stats(void);
+
+uint32_t smlt_node_get_name(void);
 
 /*
  * ===========================================================================
