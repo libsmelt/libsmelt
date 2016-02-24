@@ -9,6 +9,9 @@
 #ifndef SMLT_BROADCAST_H_
 #define SMLT_BROADCAST_H_ 1
 
+/* forward declaratio */
+struct smlt_context;
+struct smlt_msg;
 
 /*
  * ===========================================================================
@@ -20,38 +23,44 @@
 /**
  * @brief performs a broadcast to the nodes of the subtree routed at the 
  *        calling node
- * 
- * @param msg       input for the reduction
- * @param result    returns the result of the reduction
+ *
+ * @param ctx   the Smelt context to broadcast on
+ * @param msg   input for the broadcast
  * 
  * @returns TODO:errval
  */
-errval_t smlt_broadcast_subtree(struct smlt_msg *msg);
+errval_t smlt_broadcast_subtree(struct smlt_context *ctx,
+                                struct smlt_msg *msg);
 
 /**
  * @brief performs a broadcast without any payload to the subtree routed at
  *        the calling node
  *
+ * @param ctx   the Smelt context to broadcast on
+ *
  * @returns TODO:errval
  */
-errval_t smlt_broadcast_notify_subtree(void);
+errval_t smlt_broadcast_notify_subtree(struct smlt_context *ctx);
 
 /**
  * @brief performs a broadcast to all nodes on the current active instance 
  * 
- * @param msg       input for the reduction
- * @param result    returns the result of the reduction
+ * @param ctx   the Smelt context to broadcast on
+ * @param msg   input for the reduction
  * 
  * @returns TODO:errval
  */
-errval_t smlt_broadcast(struct smlt_msg *msg);
+errval_t smlt_broadcast(struct smlt_context *ctx,
+                        struct smlt_msg *msg);
 
 /**
  * @brief performs a broadcast without any payload to all nodes
  *
+ * @param ctx   the Smelt context to broadcast on
+ *
  * @returns TODO:errval
  */
-errval_t smlt_broadcast_notify(void);
+errval_t smlt_broadcast_notify(struct smlt_context *ctx);
 
 
 /*

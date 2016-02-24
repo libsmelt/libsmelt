@@ -7,29 +7,33 @@
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
 #include <smlt.h>
-#include <smlt_node.h>
-#include <smlt_topology.h>
+#include <smlt_channel.h>
+#include <smlt_context.h>
 #include <smlt_broadcast.h>
-
 
 /**
  * @brief performs a broadcast to the nodes of the subtree routed at the 
  *        calling node
- * 
- * @param msg       input for the reduction
- * @param result    returns the result of the reduction
+ *
+ * @param ctx   the Smelt context to broadcast on
+ * @param msg   input for the broadcast
  * 
  * @returns TODO:errval
  */
-errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
+errval_t smlt_broadcast_subtree(struct smlt_context *ctx,
+                                struct smlt_msg *msg)
 {
     errval_t err;
 
     uint32_t count = 0;
-    struct smlt_node **nl = smlt_topology_get_children(&count);
+    struct smlt_channel *children;
+    err =  smlt_context_get_children_channels(ctx, &children, &count);
+    if (smlt_err_is_fail(err)) {
+        return err; // TODO: adding more error values
+    }
 
     for (uint32_t i = 0; i < count; ++i) {
-        err = smlt_node_send(nl[i], msg);
+        err = smlt_channel_send(&children[i], msg);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
         }
@@ -42,77 +46,87 @@ errval_t smlt_broadcast_subtree(struct smlt_msg *msg)
  * @brief performs a broadcast without any payload to the subtree routed at
  *        the calling node
  *
- * @returns TODO:errval
- */
-errval_t smlt_broadcast_notify_subtree(void)
-{
-    errval_t err;
-    uint32_t count = 0;
-    struct smlt_node **nl = smlt_topology_get_children(&count);
-
-    for (uint32_t i = 0; i < count; ++i) {
-        err = smlt_node_notify(nl[i]);
-        if (smlt_err_is_fail(err)) {
-            // TODO: error handling
-        }
-    }
-
-    return SMLT_SUCCESS;
-}
-
-/**
- * @brief performs a broadcast on the current active instance 
- * 
- * @param msg       input for the reduction
- * @param result    returns the result of the reduction
- * 
- * @returns TODO:errval
- */
-errval_t smlt_broadcast(struct smlt_msg *msg)
-{
-    errval_t err;
-
-    if (smlt_topology_is_root()) {
-        err = smlt_broadcast_subtree(msg);
-    } else {
-        struct smlt_node *p = smlt_topology_get_parent();
-        err = smlt_node_recv(p, msg);
-        if (smlt_err_is_fail(err)) {
-            // TODO: error handling
-        }
-        err = smlt_broadcast_subtree(msg);
-        if (smlt_err_is_fail(err)) {
-            // TODO: error handling
-        }
-    }
-
-    return SMLT_SUCCESS;
-}
-
-/**
- * @brief performs a broadcast without any payload
+ * @param ctx   the Smelt context to broadcast on
  *
  * @returns TODO:errval
  */
-errval_t smlt_broadcast_notify(void)
+errval_t smlt_broadcast_notify_subtree(struct smlt_context *ctx)
 {
     errval_t err;
 
-    if (smlt_topology_is_root()) {
-        err = smlt_broadcast_notify_subtree();
-    } else {
-        struct smlt_node *p = smlt_topology_get_parent();
-        err = smlt_node_recv(p, NULL);
-        if (smlt_err_is_fail(err)) {
-            // TODO: error handling
-        }
-        err = smlt_broadcast_notify_subtree();
+    uint32_t count = 0;
+    struct smlt_channel *children;
+    err =  smlt_context_get_children_channels(ctx, &children, &count);
+    if (smlt_err_is_fail(err)) {
+        return err; // TODO: adding more error values
+    }
+
+    for (uint32_t i = 0; i < count; ++i) {
+        err = smlt_channel_notify(&children[i]);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
         }
     }
 
-    return smlt_broadcast_notify_subtree();
+    return SMLT_SUCCESS;
+}
+
+/**
+ * @brief performs a broadcast to all nodes on the current active instance
+ * 
+ * @param ctx   the Smelt context to broadcast on
+ * @param msg   input for the reduction
+ * 
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast(struct smlt_context *ctx,
+                        struct smlt_msg *msg)
+{
+    errval_t err;
+
+    if (smlt_context_is_root(ctx)) {
+        return smlt_broadcast_subtree(ctx, msg);
+    } else {
+        struct smlt_channel *parent;
+        err =  smlt_context_get_parent_channel(ctx, &parent);
+        if (smlt_err_is_fail(err)) {
+            return err; // TODO: adding more error values
+        }
+
+        err = smlt_channel_recv(parent, NULL);
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
+        return smlt_broadcast_subtree(ctx, msg);
+    }
+}
+
+/**
+ * @brief performs a broadcast without any payload to all nodes
+ *
+ * @param ctx   the Smelt context to broadcast on
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_broadcast_notify(struct smlt_context *ctx)
+{
+    errval_t err;
+
+    if (smlt_context_is_root(ctx)) {
+        return smlt_broadcast_notify_subtree(ctx);
+    } else {
+        struct smlt_channel *parent;
+        err =  smlt_context_get_parent_channel(ctx, &parent);
+        if (smlt_err_is_fail(err)) {
+            return err; // TODO: adding more error values
+        }
+
+        err = smlt_channel_recv(parent, NULL);
+        if (smlt_err_is_fail(err)) {
+            // TODO: error handling
+        }
+        return smlt_broadcast_notify_subtree(ctx);
+    }
 }
 
 #if 0
