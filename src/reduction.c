@@ -7,8 +7,8 @@
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
 #include <smlt.h>
-#include <smlt_node.h>
-#include <smlt_topology.h>
+#include <smlt_channel.h>
+#include <smlt_context.h>
 #include <smlt_reduction.h>
 #include <smlt_broadcast.h>
 #include <shm/smlt_shm.h>
@@ -17,20 +17,22 @@
 /**
  * @brief performs a reduction on the current instance
  * 
+ * @param ctx       The smelt context
  * @param msg        input for the reduction
  * @param result     returns the result of the reduction
  * @param operation  function to be called to calculate the aggregate
  *
  * @returns TODO:errval
  */
-errval_t smlt_reduce(struct smlt_msg *input,
+errval_t smlt_reduce(struct smlt_context *ctx,
+                     struct smlt_msg *input,
                      struct smlt_msg *result,
                      smlt_reduce_fn_t operation)
 {
     errval_t err;
 
     if (!operation) {
-        return smlt_reduce_notify();
+        return smlt_reduce_notify(ctx);
     }
 
     // --------------------------------------------------
@@ -39,7 +41,7 @@ errval_t smlt_reduce(struct smlt_msg *input,
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
 
-    if (smlt_topology_does_shared_memory()) {
+    if (smlt_context_does_shared_memory(ctx)) {
         err = smlt_shm_reduce(input, result);
         if (smlt_err_is_fail(err)) {
             return err;
@@ -58,13 +60,18 @@ errval_t smlt_reduce(struct smlt_msg *input,
 
 
     operation(result, input);
+
     uint32_t count = 0;
-    struct smlt_node **nl = smlt_topology_get_children(&count);
+    struct smlt_channel *children;
+    err =  smlt_context_get_children_channels(ctx, &children, &count);
+    if (smlt_err_is_fail(err)) {
+        return err; // TODO: adding more error values
+    }
 
     // Receive (this will be from several children)
     // --------------------------------------------------
     for (uint32_t i = 0; i < count; ++i) {
-        err = smlt_node_recv(nl[i], result);
+        err = smlt_channel_recv(&children[0], result);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
         }
@@ -76,9 +83,14 @@ errval_t smlt_reduce(struct smlt_msg *input,
 
     // Receive (this will be from several children)
     // --------------------------------------------------
-    struct smlt_node *p = smlt_topology_get_parent();
-    if (p) {    
-        smlt_node_send(p, result);
+    struct smlt_channel *parent;
+    err =  smlt_context_get_parent_channel(ctx, &parent);
+    if (smlt_err_is_fail(err)) {
+        return err; // TODO: adding more error values
+    }
+
+    if (parent) {
+        smlt_channel_send(parent, result);
     }
 
     return SMLT_SUCCESS;
@@ -87,9 +99,11 @@ errval_t smlt_reduce(struct smlt_msg *input,
 /**
  * @brief performs a reduction without any payload on teh current instance
  *
+ * @param ctx       The smelt context
+ *
  * @returns TODO:errval
  */
-errval_t smlt_reduce_notify(void)
+errval_t smlt_reduce_notify(struct smlt_context *ctx)
 {
     errval_t err;
 
@@ -99,7 +113,7 @@ errval_t smlt_reduce_notify(void)
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
 
-    if (smlt_topology_does_shared_memory()) {
+    if (smlt_context_does_shared_memory(ctx)) {
         err = smlt_shm_reduce_notify();
         if (smlt_err_is_fail(err)) {
             return err;
@@ -120,18 +134,27 @@ errval_t smlt_reduce_notify(void)
     // Receive (this will be from several children)
     // --------------------------------------------------
     uint32_t count = 0;
-    struct smlt_node **nl = smlt_topology_get_children(&count);
+    struct smlt_channel *children;
+    err =  smlt_context_get_children_channels(ctx, &children, &count);
+    if (smlt_err_is_fail(err)) {
+        return err; // TODO: adding more error values
+    }
 
     for (uint32_t i = 0; i < count; ++i) {
-        err = smlt_node_recv(nl[i], NULL);
+        err = smlt_channel_recv(&children[i], NULL);
         // TODO: error handling
     }
 
     // Send (this should only be sending one message)
     // --------------------------------------------------
-    struct smlt_node *p = smlt_topology_get_parent();
-    if (p) {
-        smlt_node_notify(p);
+    struct smlt_channel *parent;
+    err =  smlt_context_get_parent_channel(ctx, &parent);
+    if (smlt_err_is_fail(err)) {
+        return err; // TODO: adding more error values
+    }
+
+    if (parent) {
+        smlt_channel_notify(parent);
     }
 
     return SMLT_SUCCESS;
@@ -141,22 +164,24 @@ errval_t smlt_reduce_notify(void)
 /**
  * @brief performs a reduction and distributes the result to all nodes
  * 
+ * @param ctx       The smelt context
  * @param msg       input for the reduction
  * @param result    returns the result of the reduction
  * @param operation  function to be called to calculate the aggregate
  * 
  * @returns TODO:errval
  */
-errval_t smlt_reduce_all(struct smlt_msg *input,
+errval_t smlt_reduce_all(struct smlt_context *ctx,
+                         struct smlt_msg *input,
                          struct smlt_msg *result,
                          smlt_reduce_fn_t operation)
 {
     errval_t err;
 
-    err = smlt_reduce(input, result, operation);
+    err = smlt_reduce(ctx, input, result, operation);
     if (smlt_err_is_fail(err)) {
         return err;
     }
 
-    return smlt_broadcast(result);
+    return smlt_broadcast(ctx, result);
 }

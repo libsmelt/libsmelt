@@ -9,6 +9,9 @@
 #ifndef SMLT_REDUCTION_H_
 #define SMLT_REDUCTION_H_ 1
 
+/* forward declaration */
+struct smlt_context;
+struct smlt_msg;
 
 /**
  * @brief operation to be called when performing the aggregate
@@ -23,33 +26,39 @@ typedef errval_t (*smlt_reduce_fn_t)(struct smlt_msg *dest, struct smlt_msg *src
 /**
  * @brief performs a reduction on the current instance
  * 
+ * @param ctx       The smelt context
  * @param msg        input for the reduction
  * @param result     returns the result of the reduction
  * @param operation  function to be called to calculate the aggregate
  *
  * @returns TODO:errval
  */
-errval_t smlt_reduce(struct smlt_msg *input,
+errval_t smlt_reduce(struct smlt_context *ctx,
+                     struct smlt_msg *input,
                      struct smlt_msg *result,
                      smlt_reduce_fn_t operation);
 
 /**
  * @brief performs a reduction without any payload on teh current instance
  *
+ * @param ctx       The smelt context
+ *
  * @returns TODO:errval
  */
-errval_t smlt_reduce_notify(void);
+errval_t smlt_reduce_notify(struct smlt_context *ctx);
 
 /**
  * @brief performs a reduction and distributes the result to all nodes
  * 
+ * @param ctx       The smelt context
  * @param msg       input for the reduction
  * @param result    returns the result of the reduction
  * @param operation  function to be called to calculate the aggregate
  * 
  * @returns TODO:errval
  */
-errval_t smlt_reduce_all(struct smlt_msg *input,
+errval_t smlt_reduce_all(struct smlt_context *ctx,
+                         struct smlt_msg *input,
                          struct smlt_msg *result,
                          smlt_reduce_fn_t operation);
 
