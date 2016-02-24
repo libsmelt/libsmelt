@@ -31,6 +31,8 @@ Eventsets / Waitsets
  * implementationto handle the events on a the queue pairs. (send and recv)
 
 
+EV_RECV: receive message, read tag (possible forward), callback
+
 # Configuration
 
 Our Makefile supports several configurations given as environment
