@@ -9,6 +9,7 @@
 #ifndef SMLT_CONTEXT_H_
 #define SMLT_CONTEXT_H_ 1
 
+#include <smlt_node.h>
 
 #define SMLT_CONTEXT_CHECK(_ctx)
 
@@ -56,19 +57,195 @@ errval_t smlt_context_destroy(struct smlt_context *ctx);
 
 /*
  * ===========================================================================
- * Smelt context creation
+ * Channels
  * ===========================================================================
  */
 
-struct smlt_channel *smlt_context_get_parent_chan(struct smlt_context *ctx);
+/**
+ * @brief obtains the children channels of the current node
+ *
+ * @param ctx        Smelt context
+ * @param node       Smelt node
+ * @param ret_chan   returns an channel array
+ * @param ret_count  number of channels in this array
+ *
+ * @return SMLT_SUCECSS if the returned channel and count are valid
+ */
+errval_t smlt_context_node_get_children_channels(struct smlt_context *ctx,
+                                                 struct smlt_node *node,
+                                                 struct smlt_channel **ret_chan,
+                                                 uint32_t *ret_count);
 
-struct smlt_channel *smlt_context_get_parent_of_node(struct smlt_context *ctx,
-                                                     struct smlt_node *node);
+/**
+ * @brief obtains the children channels of the current node
+ *
+ * @param ctx        Smelt context
+ * @param ret_chan   returns an channel array
+ * @param ret_count  number of channels in this array
+ *
+ * @return SMLT_SUCECSS if the returned channel and count are valid
+ */
+static inline
+errval_t smlt_context_get_children_channels(struct smlt_context *ctx,
+                                            struct smlt_channel **ret_chan,
+                                            uint32_t *ret_count)
+{
+    return smlt_context_node_get_children_channels(ctx, smlt_node_self, ret_chan,
+                                                   ret_count);
+}
 
-bool smlt_context_is_root(struct smlt_context *ctx);
 
-bool smlt_context_is_leaf(struct smlt_context *ctx);
+/**
+ * @brief gets the channel to the parent
+ *
+ * @param ctx       Smelt context
+ * @param node       Smelt node
+ * @param ret_chan  returns the channel to the parent, NULL if root
+ *
+ * @return SMLT_SUCESS if the returned channel is valid
+ */
+errval_t smlt_context_node_get_parent_channel(struct smlt_context *ctx,
+                                              struct smlt_node *node,
+                                              struct smlt_channel **ret_chan);
 
+/**
+ * @brief gets the channel to the parent
+ *
+ * @param ctx       Smelt context
+ * @param ret_chan  returns the channel to the parent, NULL if root
+ *
+ * @return SMLT_SUCESS if the returned channel is valid
+ */
+static inline
+errval_t smlt_context_get_parent_channel(struct smlt_context *ctx,
+                                         struct smlt_channel **ret_chan)
+{
+    return smlt_context_node_get_parent_channel(ctx, smlt_node_self, ret_chan);
+}
+
+
+
+/*
+ * ===========================================================================
+ * State queries
+ * ===========================================================================
+ */
+
+
+/**
+ * @brief checks if the node is the root in the context
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the current node is the root, FALSE otherwise
+ */
+bool smlt_context_node_is_root(struct smlt_context *ctx,
+                               struct smlt_node *node);
+
+/**
+ * @brief checks if the current node is the root in the context
+ *
+ * @param ctx   Smelt context
+ *
+ * @return TRUE if the current node is the root, FALSE otherwise
+ */
+static inline bool smlt_context_is_root(struct smlt_context *ctx)
+{
+    return smlt_context_node_is_root(ctx, smlt_node_self);
+}
+
+/**
+ * @brief checks if the node is a leaf in the context
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the current node is a leaf, FALSE otherwise
+ */
+bool smlt_context_node_is_leaf(struct smlt_context *ctx,
+                               struct smlt_node *node);
+
+/**
+ * @brief checks if the current node is a leaf in the context
+ *
+ * @param ctx   Smelt context
+ *
+ * @return TRUE if the current node is a leaf, FALSE otherwise
+ */
+static inline bool smlt_context_is_leaf(struct smlt_context *ctx)
+{
+    return smlt_context_node_is_leaf(ctx, smlt_node_self);
+}
+
+/**
+ * @brief checks if the node does shared memory operations
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the node does shm os, FALSE otherwise
+ */
+bool smlt_context_node_does_shared_memory(struct smlt_context *ctx,
+                                          struct smlt_node *node);
+
+/**
+ * @brief checks if the current node does shared memory operations
+ *
+ * @param ctx   Smelt context
+ *
+ * @return TRUE if the current node does shm os, FALSE otherwise
+ */
+static inline bool smlt_context_does_shared_memory(struct smlt_context *ctx)
+{
+    return smlt_context_node_does_shared_memory(ctx, smlt_node_self);
+}
+
+/**
+ * @brief checks if the node does message passing
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the node does message passing, FALSE otherwise
+ */
+bool smlt_context_node_does_message_passing(struct smlt_context *ctx,
+                                            struct smlt_node *node);
+
+/**
+ * @brief checks if the current node does message passing
+ *
+ * @param ctx   Smelt context
+ *
+ * @return TRUE if the current node does message passing, FALSE otherwise
+ */
+static inline bool smlt_context_does_message_passing(struct smlt_context *ctx)
+{
+    return smlt_context_node_does_message_passing(ctx, smlt_node_self);
+}
+
+/**
+ * @brief checks if the node has inter machine links
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the nodes has inter machine links, FALSE otherwise
+ */
+bool smlt_context_node_does_inter_machine(struct smlt_context *ctx,
+                                          struct smlt_node *node);
+
+/**
+ * @brief checks if the current node has inter machine links
+ *
+ * @param ctx   Smelt context
+ *
+ * @return TRUE if the nodes has inter machine links, FALSE otherwise
+ */
+static inline bool smlt_context_does_inter_machine(struct smlt_context *ctx)
+{
+    return smlt_context_node_does_inter_machine(ctx, smlt_node_self);
+}
 
 
 #endif /* SMLT_CONTEXT_H_ */
