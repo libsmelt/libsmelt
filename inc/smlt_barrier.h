@@ -11,6 +11,8 @@
 #ifndef SMLT_BARRIER_H
 #define SMLT_BARRIER_H 1
 
+/* forward declaration */
+struct smlt_context;
 
 /*
  * ===========================================================================
@@ -45,29 +47,29 @@ struct smlt_barrier
 /**
  * @brief destroys a smlt barrier
  *
- * @param bar the Smelt barrier to be initialized
+ * @param ctx the Smelt context
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_init(struct smlt_barrier *bar);
+errval_t smlt_barrier_init(struct smlt_context *ctx);
 
 /**
  * @brief destroys a smlt barrier
  *
- * @param bar the Smelt barrier to destroy
+ * @param ctx the Smelt context
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_destroy(struct smlt_barrier *bar);
+errval_t smlt_barrier_destroy(struct smlt_context *ctx);
 
 /**
  * @brief waits on the supplied barrier
  *
- * @param bar the Smelt barrier to wait on
+ * @param ctx the Smelt context
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_wait(struct smlt_barrier *bar);
+errval_t smlt_barrier_wait(struct smlt_context *ctx);
 
 
 

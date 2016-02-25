@@ -16,42 +16,45 @@
 /**
  * @brief destroys a smlt barrier
  *
- * @param bar the Smelt barrier to be initialized
+ * @param ctx the Smelt context
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_init(struct smlt_barrier *bar)
+errval_t smlt_barrier_init(struct smlt_context *ctx)
 {
 
     return SMLT_SUCCESS;
-
 }
 
 /**
  * @brief destroys a smlt barrier
  *
- * @param bar the Smelt barrier to destroy
+ * @param ctx the Smelt context
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_destroy(struct smlt_barrier *bar)
+errval_t smlt_barrier_destroy(struct smlt_context *ctx)
 {
-
     return SMLT_SUCCESS;
 }
 
 /**
  * @brief waits on the supplied barrier
  *
- * @param bar the Smelt barrier to wait on
+ * @param ctx the Smelt context
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_wait(struct smlt_barrier *bar)
+errval_t smlt_barrier_wait(struct smlt_context *ctx)
 {
-    smlt_reduce_notify();
-    smlt_broadcast_notify();
-    return SMLT_SUCCESS;
+    errval_t err;
+
+    err = smlt_reduce_notify(ctx);
+    if (smlt_err_is_fail(err)) {
+        return err;
+    }
+
+    return smlt_broadcast_notify(ctx);
 }
 
 
