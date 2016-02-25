@@ -37,6 +37,7 @@ struct smlt_context
     struct smlt_topology *topology;
     char name[SMLT_CONTEXT_NAME_MAX];
     uint32_t num_nodes;
+    smlt_nid_t max_nid;
     struct smlt_context_node **nid_to_node;
     struct smlt_context_node all_nodes[];
 };
@@ -77,9 +78,9 @@ errval_t smlt_context_create(struct smlt_topology *topo,
     }
 
     ctx->num_nodes = num_nodes;
-
+    ctx->max_nid = 0;
     /* loop over the nodes and allocate resources */
-    smlt_nid_t max_nid = 0;
+
     struct smlt_topology_node *tn = smlt_topology_get_first_node(topo);
     for (uint32_t i = 0; i < num_nodes; ++i) {
         struct smlt_context_node *n = &ctx->all_nodes[i];
@@ -100,14 +101,14 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         }
 
         /* update maximum node id */
-        if (max_nid < current_nid) {
-            max_nid = current_nid;
+        if (ctx->max_nid  < current_nid) {
+            ctx->max_nid  = current_nid;
         }
 
         tn = smlt_topology_node_next(tn);
     }
 
-    ctx->nid_to_node = smlt_platform_alloc(max_nid * sizeof(void *),
+    ctx->nid_to_node = smlt_platform_alloc(ctx->max_nid  * sizeof(void *),
                                            SMLT_CACHELINE_SIZE, true);
     if (!ctx->nid_to_node) {
 
@@ -162,3 +163,163 @@ errval_t smlt_context_destroy(struct smlt_context *ctx)
 
     return SMLT_SUCCESS;
 }
+
+
+/*
+ * ===========================================================================
+ * Channels
+ * ===========================================================================
+ */
+
+/**
+ * @brief obtains the children channels of the current node
+ *
+ * @param ctx        Smelt context
+ * @param node       Smelt node
+ * @param ret_chan   returns an channel array
+ * @param ret_count  number of channels in this array
+ *
+ * @return SMLT_SUCECSS if the returned channel and count are valid
+ */
+errval_t smlt_context_node_get_children_channels(struct smlt_context *ctx,
+                                                 struct smlt_node *node,
+                                                 struct smlt_channel **ret_chan,
+                                                 uint32_t *ret_count)
+{
+    if (ctx->max_nid < node->id) {
+        return -1; /* TODO: ERROR VALUE */
+    }
+
+    if (ret_chan) {
+        *ret_chan = ctx->nid_to_node[node->id]->children;
+    }
+    if (ret_count) {
+        *ret_count = ctx->nid_to_node[node->id]->num_children;
+    }
+
+    return SMLT_SUCCESS;
+}
+
+
+/**
+ * @brief gets the channel to the parent
+ *
+ * @param ctx       Smelt context
+ * @param node       Smelt node
+ * @param ret_chan  returns the channel to the parent, NULL if root
+ *
+ * @return SMLT_SUCESS if the returned channel is valid
+ */
+errval_t smlt_context_node_get_parent_channel(struct smlt_context *ctx,
+                                              struct smlt_node *node,
+                                              struct smlt_channel **ret_chan)
+{
+    if (ctx->max_nid < node->id) {
+        return -1; /* TODO: ERROR VALUE */
+    }
+
+    if (ret_chan) {
+        *ret_chan  = ctx->nid_to_node[node->id]->parent;
+    }
+    return SMLT_SUCCESS;
+}
+
+
+/*
+ * ===========================================================================
+ * State queries
+ * ===========================================================================
+ */
+
+
+/**
+ * @brief checks if the node is the root in the context
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the current node is the root, FALSE otherwise
+ */
+bool smlt_context_node_is_root(struct smlt_context *ctx,
+                               struct smlt_node *node)
+{
+    if (ctx->max_nid < node->id) {
+        return 0;
+    }
+    return (ctx->nid_to_node[node->id]->parent == NULL);
+}
+
+/**
+ * @brief checks if the node is a leaf in the context
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the current node is a leaf, FALSE otherwise
+ */
+bool smlt_context_node_is_leaf(struct smlt_context *ctx,
+                               struct smlt_node *node)
+{
+    if (ctx->max_nid < node->id) {
+        return 0;
+    }
+    return (ctx->nid_to_node[node->id]->num_children == 0);
+}
+
+/**
+ * @brief checks if the node does shared memory operations
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the node does shm os, FALSE otherwise
+ */
+bool smlt_context_node_does_shared_memory(struct smlt_context *ctx,
+                                          struct smlt_node *node)
+{
+    if (ctx->max_nid < node->id) {
+        return 0;
+    }
+
+    /* TODO: impelemt */
+    assert(!"NYI");
+    return 0;
+}
+
+/**
+ * @brief checks if the node does message passing
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the node does message passing, FALSE otherwise
+ */
+bool smlt_context_node_does_message_passing(struct smlt_context *ctx,
+                                            struct smlt_node *node)
+{
+    if (ctx->max_nid < node->id) {
+        return 0;
+    }
+    /* TODO: impelemt */
+    assert(!"NYI");
+    return 0;
+}
+
+/**
+ * @brief checks if the node has inter machine links
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return TRUE if the nodes has inter machine links, FALSE otherwise
+ */
+bool smlt_context_node_does_inter_machine(struct smlt_context *ctx,
+                                          struct smlt_node *node)
+{
+    if (ctx->max_nid < node->id) {
+        return 0;
+    }
+    assert(!"NYI");
+    return 0;
+}
+

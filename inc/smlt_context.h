@@ -11,6 +11,9 @@
 
 #include <smlt_node.h>
 
+/* forward declaration */
+struct smlt_channel;
+
 #define SMLT_CONTEXT_CHECK(_ctx)
 
 /*
