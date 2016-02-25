@@ -41,7 +41,7 @@ HEADERS += $(wildcard inc/arch/*.h)
 
 # includes
 # --------------------------------------------------
-INC += -I inc -I inc/platforms/linux -I inc/backends 
+INC += -I inc -I inc/platforms/linux -I inc/backends -I contrib/
 
 
 # versiong
@@ -115,6 +115,9 @@ test/nodes-test: test/nodes-test.c $(TARGET)
 test/topo-create-test: test/topo-create-test.c
 	$(CC) $(CFLAGS) $(INC) -L./ test/topo-create-test.c -o $@ -lsmltrt
 
+test/contrib-lib-test: test/contrib-lib-test.c
+	$(CC) $(CFLAGS) $(INC) -L./contrib/ test/contrib-lib-test.c -o $@ -lsmltcontrib
+
 # Benchmarks
 # --------------------------------------------------
 bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
@@ -144,7 +147,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test test/topo-create-test
+	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test test/topo-create-test test/contrib-lib-test
 
 debug:
 	echo $(HEADERS)
