@@ -177,7 +177,7 @@ errval_t smlt_node_exec_start(struct smlt_node *node)
     //char *_tmp = (char*) malloc(1000);
     //sprintf(_tmp, "smlt-%d", node->id);
 
-    if (smlt_topology_is_root()) {
+    //if (smlt_topology_is_root()) {
         // Message passing initialization
         // --------------------------------------------------
 
@@ -188,7 +188,7 @@ errval_t smlt_node_exec_start(struct smlt_node *node)
 
         // Build associated broadcast tree
         //setup_tree_from_model();
-    }
+    //}
 
     // Shared memory initialization
     // --------------------------------------------------
