@@ -116,7 +116,7 @@ test/topo-create-test: test/topo-create-test.c
 	$(CC) $(CFLAGS) $(INC) -L./ test/topo-create-test.c -o $@ -lsmltrt
 
 test/contrib-lib-test: test/contrib-lib-test.c
-	$(CC) $(CFLAGS) $(INC) -L./contrib/ test/contrib-lib-test.c -o $@ -lsmltcontrib
+	$(CC) $(CFLAGS) $(INC) -L./contrib/ test/contrib-lib-test.c -o $@ contrib/libsmltcontrib.so
 
 # Benchmarks
 # --------------------------------------------------
@@ -135,7 +135,7 @@ bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.cpp
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
-	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET)
+	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET) contrib/libsmltcontrib.so
 	ar rcs $(patsubst %.so,%.a,$(TARGET)) $(OBJS) $(EXTERNAL_OBJS)
 
 # Compile object files

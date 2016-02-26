@@ -27,20 +27,61 @@ static char* get_env_str(const char *envname, const char *defaultvalue)
     return env;
 }
 
-void smlt_tree_parse_wrapper(char* json_string,
-                             uint16_t** model,
-                             uint32_t** leafs,
-                             uint32_t* last_node)
+int smlt_tree_parse_wrapper(char* json_string,
+                            unsigned ncores,
+                            uint16_t** model,
+                            uint32_t** leafs,
+                            uint32_t* last_node)
 {
+    Json::Value root;
+    // Json::CharReaderBuilder rbuilder;
+    // rbuilder["collectComments"] = false;
+    std::string errs;
+    // bool ok = Json::parseFromStream(rbuilder, rec, &root, &errs);
 
+    Json::CharReaderBuilder rbuilder;
+    Json::CharReader* reader = rbuilder.newCharReader();
+
+    reader->parse(json_string, json_string+strlen(json_string)-1, 
+                  &root, &errs);
+
+    // Extract last node
+    Json::Value ln = root.get("last_node", "");
+    int lnval = ln.asInt();
+    *last_node = (uint32_t)lnval;
+
+    // Extract leaf node
+    Json::Value leafs_j = root.get("leaf_nodes", "");
+    assert(*leafs != NULL);
+    for (unsigned i=0; i<leafs_j.size(); i++) {
+        *leafs[i] = leafs_j.get(i, Json::Value()).asInt();
+    }
+    
+    Json::Value elem = root.get("model", "");
+    assert(*model != NULL);
+    int x = 0;
+    int y = 0;
+    for (Json::ValueIterator i=elem.begin(); i != elem.end(); i++) {
+        y = 0;
+        Json::Value inner = (*i);
+        for (Json::ValueIterator k=inner.begin(); k != inner.end(); k++) {
+
+            Json::Value val = (*k);
+            *model[x*ncores+y] = (uint32_t) val.asInt();
+            y++;
+        }
+        x++;
+    }
+    
+    return 0;
 }
 
-static void smlt_tree_config_request(const char *hostname, 
-                                     const char* msg,
-                                     unsigned ncores,
-                                     uint16_t** model,
-                                     uint32_t** leafs,
-                                     uint32_t* last_node)
+static int smlt_tree_config_request(const char *hostname, 
+                                    const char* msg,
+                                    unsigned ncores,
+                                    uint16_t** model,
+                                    uint32_t** leafs,
+                                    uint32_t* last_node)
 {
 
     int status;
@@ -60,16 +101,25 @@ static void smlt_tree_config_request(const char *hostname,
     status = getaddrinfo(hostname, PORT, &host_info, &host_info_list);
     // getaddrinfo returns 0 on succes, or some other value when an error occured.
     // (translated into human readable text by the gai_gai_strerror function).
-    if (status != 0)  std::cout << "getaddrinfo error" << gai_strerror(status) ;
+    if (status != 0) {
+        std::cout << "getaddrinfo error" << gai_strerror(status) ;
+        return 1;
+    }
 
     int socketfd ; // The socket descripter
     socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                   host_info_list->ai_protocol);
-    if (socketfd == -1)  std::cout << "socket error " ;
+    if (socketfd == -1) {
+        std::cout << "socket error " ;
+        return 1;
+    }
 
 
     status = connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen);
-    if (status == -1)  std::cout << "connect error" ;
+    if (status == -1) {
+        std::cout << "connect error" ;
+        return 1;
+    }
 
 
     int len = strlen(msg);
@@ -84,81 +134,42 @@ static void smlt_tree_config_request(const char *hostname,
     std::string rec;
     
     do {
-    bytes_recieved = recv(socketfd, incomming_data_buffer,1000, 0);
-    
-    // If no data arrives, the program will just wait here until some data arrives.
-    if (bytes_recieved > 0) {
-        incomming_data_buffer[bytes_recieved] = '\0' ;
+        bytes_recieved = recv(socketfd, incomming_data_buffer,1000, 0);
+        
+        // If no data arrives, the program will just wait here until some data arrives.
+        if (bytes_recieved > 0) {
+            incomming_data_buffer[bytes_recieved] = '\0' ;
 
-        rec.append(incomming_data_buffer);
-    }
-    
-    else {
-        if (bytes_recieved == 0) {
-            
-        } else if (bytes_recieved == -1) {
+            rec.append(incomming_data_buffer);
         }
-    }
+        else {
+            if (bytes_recieved == 0) {
+               printf("host shut down \n");
+            } else if (bytes_recieved == -1) {
+               printf("receive error \n");
+               return 1;
+            }
+        }
         
     } while(bytes_recieved>0);
 
 
-    assert(model != NULL);
-    // Parse json
-    Json::Value root;
-    // Json::CharReaderBuilder rbuilder;
-    // rbuilder["collectComments"] = false;
-    std::string errs;
-    // bool ok = Json::parseFromStream(rbuilder, rec, &root, &errs);
-
-    Json::CharReaderBuilder rbuilder;
-    Json::CharReader* reader = rbuilder.newCharReader();
-
-    const char* input = rec.c_str();
-    reader->parse(input, input+strlen(input)-1, &root, &errs);
-
-    // Extract last node
-    Json::Value ln = root.get("last_node", "");
-    int lnval = ln.asInt();
-    *last_node = (uint32_t)lnval;
-
-    // Extract leaf node
-    Json::Value leafs_j = root.get("leaf_nodes", "");
-    *leafs = (uint32_t*) malloc(sizeof(uint32_t)*leafs_j.size());
-    assert(*leafs != NULL);
-    for (unsigned i=0; i<leafs_j.size(); i++) {
-        *leafs[i] = leafs_j.get(i, Json::Value()).asInt();
-    }
-    
-    Json::Value elem = root.get("model", "");
-    *model = (uint16_t*)malloc(sizeof(uint16_t)*elem.size());
-    assert(*model != NULL);
-    int x = 0;
-    int y = 0;
-    for (Json::ValueIterator i=elem.begin(); i != elem.end(); i++) {
-        y = 0;
-        Json::Value inner = (*i);
-        for (Json::ValueIterator k=inner.begin(); k != inner.end(); k++) {
-
-            Json::Value val = (*k);
-            *model[x*ncores+y] = (uint32_t) val.asInt();
-            y++;
-        }
-        x++;
-    }
-    
     freeaddrinfo(host_info_list);
     shutdown(socketfd, SHUT_RDWR);
+    assert(model != NULL);
+    char* inp = (char*) rec.c_str();    
+
+    return smlt_tree_parse_wrapper(inp, ncores, model, leafs, last_node);
 }
 
 #define NAMELEN 1000U
 
-void smlt_tree_generate_wrapper(unsigned ncores, 
-                                uint32_t* cores,
-                                char* tree_name,
-                                uint16_t** model,
-                                uint32_t** leafs,
-                                uint32_t* last_node)
+int smlt_tree_generate_wrapper(unsigned ncores, 
+                               uint32_t* cores,
+                               char* tree_name,
+                               uint16_t** model,
+                               uint32_t** leafs,
+                               uint32_t* last_node)
 {
     // Ask the Simulator to build a model
     const char *host = get_env_str("SMLT_HOSTNAME", "");
@@ -171,7 +182,7 @@ void smlt_tree_generate_wrapper(unsigned ncores,
         printf("Hostname is %s \n", host);
     } else {
         printf("No hostname give, not contacting generator \n");
-        return;
+        return 1;
     }
     
     Json::StreamWriterBuilder wbuilder;
@@ -193,8 +204,7 @@ void smlt_tree_generate_wrapper(unsigned ncores,
 
     std::string doc = Json::writeString(wbuilder, root);
  
-    smlt_tree_config_request(host, doc.c_str(), ncores,
-                             model, leafs, last_node);
-
+    return smlt_tree_config_request(host, doc.c_str(), ncores,
+                                    model, leafs, last_node);
 }
 

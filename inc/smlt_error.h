@@ -33,6 +33,9 @@ enum smlt_err_code {
     /* topology errors */
     SMLT_ERR_TOPOLOGY_INIT,
 
+    /* generator errors */
+    SMLT_ERR_GENERATOR,
+
     /* node errors */
     SMLT_ERR_NODE_START  = 5,
     SMLT_ERR_NODE_CREATE = 6,
