@@ -150,7 +150,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test test/topo-create-test test/contrib-lib-test
+	rm -f src/*.o src/backends/shm/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test test/topo-create-test test/contrib-lib-test
 
 debug:
 	echo $(HEADERS)

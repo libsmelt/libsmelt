@@ -83,6 +83,22 @@ void get_next_sync(struct shm_queue* context,
     *next = min+(context->num_slots-1);
 }
 
+
+
+bool shm_can_send(struct shm_queue* context)
+{
+    if (context->next_seq == context->next_sync) {
+        uint64_t next_sync;
+        get_next_sync(context, &next_sync);
+        if (context->next_sync < next_sync) {
+            return true;
+        }
+        return false;
+    } else {    
+        return true;
+    }
+}
+
 void shm_send_raw(struct shm_queue* context,
                   uintptr_t p1,
                   uintptr_t p2,

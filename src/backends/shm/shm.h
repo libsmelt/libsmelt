@@ -79,4 +79,7 @@ void shm_receive_raw(struct shm_queue* context,
               uintptr_t *p6,
               uintptr_t *p7);
 
+bool shm_can_send(struct shm_queue* context);
+bool shm_can_receive(struct shm_queue* context);
+
 #endif /* SYNC_SHM_H */
