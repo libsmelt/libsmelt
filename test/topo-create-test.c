@@ -23,7 +23,7 @@ static uint16_t model[64] = { 0, 1, 2, 0, 0, 0, 0, 0,
                               0, 0, 99, 0, 0, 0, 0, 0,
                               0, 0, 99, 0, 0, 0, 0, 0,
                               0, 0, 99, 0, 0, 0, 0, 0};
-static uint32_t leafs[8] = {1,2,3,4,5,6,7,0};
+static uint32_t leafs[8] = {3,4,5,6,7,0,0,0};
 static uint32_t last_node = 7; 
 
 

@@ -23,6 +23,7 @@ struct smlt_topology_node
     smlt_nid_t node_id;                     ///< qp[0]->parent qp[1..n] child
     uint32_t array_index;                   ///< Invalid if root
     uint32_t num_children;                  ///<
+    bool is_leaf;
 };
 
 
@@ -162,6 +163,7 @@ static void smlt_topology_create_binary_tree(struct smlt_topology *topology,
             node->children = NULL;
             node->num_children = 0;
             node->node_id = i;
+            node->is_leaf = true;
         }
     }
 }
@@ -215,6 +217,15 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                 }
             }
         }        
+    }
+
+    for (int i = 0; i < model->ncores; i++) {
+        for (int j = 0; j < model->ncores; j++) {
+            if ((model->leafs[j] == i) && (i != 0)) {
+                SMLT_DEBUG(SMLT_DBG__INIT,"%d is a leaf \n", i) 
+                topo->all_nodes[i].is_leaf = true;
+            }
+        }
     }
 }
 /*
