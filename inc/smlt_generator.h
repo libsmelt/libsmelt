@@ -12,6 +12,7 @@
 
 
 struct smlt_generated_model {
+    uint32_t ncores;
     uint32_t last_node;
     uint16_t* model;
     uint32_t* leafs;

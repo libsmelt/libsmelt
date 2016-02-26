@@ -11,8 +11,21 @@
 #include <stdlib.h>
 #include <smlt.h>
 #include <smlt_topology.h>
+#include <smlt_generator.h>
 
 #define NUM_THREADS 12
+
+static uint16_t model[64] = { 0, 1, 2, 0, 0, 0, 0, 0,
+                             99, 0, 0, 1, 2, 0, 0, 0,
+                             99, 0, 0, 0, 0, 1, 2, 3,
+                              0,99, 0, 0, 0, 0, 0, 0,
+                              0,99, 0, 0, 0, 0, 0, 0,
+                              0, 0, 99, 0, 0, 0, 0, 0,
+                              0, 0, 99, 0, 0, 0, 0, 0,
+                              0, 0, 99, 0, 0, 0, 0, 0};
+static uint32_t leafs[8] = {1,2,3,4,5,6,7,0};
+static uint32_t last_node = 7; 
+
 
 static const char *name = "binary_tree";
 int main(int argc, char **argv)
@@ -26,5 +39,15 @@ int main(int argc, char **argv)
 
     struct smlt_topology *topo = NULL;
     printf("Creating binary tree \n");
-    smlt_topology_create(NULL, 0, name, topo);
+    smlt_topology_create(NULL, name, topo);
+
+    struct smlt_topology *topo2 = NULL;
+    struct smlt_generated_model *m = NULL;
+    m = (struct smlt_generated_model*) malloc(sizeof(struct smlt_generated_model));
+    m->model = model;
+    m->leafs = leafs;
+    m->last_node = last_node;
+    m->ncores = 8;
+    printf("Creating other tree \n");
+    smlt_topology_create(m, name, topo2);  
 }

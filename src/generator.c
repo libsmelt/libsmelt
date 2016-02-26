@@ -28,11 +28,12 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
                          char* name, struct smlt_generated_model* model)
 {
     model = (struct smlt_generated_model*) smlt_platform_alloc(
-                                                sizeof(uint32_t)+
+                                                (2*sizeof(uint32_t))+
                                                 (sizeof(uint16_t)*len*len)+
                                                 (sizeof(uint32_t)*len),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
+    model->ncores = len;
     int err = smlt_tree_generate(len, cores, name, &(model->model),
                                  &(model->leafs), &(model->last_node));
     
@@ -54,12 +55,12 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
                                        struct smlt_generated_model* model)
 {
     model = (struct smlt_generated_model*) smlt_platform_alloc(
-                                                sizeof(uint32_t)+
+                                                (2*sizeof(uint32_t))+
                                                 (sizeof(uint16_t)*ncores*ncores)+
                                                 (sizeof(uint32_t)*ncores),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-
+    model->ncores = ncores;
     char *json_string;
     uint64_t file_size;
     FILE *file = fopen(filepath, "rb");

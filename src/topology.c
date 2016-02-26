@@ -8,6 +8,7 @@
  */
 #include <smlt.h>
 #include <smlt_topology.h>
+#include <smlt_generator.h>
 #include "debug.h"
 
 /**
@@ -39,7 +40,8 @@ struct smlt_topology
 //prototypes
 static void smlt_topology_create_binary_tree(struct smlt_topology *topology,
                                              uint32_t num_threads);
-
+static void smlt_topology_parse_model(struct smlt_generated_model* model,
+                                      struct smlt_topology* topo);
 /**
  * @brief initializes the topology subsystem
  *
@@ -73,10 +75,10 @@ errval_t smlt_topology_init(void)
  *
  * If the model is NULL, then a binary tree will be generated
  */
-errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
+errval_t smlt_topology_create(struct smlt_generated_model* model, 
+                              const char *name,
                               struct smlt_topology *ret_topology)
 {
-    SMLT_DEBUG(SMLT_DBG__INIT, "Creating topo_node  \n");
     ret_topology = (struct smlt_topology*) 
                     smlt_platform_alloc(sizeof(struct smlt_topology)+
                                         sizeof(struct smlt_topology_node)*
@@ -88,7 +90,7 @@ errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
     if (model == NULL) {
         smlt_topology_create_binary_tree(ret_topology, smlt_get_num_proc());      
     } else {
-        
+        smlt_topology_parse_model(model, ret_topology);      
     }
     return SMLT_SUCCESS;
 }
@@ -164,7 +166,57 @@ static void smlt_topology_create_binary_tree(struct smlt_topology *topology,
     }
 }
 
+/**
+ * \brief build topology from model.
+ *
+ * @param topology      returned pointer to the topology
+ *
+ * @return SMELT_SUCCESS or error value 
+ */
+static void smlt_topology_parse_model(struct smlt_generated_model* model,
+                                      struct smlt_topology* topo)
+{
+    assert (topo!=NULL);
+    // Fill model    
+    topo->root = &(topo->all_nodes[0]);    
+    topo->root->parent = NULL;
+    // TODO use node ids instead of cores ids
+    for (int x = 0; x < model->ncores;x++){
+        struct smlt_topology_node* node = &(topo->all_nodes[x]);
 
+        // find number of children and allocate accordingly
+        int max_child = 0;
+        for(int y = 0; y < model->ncores; y++){
+            if (model->model[x*model->ncores+y] > max_child){
+               max_child = model->model[x*model->ncores+y];
+            }
+        }
+    
+        node->children = (struct smlt_topology_node**)
+                             smlt_platform_alloc(sizeof(struct smlt_topology_node*)*
+                                                 max_child, SMLT_DEFAULT_ALIGNMENT, 
+                                                 true);
+        // set model
+        for(int y = 0; y < model->ncores; y++){
+            int val = model->model[x*model->ncores+y];
+            if (val > 0) {
+                if (val == 99) {
+                    SMLT_DEBUG(SMLT_DBG__INIT,"Parent of %d is %d \n", x, y);
+                    node->parent = &(topo->all_nodes[y]);
+                } else {
+                    // TODO add channel type
+                    SMLT_DEBUG(SMLT_DBG__INIT,"Child of %d is %d at pos %d \n", 
+                               x, y, val);
+                    node->topology = topo;
+                    node->children[val] = &(topo->all_nodes[y]);
+                    node->num_children = max_child;
+                    node->node_id = x; // TODO change to real node ID
+                    topo->all_nodes[y].array_index = val;
+                }
+            }
+        }        
+    }
+}
 /*
  * ===========================================================================
  * topology nodes

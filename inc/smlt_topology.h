@@ -21,6 +21,7 @@
  */
 struct smlt_topology;
 struct smlt_topology_node;
+struct smlt_generated_model;
 
 ///< refer to the current smelt topology
 #define SMLT_TOPOLOGY_CURRENT NULL;
@@ -51,7 +52,8 @@ errval_t smlt_topology_init(void);
  *
  * If the model is NULL, then a binary tree will be generated
  */
-errval_t smlt_topology_create(void *model, uint32_t length, const char *name,
+errval_t smlt_topology_create(struct smlt_generated_model* model,
+                              const char *name,
                               struct smlt_topology *ret_topology);
 
 /**
