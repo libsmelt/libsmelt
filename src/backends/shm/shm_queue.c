@@ -1,5 +1,10 @@
+/**
+ * \file
+ * \brief Implementation of shared memory qeueue writer
+ */
+
 /*
- * Copyright (c) 2016, ETH Zurich.
+ * Copyright (c) 2015, ETH Zurich.
  * All rights reserved.
  *
  * This file is distributed under the terms in the attached LICENSE file.
@@ -8,8 +13,6 @@
  * Attn: Systems Group.
  */
 
-#include <smlt.h>
-#include <shm/smlt_shm.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -17,12 +20,12 @@
 #include <unistd.h>
 #include <sched.h>
 #include <stdbool.h>
+#include <assert.h>
 
-#if 0
+#include "shm.h"
+
 
 //#define DEBUG_SHM
-#define END 1
-#define RESET 9
 
 /**
  * \brief Initalize a shared memory context
@@ -56,26 +59,28 @@ struct shm_queue* shm_init_context(void* shm,
 #ifdef DEBUG_SHM
     queue->num_slots = 10;
 #endif
-    queue->write_pos = (union pos_pointer*) shm;
-    queue->readers_pos = (union pos_pointer*) shm+1;
+    queue->readers_pos = (union pos_pointer*) shm;
     queue->l_pos = 0;
     queue->data = (uint8_t*) shm+((num_readers+2)*sizeof(union pos_pointer));
+    queue->next_sync = queue->num_slots-1;
+    queue->next_seq = 1;
+    queue->r_mask = 0xF;
 
     return queue;
 }
 
-static bool check_readers_end(struct shm_queue* queue)
+
+void get_next_sync(struct shm_queue* context, 
+                   uint64_t* next)
 {
-
-    for (int i = 0; i < queue->num_readers; i++) {
-        volatile uint64_t pos = queue->readers_pos[i].pos;
-        if (pos == END) {
-
-        } else {
-            return false;
+    uint64_t min = 0xFFFFFFFF;
+    for (int i = 0; i < context->num_readers; i++) {
+        if (min > context->readers_pos[i].p[0]) {
+            min = context->readers_pos[i].p[0];
         }
     }
-    return true;
+
+    *next = min+(context->num_slots-1);
 }
 
 void shm_send_raw(struct shm_queue* context,
@@ -87,65 +92,65 @@ void shm_send_raw(struct shm_queue* context,
                   uintptr_t p6,
                   uintptr_t p7)
 {
-    assert (context!=NULL);
-    // if we reached the end sync with readers
-    if ((context->write_pos[0].pos) == context->num_slots) {
-            //printf("Writer waiting %d \n", sched_getcpu());
-            while(!check_readers_end(context)){};
 
-#ifdef DEBUG_SHM
-            printf("#################################################### \n");
-            printf("Synced %d \n", sched_getcpu());
-            printf("#################################################### \n");
-#endif       
-            // reset new pointer
-            context->write_pos[0].pos = 0;
-            // reset readers
-            for (int i = 0; i < context->num_readers; i++) {
-                context->readers_pos[i].pos = RESET;
-            }
+    uint64_t next_sync;
+    //assert (context!=NULL);
+    // if we reached the end sync with readers
+    if ((context->l_pos) == context->num_slots) {
+        context->l_pos = 0;
     }
 
-    uintptr_t offset =  (context->write_pos[0].pos*
-                         (CACHELINE_SIZE/sizeof(uintptr_t)));
-    assert (offset<SHMQ_SIZE*CACHELINE_SIZE);
+    // get next sync at the sync point
+    if (context->next_seq == context->next_sync) {
+       get_next_sync(context, &next_sync);
+       while(context->next_seq == next_sync) {
+            get_next_sync(context, &next_sync);
+       }
+       context->next_sync = next_sync;
+    }
+
+    uintptr_t offset =  (context->l_pos*(CACHELINE_SIZE/sizeof(uintptr_t)));
+    //assert (offset<SHMQ_SIZE*CACHELINE_SIZE);
 
     uintptr_t* slot_start = (uintptr_t*) context->data + offset;
 
-    slot_start[0] = p1;
-    slot_start[1] = p2; 
-    slot_start[2] = p3; 
-    slot_start[3] = p4;
-    slot_start[4] = p5; 
-    slot_start[5] = p6;
-    slot_start[6] = p7; 
-
+    slot_start[1] = p1; 
+    slot_start[2] = p2; 
+    slot_start[3] = p3;
+    slot_start[4] = p4; 
+    slot_start[5] = p5;
+    slot_start[6] = p6; 
+    slot_start[7] = p7; 
 #ifdef DEBUG_SHM
        /* printf("Shm writer %d epoch %d: write pos %" PRIu64 " addr %p value1 %lu \n",
             sched_getcpu(), context->epoch, context->write_pos[0].pos[context->epoch],
             slot_start, slot_start[0]); */
-        printf("Shm writer %d: write pos %" PRIu64 " val %lu \n", 
-                sched_getcpu(), context->write_pos[0].pos, 
-                slot_start[0]);
+        printf("Shm writer %d: write pos %d val %lu \n", 
+                sched_getcpu(), context->l_pos, 
+                context->next_seq);
 #endif
+    slot_start[0] = context->next_seq;
+    context->next_seq++;
 
     // increse write pointer..
-    uint64_t pos = context->write_pos[0].pos+1;
-    context->write_pos[0].pos = pos;
+    context->l_pos = context->l_pos+1;
 }
 
-
-static bool check_reader_p(struct shm_queue* context)
+bool shm_can_receive(struct shm_queue* context)
 {
-    if (context->readers_pos[context->id].pos == 9) {
-        return false;
-    } else {
+    uintptr_t* start;
+    start = (uintptr_t*) context->data + ((context->l_pos)*
+                 CACHELINE_SIZE/(sizeof(uintptr_t)));
+
+    if (context->next_seq == start[0]) {
         return true;
+    } else {
+        return false;
     }
 }
 
 // returns NULL if reader reached writers pos
-static bool shm_receive_non_blocking(struct shm_queue* context,
+bool shm_receive_non_blocking(struct shm_queue* context,
               uintptr_t *p1,
               uintptr_t *p2,
               uintptr_t *p3,
@@ -154,50 +159,42 @@ static bool shm_receive_non_blocking(struct shm_queue* context,
               uintptr_t *p6,
               uintptr_t *p7)
 {
-    assert (context!=NULL);
-
-    if (context->l_pos == context->num_slots) {
-        // at end
-        context->readers_pos[context->id].pos = END;
-        context->l_pos = 0;
-
-        // wait until writer resets
-        while (check_reader_p(context)){};
-
-#ifdef DEBUG_SHM
-        printf("Reader %d: reset id %d\n", 
-                    sched_getcpu(), context->id);
-#endif
-    }
-
-    if ((context->l_pos == (context->write_pos[0].pos))) {
-        return false;
-    } else {
-
-        uintptr_t* start;
-        start = (uintptr_t*) context->data + ((context->l_pos)*
+    //assert (context!=NULL);
+    uintptr_t* start;
+    start = (uintptr_t*) context->data + ((context->l_pos)*
                  CACHELINE_SIZE/(sizeof(uintptr_t)));
-        *p1 = start[0];
-        *p2 = start[1];
-        *p3 = start[2]; 
-        *p4 = start[3]; 
-        *p5 = start[4]; 
-        *p6 = start[5]; 
-        *p7 = start[6]; 
+
+    if (context->next_seq == start[0]) {
+        *p1 = start[1];
+        *p2 = start[2];
+        *p3 = start[3]; 
+        *p4 = start[4]; 
+        *p5 = start[5]; 
+        *p6 = start[6]; 
+        *p7 = start[7]; 
 /*
         printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu slot_start %p \n",
                sched_getcpu(), (sched_getcpu() % 4), context->l_pos,
                 *((uintptr_t *) start) , start); 
 */
 #ifdef DEBUG_SHM
-        printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu slot_start %p \n",
+        printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu \n",
                sched_getcpu(), (sched_getcpu() % 4), context->l_pos,
-                *((uintptr_t *) start) , start); 
+                *((uintptr_t *) start)); 
     
 #endif
         context->l_pos = (context->l_pos+1);
+        context->next_seq++;
+        if (context->l_pos == context->num_slots) {
+            context->l_pos = 0;
+        }
+
+        if ((context->next_seq & 0xF) == 0) {
+            context->readers_pos[context->id].p[0] = (context->next_seq -1);
+        }
         return true;
     }
+    return false;
 }
 
 
@@ -217,4 +214,3 @@ void shm_receive_raw(struct shm_queue* context,
 
 }
 
-#endif

@@ -53,7 +53,7 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 # --------------------------------------------------
 
 COMMONFLAGS += -Wpedantic -Werror -Wall -Wfatal-errors \
-				-pthread -fPIC -DVERSION=\"$(GIT_VERSION)\" 
+			   -pthread -fPIC -DVERSION=\"$(GIT_VERSION)\" 
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
 CFLAGS += -std=gnu99 $(COMMONFLAGS)
 
@@ -96,7 +96,7 @@ CFLAGS += $(OPT)
 #	CXXFLAGS += -DSHL
 #endif
 
-all: test/nodes-test test/topo-create-test
+all: test/nodes-test test/topo-create-test test/contrib-lib-test test/shm-queue-test
 #$(TARGET)
 
 test: test/mp-test
@@ -117,6 +117,9 @@ test/topo-create-test: test/topo-create-test.c
 
 test/contrib-lib-test: test/contrib-lib-test.c
 	$(CC) $(CFLAGS) $(INC) -L./contrib/ test/contrib-lib-test.c -o $@ contrib/libsmltcontrib.so
+
+test/shm-queue-test: test/shm-queue-test.c
+	$(CC) $(CFLAGS)  $(INC) -I src/backends/shm/ -L./ test/shm-queue-test.c -o $@ -lsmltrt
 
 # Benchmarks
 # --------------------------------------------------
