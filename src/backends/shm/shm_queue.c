@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#include "shm.h"
+#include <shm/shm.h>
 
 
 //#define DEBUG_SHM

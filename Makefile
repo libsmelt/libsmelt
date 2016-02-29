@@ -11,7 +11,7 @@ CFILES += $(wildcard src/*.c)
 # backend specific source files
 CFILES += $(wildcard src/backends/shm/*.c)
 CFILES += $(wildcard src/backends/ump/*.c)
-CFILES += $(wildcard src/backends/ffq/*.c)
+#CFILES += $(wildcard src/backends/ffq/*.c)
 
 # platform specific source files
 CFILES += $(wildcard src/platforms/linux/*.c)
@@ -42,7 +42,7 @@ HEADERS += $(wildcard inc/arch/*.h)
 # includes
 # --------------------------------------------------
 INC += -I inc -I inc/platforms/linux -I inc/backends -I contrib/
-
+INC += -I inc/backends/ump -I inc/backends/ffq
 
 # versiong
 # --------------------------------------------------
@@ -119,7 +119,7 @@ test/contrib-lib-test: test/contrib-lib-test.c
 	$(CC) $(CFLAGS) $(INC) -L./contrib/ test/contrib-lib-test.c -o $@ contrib/libsmltcontrib.so
 
 test/shm-queue-test: test/shm-queue-test.c
-	$(CC) $(CFLAGS)  $(INC) -I src/backends/shm/ -L./ test/shm-queue-test.c -o $@ -lsmltrt
+	$(CC) $(CFLAGS)  $(INC) -L./ test/shm-queue-test.c -o $@ -lsmltrt
 
 # Benchmarks
 # --------------------------------------------------

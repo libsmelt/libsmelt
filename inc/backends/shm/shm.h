@@ -10,6 +10,7 @@
 #define SYNC_SHM_H 1
 
 #include <inttypes.h>
+#include <stdbool.h>
 
 /*
  * Definitions for shared memory queue
