@@ -42,7 +42,12 @@ enum smlt_err_code {
     SMLT_ERR_NODE_JOIN   = 7,
 
     /* backends */
-
+    SMLT_ERR_ALLOC_UMP,
+    SMLT_ERR_ALLOC_FFQ,
+    SMLT_ERR_ALLOC_SHM,
+    SMLT_ERR_DESTROY_UMP,
+    SMLT_ERR_DESTROY_FFQ,
+    SMLT_ERR_DESTRYO_SHM,
     /* shared memory error */
     SMLT_ERR_SHM_INIT    = 8,
 

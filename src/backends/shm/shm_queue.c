@@ -69,7 +69,7 @@ struct shm_queue* shm_init_context(void* shm,
     return queue;
 }
 
-
+// get the minimum of the readers pointer
 void get_next_sync(struct shm_queue* context, 
                    uint64_t* next)
 {
@@ -111,7 +111,7 @@ void shm_send_raw(struct shm_queue* context,
 
     uint64_t next_sync;
     //assert (context!=NULL);
-    // if we reached the end sync with readers
+    // if we reached the end reset local queue buffer pointer
     if ((context->l_pos) == context->num_slots) {
         context->l_pos = 0;
     }
@@ -119,6 +119,7 @@ void shm_send_raw(struct shm_queue* context,
     // get next sync at the sync point
     if (context->next_seq == context->next_sync) {
        get_next_sync(context, &next_sync);
+       // block if there is no empty slot
        while(context->next_seq == next_sync) {
             get_next_sync(context, &next_sync);
        }
@@ -205,6 +206,7 @@ bool shm_receive_non_blocking(struct shm_queue* context,
             context->l_pos = 0;
         }
 
+	// only update read pointer every 16th read
         if ((context->next_seq & 0xF) == 0) {
             context->readers_pos[context->id].p[0] = (context->next_seq -1);
         }

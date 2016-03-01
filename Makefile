@@ -11,7 +11,7 @@ CFILES += $(wildcard src/*.c)
 # backend specific source files
 CFILES += $(wildcard src/backends/shm/*.c)
 CFILES += $(wildcard src/backends/ump/*.c)
-#CFILES += $(wildcard src/backends/ffq/*.c)
+CFILES += $(wildcard src/backends/ffq/*.c)
 
 # platform specific source files
 CFILES += $(wildcard src/platforms/linux/*.c)
@@ -150,7 +150,9 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f src/*.o src/backends/shm/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) test/mp-test test/topo-create-test test/contrib-lib-test
+	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) 
+	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
+	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 
 debug:
 	echo $(HEADERS)
