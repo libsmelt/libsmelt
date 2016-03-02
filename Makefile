@@ -152,8 +152,8 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 clean:
 	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) 
 	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
+	rm -f test/shm-queue-test test/nodes-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
-
 debug:
 	echo $(HEADERS)
 

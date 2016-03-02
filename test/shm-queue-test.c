@@ -21,7 +21,7 @@
 #include <pthread.h>
 #include <numa.h>
 #include <sched.h>
-#include "shm.h"
+#include <backends/shm/shm.h>
 
 //#define DEBUG
 #define SHM_SIZE SHMQ_SIZE*64
