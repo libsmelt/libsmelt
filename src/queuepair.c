@@ -11,10 +11,11 @@
 #include <smlt_platform.h>
 
 /* backends */
-#include <shm/smlt_shm.h>
 #include <backends/ffq/ff_queuepair.h>
 #include <backends/ump/ump_queuepair.h>
 #include "qp_func_wrapper.h"
+#include "debug.h"
+
 /**
   * @brief creates the queue pair
   *
@@ -23,53 +24,57 @@
   * @returns 0
   */
 errval_t smlt_queuepair_create(smlt_qp_type_t type,
-                               struct smlt_qp **qp,
+                               struct smlt_qp **qp1,
+                               struct smlt_qp **qp2,
                                coreid_t src,
                                coreid_t dst)
 {
+
+    SMLT_DEBUG(SMLT_DBG__GENERAL, "creating qp src=%" PRIu32 " dst =% " PRIu32 " \n", 
+               src, dst);
     // TODO what is really a queuepair ?
-    *qp = (struct smlt_qp*) smlt_platform_alloc(sizeof(struct smlt_qp), 
+    *qp1 = (struct smlt_qp*) smlt_platform_alloc(sizeof(struct smlt_qp), 
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-    int ret;
+    *qp2 = (struct smlt_qp*) smlt_platform_alloc(sizeof(struct smlt_qp), 
+                                                SMLT_DEFAULT_ALIGNMENT,
+                                                true);
     switch(type) {
         case SMLT_QP_TYPE_UMP :
             // create two queues
-            ret = ump_queuepair_create(&((*qp)->queue_tx.ump), src, dst);
-            if (ret) {
-                return SMLT_ERR_ALLOC_UMP;
-            }
-            ret = ump_queuepair_create(&((*qp)->queue_rx.ump), dst, src);
-            if (ret) {
-                return SMLT_ERR_ALLOC_UMP;
-            }
+            (*qp1)->queue_tx.ump = *ump_queuepair_create(src, dst);
+            (*qp1)->queue_rx.ump = *ump_queuepair_create(src, dst);
+        
+            (*qp2)->queue_tx.ump = (*qp1)->queue_rx.ump;
+            (*qp2)->queue_rx.ump = (*qp1)->queue_tx.ump;
 
             // set function pointers
-            (*qp)->f.send.do_send = smlt_ump_send;
-            (*qp)->f.send.notify = smlt_ump_send0;
-            (*qp)->f.send.can_send = smlt_ump_can_send;
-            (*qp)->f.recv.do_recv = smlt_ump_recv;
-            (*qp)->f.recv.can_recv = smlt_ump_can_recv;
-            (*qp)->f.recv.notify = smlt_ump_recv0;
+            (*qp1)->f.send.do_send = smlt_ump_send;
+            (*qp1)->f.send.notify = smlt_ump_send0;
+            (*qp1)->f.send.can_send = smlt_ump_can_send;
+            (*qp1)->f.recv.do_recv = smlt_ump_recv;
+            (*qp1)->f.recv.can_recv = smlt_ump_can_recv;
+            (*qp1)->f.recv.notify = smlt_ump_recv0;
+            (*qp2)->f = (*qp1)->f;
+
             break;
         case SMLT_QP_TYPE_FFQ :
             // create two queues
-            ret = ff_queuepair_create(&((*qp)->queue_tx.ffq), dst);
-            if (ret) {
-                return SMLT_ERR_ALLOC_FFQ;
-            }
-            ret = ff_queuepair_create(&((*qp)->queue_rx.ffq), src);
-            if (ret) {
-                return SMLT_ERR_ALLOC_FFQ;
-            }
-        
+            (*qp1)->queue_tx.ffq = *ff_queuepair_create(dst);
+            (*qp1)->queue_rx.ffq = *ff_queuepair_create(src);
+
+            (*qp2)->queue_tx.ffq = (*qp1)->queue_rx.ffq;
+            (*qp2)->queue_rx.ffq = (*qp1)->queue_tx.ffq;
+
             // set function pointers
-            (*qp)->f.send.do_send = smlt_ffq_send;
-            (*qp)->f.send.notify = smlt_ffq_send0;
-            (*qp)->f.send.can_send = smlt_ffq_can_send;
-            (*qp)->f.recv.do_recv = smlt_ffq_recv;
-            (*qp)->f.recv.can_recv = smlt_ffq_can_recv;
-            (*qp)->f.recv.notify = smlt_ffq_recv0;
+            (*qp1)->f.send.do_send = smlt_ffq_send;
+            (*qp1)->f.send.notify = smlt_ffq_send0;
+            (*qp1)->f.send.can_send = smlt_ffq_can_send;
+            (*qp1)->f.recv.do_recv = smlt_ffq_recv;
+            (*qp1)->f.recv.can_recv = smlt_ffq_can_recv;
+            (*qp1)->f.recv.notify = smlt_ffq_recv0;
+
+            (*qp2)->f = (*qp1)->f;
             break;
         case SMLT_QP_TYPE_SHM :
             assert(!"NIY");
@@ -101,12 +106,7 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp)
             }
             break;
         case SMLT_QP_TYPE_FFQ :
-            // create two queues
-            ret = ff_queuepair_destroy(&(qp->queue_tx.ffq));
-            ret = ff_queuepair_destroy(&(qp->queue_rx.ffq));
-            if (ret) {
-                return SMLT_ERR_DESTROY_FFQ;
-            }
+
             break;
         case SMLT_QP_TYPE_SHM :
             assert(!"NIY");

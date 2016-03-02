@@ -9,6 +9,7 @@
 #ifndef SMLT_MESSAGE_H_
 #define SMLT_MESSAGE_H_ 1
 
+#include <inttypes.h>
 
 /*
  * ===========================================================================
@@ -33,7 +34,7 @@ struct smlt_msg
     uint32_t datalen;   ///< length of the data region in bytes
     uint32_t maxlen;    ///< maximum length of the data region
     uint32_t _pad;      ///< unused padding for now
-    void *data;
+    void*    data;
 };
 
 

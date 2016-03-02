@@ -84,7 +84,7 @@ struct smlt_qp
         struct ff_queuepair ffq;
     } queue_rx;
 
-    union {
+    struct {
         struct {                          
             smlt_qp_op_fn_t do_send;           ///< send operation
             smlt_qp_notify_fn_t notify;
@@ -114,7 +114,8 @@ struct smlt_qp
   * @returns 0
   */
 errval_t smlt_queuepair_create(smlt_qp_type_t type,
-                               struct smlt_qp **qp,
+                               struct smlt_qp **qp1,
+                               struct smlt_qp **qp2,
                                coreid_t src,
                                coreid_t dst);
 

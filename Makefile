@@ -96,7 +96,7 @@ CFLAGS += $(OPT)
 #	CXXFLAGS += -DSHL
 #endif
 
-all: test/nodes-test test/topo-create-test test/contrib-lib-test test/shm-queue-test
+all: test/nodes-test test/topo-create-test test/contrib-lib-test test/shm-queue-test test/queuepair-test test/ffq-test
 #$(TARGET)
 
 test: test/mp-test
@@ -120,6 +120,10 @@ test/contrib-lib-test: test/contrib-lib-test.c
 
 test/shm-queue-test: test/shm-queue-test.c
 	$(CC) $(CFLAGS)  $(INC) -L./ test/shm-queue-test.c -o $@ -lsmltrt
+test/queuepair-test: test/queuepair-test.c
+	$(CC) $(CFLAGS)  $(INC) -L./ test/queuepair-test.c -o $@ -lsmltrt
+test/ffq-test: test/ffq-test.c
+	$(CC) $(CFLAGS)  $(INC) -L./ test/ffq-test.c -o $@ -lsmltrt
 
 # Benchmarks
 # --------------------------------------------------
@@ -152,7 +156,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 clean:
 	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) 
 	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
-	rm -f test/shm-queue-test test/nodes-test
+	rm -f test/shm-queue-test test/nodes-test test/queuepair-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 debug:
 	echo $(HEADERS)

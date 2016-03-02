@@ -13,7 +13,7 @@
 #include <backends/ffq/ff_queuepair.h>
 #include <backends/ffq/ff_queue.h>
 #include "qp_func_wrapper.h"
-
+#include "debug.h"
 /* ===========================================================
  * UMP wrapper functions
  * ===========================================================
@@ -21,7 +21,7 @@
 
 errval_t smlt_ump_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
-    if (msg->datalen < 56) {
+    if (msg->datalen <= 56) {
         uintptr_t* data = (uintptr_t*) msg->data;
         ump_enqueue(&qp->queue_tx.ump.src.queue, 
                     data[0], data[1], data[2],
@@ -46,13 +46,13 @@ errval_t smlt_ump_recv(struct smlt_qp *qp, struct smlt_msg *msg)
 
 errval_t smlt_ump_recv0(struct smlt_qp *qp)
 {
-    ump_dequeue_zero(&qp->queue_rx.ump.src.queue);
+    ump_dequeue_zero(&qp->queue_rx.ump.dst.queue);
     return SMLT_SUCCESS;
 }
 
 errval_t smlt_ump_send0(struct smlt_qp *qp)
 {
-    ump_enqueue_zero(&qp->queue_rx.ump.dst.queue);
+    ump_enqueue_zero(&qp->queue_tx.ump.src.queue);
     return SMLT_SUCCESS;
 }
 
@@ -73,7 +73,7 @@ bool smlt_ump_can_send(struct smlt_qp *qp)
 
 errval_t smlt_ffq_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
-    if (msg->datalen < 56) {
+    if (msg->datalen <= 56) {
         uintptr_t* data = (uintptr_t*) msg->data;
         ffq_enqueue_full(&qp->queue_tx.ffq.src, 
                          data[0], data[1], data[2],
