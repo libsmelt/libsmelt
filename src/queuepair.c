@@ -77,7 +77,22 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             (*qp2)->f = (*qp1)->f;
             break;
         case SMLT_QP_TYPE_SHM :
-            assert(!"NIY");
+            // create two queues
+            (*qp1)->queue_tx.shm = *shm_queuepair_create(src, dst);
+            (*qp1)->queue_rx.shm = *shm_queuepair_create(dst, src);
+
+            (*qp2)->queue_tx.shm = (*qp1)->queue_rx.shm;
+            (*qp2)->queue_rx.shm = (*qp1)->queue_tx.shm;
+
+            // set function pointers
+            (*qp1)->f.send.do_send = smlt_shm_send;
+            (*qp1)->f.send.notify = smlt_shm_send0;
+            (*qp1)->f.send.can_send = smlt_shm_can_send;
+            (*qp1)->f.recv.do_recv = smlt_shm_recv;
+            (*qp1)->f.recv.can_recv = smlt_shm_can_recv;
+            (*qp1)->f.recv.notify = smlt_shm_recv0;
+
+            (*qp2)->f = (*qp1)->f;
             break;
         default:
             break;
@@ -106,10 +121,10 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp)
             }
             break;
         case SMLT_QP_TYPE_FFQ :
-
+            // TODO do destroy
             break;
         case SMLT_QP_TYPE_SHM :
-            assert(!"NIY");
+            // TODO do destroy
             break;
         default:
             break;

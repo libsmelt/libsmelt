@@ -12,6 +12,7 @@
 #include <backends/ump/ump_queue.h>
 #include <backends/ffq/ff_queuepair.h>
 #include <backends/ffq/ff_queue.h>
+#include <backends/shm/shm_qp.h>
 #include "qp_func_wrapper.h"
 #include "debug.h"
 /* ===========================================================
@@ -122,3 +123,51 @@ bool smlt_ffq_can_send(struct smlt_qp *qp)
  * SHM wrapper functions
  * ===========================================================
  */
+
+errval_t smlt_shm_send(struct smlt_qp *qp, struct smlt_msg *msg)
+{
+    if (msg->datalen <= 56) {
+        uintptr_t* data = (uintptr_t*) msg->data;
+        shm_q_send(&qp->queue_tx.shm.src, 
+                    data[0], data[1], data[2],
+                    data[3], data[4], data[5], data[6]);
+    } else {
+        // TODO Fragment ? Or Bulkload style?
+    }
+    return SMLT_SUCCESS;
+}
+
+
+errval_t smlt_shm_recv(struct smlt_qp *qp, struct smlt_msg *msg)
+{
+    // TODO msg struct must be allocated i.e. where to encode msg 
+    //      size that is allocated
+    // TODO Fragmentation
+    uintptr_t* data = (uintptr_t*) msg->data;
+    shm_q_recv(&qp->queue_rx.shm.dst, &data[0], &data[1],
+               &data[2], &data[3], &data[4], &data[5], &data[6]);
+    return SMLT_SUCCESS;
+}
+
+
+errval_t smlt_shm_recv0(struct smlt_qp *qp)
+{
+    shm_q_recv0(&qp->queue_rx.shm.dst);
+    return SMLT_SUCCESS;
+}
+
+errval_t smlt_shm_send0(struct smlt_qp *qp)
+{
+    shm_q_send0(&qp->queue_tx.shm.src);
+    return SMLT_SUCCESS;
+}
+
+bool smlt_shm_can_recv(struct smlt_qp *qp)
+{
+    return shm_q_can_recv(&qp->queue_rx.shm.dst);
+}
+
+bool smlt_shm_can_send(struct smlt_qp *qp)
+{
+    return shm_q_can_send(&qp->queue_tx.shm.src);
+}

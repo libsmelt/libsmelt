@@ -42,7 +42,7 @@ HEADERS += $(wildcard inc/arch/*.h)
 # includes
 # --------------------------------------------------
 INC += -I inc -I inc/platforms/linux -I inc/backends -I contrib/
-INC += -I inc/backends/ump -I inc/backends/ffq
+INC += -I inc/backends/ump -I inc/backends/ffq -I inc/backends/shm
 
 # versiong
 # --------------------------------------------------

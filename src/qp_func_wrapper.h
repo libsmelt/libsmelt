@@ -27,4 +27,12 @@ errval_t smlt_ffq_send0(struct smlt_qp *qp);
 errval_t smlt_ffq_recv0(struct smlt_qp *qp);
 bool smlt_ffq_can_send (struct smlt_qp *qp);
 bool smlt_ffq_can_recv(struct smlt_qp *qp);
+
+
+errval_t smlt_shm_send (struct smlt_qp *qp, struct smlt_msg *msg);
+errval_t smlt_shm_recv(struct smlt_qp *qp, struct smlt_msg *msg);
+errval_t smlt_shm_send0(struct smlt_qp *qp);
+errval_t smlt_shm_recv0(struct smlt_qp *qp);
+bool smlt_shm_can_send (struct smlt_qp *qp);
+bool smlt_shm_can_recv(struct smlt_qp *qp);
 #endif /* QP_FUNC_WRAPPER_H */
