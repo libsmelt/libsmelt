@@ -50,4 +50,5 @@ int main(int argc, char **argv)
     m->ncores = 8;
     printf("Creating other tree \n");
     smlt_topology_create(m, name, topo2);  
+
 }

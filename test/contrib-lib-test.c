@@ -22,4 +22,5 @@ int main(int argc, char **argv)
     uint32_t last_node;
     smlt_tree_generate(NUM_THREADS, cores, name,
                        &model, &leafs, &last_node);
+
 }

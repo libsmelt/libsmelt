@@ -100,6 +100,16 @@ struct smlt_topology_node *smlt_topology_node_next(struct smlt_topology_node *no
  */
 struct smlt_topology_node *smlt_topology_node_parent(struct smlt_topology_node *node);
 
+
+/**
+ * @brief gets the children of a topology ndoe
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+struct smlt_topology_node **smlt_topology_node_children(struct smlt_topology_node *node,
+                                                        uint32_t* children);
 /**
  * @brief checks if the topology node is the last
  *

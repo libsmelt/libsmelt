@@ -98,6 +98,15 @@ errval_t smlt_context_create(struct smlt_topology *topo,
             }
 
             /* setup channels */
+            struct smlt_topology_node **children;
+            children = smlt_topology_node_children(tn, &num_children);
+
+            for (int i = 0; i < num_children; i++) {
+                uint32_t c_id = smlt_topology_node_get_id(children[i]);
+                smlt_channel_create(SMLT_CHAN_TYPE_ONE_TO_ONE,
+                                    &n->children[i], smlt_topology_node_get_id(tn), 
+                                    &c_id, 1);
+            }
         }
 
         /* update maximum node id */
@@ -156,7 +165,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 errval_t smlt_context_destroy(struct smlt_context *ctx)
 {
     for (uint32_t i = 0; i < ctx->num_nodes; ++i) {
-        /* todo: create the bindings */
+        /* TODO: create the bindings */
     }
 
     smlt_platform_free(ctx);

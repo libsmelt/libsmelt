@@ -51,6 +51,9 @@ enum smlt_err_code {
     /* shared memory error */
     SMLT_ERR_SHM_INIT    = 8,
 
+    /* channel error */
+    SMLT_ERR_CHAN_CREATE,
+    SMLT_ERR_CHAN_UNKNOWN_TYPE,
 };
 
 /*

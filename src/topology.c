@@ -271,6 +271,21 @@ struct smlt_topology_node *smlt_topology_node_parent(struct smlt_topology_node *
     return node->parent;
 }
 
+
+/**
+ * @brief gets the parent topology ndoe
+ *
+ * @param node the current topology node
+ *
+ * @return 
+ */
+struct smlt_topology_node **smlt_topology_node_children(struct smlt_topology_node *node,
+                                                        uint32_t* children)
+{
+    *children = node->num_children;
+    return node->children;
+}
+
 /**
  * @brief checks if the topology node is the last
  *

@@ -48,8 +48,8 @@ struct shm_context {
 };
 
 struct shm_qp {
-    struct shm_context src;
-    struct shm_context dst;
+    struct shm_context* src;
+    struct shm_context* dst;
 };
 
 struct shm_qp* shm_queuepair_create(uint32_t src,

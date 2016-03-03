@@ -99,7 +99,7 @@ CFLAGS += $(OPT)
 all: test/nodes-test test/topo-create-test test/contrib-lib-test test/shm-queue-test test/queuepair-test test/ffq-test
 #$(TARGET)
 
-test: test/mp-test
+test: test/nodes-test test/topo-create-test test/contrib-lib-test /test/shm-queue-test test/queuepair-test test/ffq-test
 
 # Tests
 # --------------------------------------------------

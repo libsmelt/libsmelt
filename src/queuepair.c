@@ -33,12 +33,11 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
     SMLT_DEBUG(SMLT_DBG__GENERAL, "creating qp src=%" PRIu32 " dst =% " PRIu32 " \n", 
                src, dst);
     // TODO what is really a queuepair ?
-    *qp1 = (struct smlt_qp*) smlt_platform_alloc(sizeof(struct smlt_qp), 
-                                                SMLT_DEFAULT_ALIGNMENT,
-                                                true);
-    *qp2 = (struct smlt_qp*) smlt_platform_alloc(sizeof(struct smlt_qp), 
-                                                SMLT_DEFAULT_ALIGNMENT,
-                                                true);
+    assert(*qp1);
+    assert(*qp2);
+
+    (*qp1)->type = type;
+    (*qp2)->type = type;
     switch(type) {
         case SMLT_QP_TYPE_UMP :
             // create two queues
@@ -130,7 +129,6 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp)
             break;
     }
 
-    smlt_platform_free(qp);       
     return SMLT_SUCCESS;
 }
 

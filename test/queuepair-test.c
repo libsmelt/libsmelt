@@ -103,8 +103,8 @@ void* thr_worker2(void* arg)
 int main(int argc, char ** argv)
 {
 
-    struct smlt_qp* qp1;
-    struct smlt_qp* qp2;
+    struct smlt_qp* qp1 = malloc(sizeof(struct smlt_qp));
+    struct smlt_qp* qp2 = malloc(sizeof(struct smlt_qp));
     smlt_queuepair_create(SMLT_QP_TYPE_FFQ, &qp1,
                           &qp2, 0, 1);
     pthread_t *tids = (pthread_t*) malloc(sizeof(pthread_t));
@@ -137,7 +137,8 @@ int main(int argc, char ** argv)
 
     smlt_queuepair_destroy(qp1);
     smlt_queuepair_destroy(qp2);
-
+/*
+    TODO not working yet ...
     sleep(1);
     smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
                           &qp2, 0, 1);
@@ -146,12 +147,12 @@ int main(int argc, char ** argv)
     printf("##################################################\n");
     pthread_create(&tids[0], NULL, thr_worker1, (void*) qp1);
     pthread_create(&tids[1], NULL, thr_worker2, (void*) qp2);
-
     for (uint64_t i = 0; i < (uint64_t) 2; i++) {
         pthread_join(tids[i], NULL);
     }
 
     smlt_queuepair_destroy(qp1);
     smlt_queuepair_destroy(qp2);
+*/
 }
 

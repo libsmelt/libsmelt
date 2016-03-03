@@ -128,7 +128,7 @@ errval_t smlt_shm_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
     if (msg->datalen <= 56) {
         uintptr_t* data = (uintptr_t*) msg->data;
-        shm_q_send(&qp->queue_tx.shm.src, 
+        shm_q_send(qp->queue_tx.shm.src, 
                     data[0], data[1], data[2],
                     data[3], data[4], data[5], data[6]);
     } else {
@@ -144,7 +144,8 @@ errval_t smlt_shm_recv(struct smlt_qp *qp, struct smlt_msg *msg)
     //      size that is allocated
     // TODO Fragmentation
     uintptr_t* data = (uintptr_t*) msg->data;
-    shm_q_recv(&qp->queue_rx.shm.dst, &data[0], &data[1],
+
+    shm_q_recv(qp->queue_rx.shm.dst, &data[0], &data[1],
                &data[2], &data[3], &data[4], &data[5], &data[6]);
     return SMLT_SUCCESS;
 }
@@ -152,22 +153,22 @@ errval_t smlt_shm_recv(struct smlt_qp *qp, struct smlt_msg *msg)
 
 errval_t smlt_shm_recv0(struct smlt_qp *qp)
 {
-    shm_q_recv0(&qp->queue_rx.shm.dst);
+    shm_q_recv0(qp->queue_rx.shm.dst);
     return SMLT_SUCCESS;
 }
 
 errval_t smlt_shm_send0(struct smlt_qp *qp)
 {
-    shm_q_send0(&qp->queue_tx.shm.src);
+    shm_q_send0(qp->queue_tx.shm.src);
     return SMLT_SUCCESS;
 }
 
 bool smlt_shm_can_recv(struct smlt_qp *qp)
 {
-    return shm_q_can_recv(&qp->queue_rx.shm.dst);
+    return shm_q_can_recv(qp->queue_rx.shm.dst);
 }
 
 bool smlt_shm_can_send(struct smlt_qp *qp)
 {
-    return shm_q_can_send(&qp->queue_tx.shm.src);
+    return shm_q_can_send(qp->queue_tx.shm.src);
 }

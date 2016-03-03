@@ -13,7 +13,6 @@
  * Attn: Systems Group.
  */
 
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +23,7 @@
 #include <numa.h>
 
 #include "shm_qp.h"
+
 
 //#define DEBUG_SHM
 
@@ -52,9 +52,9 @@ struct shm_qp* shm_queuepair_create(uint32_t src,
     struct shm_qp* qp = (struct shm_qp*) malloc(sizeof(struct shm_qp));
     void* shm = numa_alloc_onnode(sizeof(DEFAULT_SHM_SIZE),
                                   numa_node_of_cpu(dst));
-    qp->src = *shm_init_context(shm,
+    qp->src = shm_init_context(shm,
                                numa_node_of_cpu(src));
-    qp->dst = *shm_init_context(shm,
+    qp->dst = shm_init_context(shm,
                                numa_node_of_cpu(dst));
     return qp;
 }
@@ -75,7 +75,6 @@ void shm_q_send(struct shm_context* q,
                 uintptr_t p6,
                 uintptr_t p7)
 {
-
     uint64_t next_sync;
     // if we reached the end sync with readers
     if ((q->l_pos) == q->num_slots) {
@@ -104,8 +103,8 @@ void shm_q_send(struct shm_context* q,
     slot_start[6] = p6; 
     slot_start[7] = p7; 
 #ifdef DEBUG_SHM
-    printf("Shm writer: write pos %d val %lu \n", q->l_pos, 
-                q->next_seq);
+    printf("Shm writer: write pos %ld val %lu \n", q->next_seq, 
+                slot_start[1]);
 #endif
     slot_start[0] = q->next_seq;
     q->next_seq++;
@@ -181,7 +180,6 @@ static bool shm_receive_non_blocking(struct shm_context* context,
     uintptr_t* start;
     start = (uintptr_t*) context->data + ((context->l_pos)*
                  CACHELINE_SIZE/(sizeof(uintptr_t)));
-
     if (context->next_seq == start[0]) {
         *p1 = start[1];
         *p2 = start[2];
@@ -192,10 +190,9 @@ static bool shm_receive_non_blocking(struct shm_context* context,
         *p7 = start[7]; 
 
 #ifdef DEBUG_SHM
-        printf("Shm: read pos %" PRIu16 " val1 %lu \n", 
-                context->l_pos,
-                *((uintptr_t *) start)); 
-    
+        printf("Shm: read pos %" PRIu64 " val1 %lu \n", 
+                context->next_seq,
+                *((uintptr_t *) start));    
 #endif
         context->l_pos = (context->l_pos+1);
         context->next_seq++;

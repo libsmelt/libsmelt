@@ -9,8 +9,7 @@
 #ifndef SMLT_CHANNEL_H_
 #define SMLT_CHANNEL_H_ 1
 
-#include <smlt_endpoint.h>
-
+#include <smlt_queuepair.h>
 /*
  * ===========================================================================
  * Smelt channel MACROS
@@ -27,6 +26,11 @@
  */
 
 typedef enum {
+    SMLT_CHAN_BACKEND_MP, // Message passing backend
+    SMLT_CHAN_BACKEND_SHM, // Single writer multiple reader backend
+} smlt_chan_backend_t;
+
+typedef enum {
     SMLT_CHAN_TYPE_INVALID,
     SMLT_CHAN_TYPE_ONE_TO_ONE,
     SMLT_CHAN_TYPE_ONE_TO_MANY,
@@ -37,13 +41,23 @@ typedef enum {
 
 struct smlt_chan_o2o
 {
-    uint32_t dummy;
-
+    struct smlt_qp send;
+    struct smlt_qp recv;
 };
 
 struct smlt_chan_o2m
 {
-    uint32_t dummy;
+    uint32_t m;
+    smlt_chan_backend_t backend;
+    uint32_t last_polled;
+    union {
+        struct smlt_qp* qp; // can not make array (size would be undefined)
+        uint32_t dummy; // TODO add shm SW/MR queue
+    } send;
+    union {
+        struct smlt_qp* qp; // can not make array (size would be undefined)
+        uint32_t dummy; // TODO add shm SW/MR queue
+    } recv;
 };
 
 struct smlt_chan_m2o
@@ -82,12 +96,19 @@ struct smlt_channel
  /**
   * @brief creates the queue pair
   *
-  * @param TODO: information specification
+  * @param type     type of the channel (o2o o2m m2o m2m)
+  * @param chan     return pointer to the channel
+  * @param src      src core id // TODO use nid ? 
+  * @param dst      array of core ids to desinations
+  * @param count    length of array dst;   
   *
-  * @returns 0
+  * @returns SMLT_SUCCESS or failure 
   */
 errval_t smlt_channel_create(smlt_chan_type_t  type,
-                             struct smlt_channel *chan);
+                             struct smlt_channel *chan,
+                             uint32_t src,
+                             uint32_t* dst,
+                             uint16_t count);
 
  /**
   * @brief destroys the channel
@@ -96,7 +117,7 @@ errval_t smlt_channel_create(smlt_chan_type_t  type,
   *
   * @returns 0
   */
-errval_t smlt_channel_destroy(struct smlt_channel *qp);
+errval_t smlt_channel_destroy(struct smlt_channel *chan);
 
 
 /*
@@ -117,8 +138,33 @@ errval_t smlt_channel_destroy(struct smlt_channel *qp);
  * This function is BLOCKING if the queuepair cannot take new messages
  */
 static inline errval_t smlt_channel_send(struct smlt_channel *chan,
-                                           struct smlt_msg *msg)
+                                         struct smlt_msg *msg)
 {
+    switch (chan->type) {
+        case SMLT_CHAN_TYPE_ONE_TO_ONE:
+            smlt_queuepair_send(&chan->c.o2o.send, msg);
+            break;
+        case SMLT_CHAN_TYPE_ONE_TO_MANY:
+            if (chan->c.o2m.backend == SMLT_CHAN_BACKEND_MP) {
+                for (int i = 0; i < chan->c.o2m.m; i++) {
+                    smlt_queuepair_send(&chan->c.o2m.send.qp[i], msg);
+                }
+            } else {
+                // TODO
+                assert(!"NIY");
+            }
+            break;
+        case SMLT_CHAN_TYPE_MANY_TO_ONE:   
+            assert(!"NIY");
+            break;
+
+        case SMLT_CHAN_TYPE_MANY_TO_MANY:
+            assert(!"NIY");
+            break;
+
+        default:
+            break;
+    }
     return SMLT_SUCCESS;
 }
 
@@ -132,20 +178,72 @@ static inline errval_t smlt_channel_send(struct smlt_channel *chan,
  */
 static inline errval_t smlt_channel_notify(struct smlt_channel *chan)
 {
+    switch (chan->type) {
+        case SMLT_CHAN_TYPE_ONE_TO_ONE:
+            smlt_queuepair_notify(&chan->c.o2o.send);
+            break;
+        case SMLT_CHAN_TYPE_ONE_TO_MANY:
+            if (chan->c.o2m.backend == SMLT_CHAN_BACKEND_MP) {
+                for (int i = 0; i < chan->c.o2m.m; i++) {
+                    smlt_queuepair_notify(&chan->c.o2m.send.qp[i]);
+                }
+            } else {
+                // TODO
+                assert(!"NIY");
+            }
+            break;
+        case SMLT_CHAN_TYPE_MANY_TO_ONE:   
+            assert(!"NIY");
+            break;
+
+        case SMLT_CHAN_TYPE_MANY_TO_MANY:
+            assert(!"NIY");
+            break;
+
+        default:
+            break;
+    }
     return SMLT_SUCCESS;
 }
 
 /**
- * @brief checks if the a message can be sent on the queuepair
+ * @brief checks if the a message can be sent on the channel
  *
- * @param ep    the Smelt queuepair to call the check function on
+ * @param chan    the Smelt channel to call the check function on
  *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  */
 static inline bool smlt_channel_can_send(struct smlt_channel *chan)
 {
-    return SMLT_SUCCESS;
+    switch (chan->type) {
+        case SMLT_CHAN_TYPE_ONE_TO_ONE:
+            return smlt_queuepair_can_send(&chan->c.o2o.send);
+            break;
+        case SMLT_CHAN_TYPE_ONE_TO_MANY:
+            if (chan->c.o2m.backend == SMLT_CHAN_BACKEND_MP) {
+                for (int i = 0; i < chan->c.o2m.m; i++) {
+                    if (!smlt_queuepair_can_send(&chan->c.o2m.send.qp[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                // TODO
+                assert(!"NIY");
+            }
+            break;
+        case SMLT_CHAN_TYPE_MANY_TO_ONE:   
+            assert(!"NIY");
+            break;
+
+        case SMLT_CHAN_TYPE_MANY_TO_MANY:
+            assert(!"NIY");
+            break;
+
+        default:
+            break;
+    }
 }
 
 /* TODO: include also non blocking variants ? */
@@ -160,8 +258,9 @@ static inline bool smlt_channel_can_send(struct smlt_channel *chan)
 /**
  * @brief receives a message or a notification from the queuepair
  *
- * @param ep    the Smelt queuepair to call the operation on
- * @param msg   Smelt message argument
+ * @param chan      the Smelt channel to call he operation on
+ * @param msg       Smelt message argument
+ * @param core_id   the core id of child on which the msg is received
  *
  * @returns error value
  *
@@ -170,6 +269,25 @@ static inline bool smlt_channel_can_send(struct smlt_channel *chan)
 static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
                                          struct smlt_msg *msg)
 {
+    switch (chan->type) {
+        case SMLT_CHAN_TYPE_ONE_TO_ONE:
+            smlt_queuepair_recv(&chan->c.o2o.recv, msg);
+            break;
+        case SMLT_CHAN_TYPE_ONE_TO_MANY:
+            assert(!"NIY");
+            break;
+        case SMLT_CHAN_TYPE_MANY_TO_ONE:   
+            assert(!"NIY");
+            break;
+
+        case SMLT_CHAN_TYPE_MANY_TO_MANY:
+            assert(!"NIY");
+            break;
+
+        default:
+            break;
+    }
+    return SMLT_SUCCESS;
     return SMLT_SUCCESS;
 }
 
