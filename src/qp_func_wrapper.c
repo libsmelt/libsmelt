@@ -153,13 +153,13 @@ errval_t smlt_shm_recv(struct smlt_qp *qp, struct smlt_msg *msg)
 
 errval_t smlt_shm_recv0(struct smlt_qp *qp)
 {
-    //shm_q_recv0(qp->queue_rx.shm.dst);
+    shm_q_recv0(&qp->queue_rx.shm.dst);
     return SMLT_SUCCESS;
 }
 
 errval_t smlt_shm_send0(struct smlt_qp *qp)
 {
-    //shm_q_send0(qp->queue_tx.shm.src);
+    shm_q_send0(&qp->queue_tx.shm.src);
     return SMLT_SUCCESS;
 }
 

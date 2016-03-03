@@ -51,8 +51,9 @@ void* thr_worker1(void* arg)
         }
 
         // Test notify
- //       smlt_queuepair_notify(qp);
- //       smlt_queuepair_recv(qp, msg);
+        smlt_queuepair_notify(qp);
+        smlt_queuepair_recv(qp,msg);
+        //smlt_queuepair_recv0(qp); // TODO does not work for UMP
     }   
 
     if (!num_wrong) {
@@ -88,8 +89,9 @@ void* thr_worker2(void* arg)
         smlt_queuepair_send(qp, msg);
         
         // Test notify
-   //     smlt_queuepair_recv(qp, msg);
-   //     smlt_queuepair_notify(qp);
+        smlt_queuepair_recv(qp, msg);
+        smlt_queuepair_notify(qp);
+        //smlt_queuepair_recv0(qp); // TODO does not work for UMP
     }
 
     if (!num_wrong) {
@@ -138,7 +140,6 @@ int main(int argc, char ** argv)
     smlt_queuepair_destroy(qp1);
     smlt_queuepair_destroy(qp2);
 
-//    TODO not working yet ...
     sleep(1);
     smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
                           &qp2, 0, 1);

@@ -119,6 +119,36 @@ void shm_q_send(struct shm_context* q,
     q->l_pos = q->l_pos+1;
 }
 
+void shm_q_send0(struct shm_context* q)
+{
+
+    uint64_t next_sync;
+    // if we reached the end sync with readers
+    if ((q->l_pos) == q->num_slots) {
+        q->l_pos = 0;
+    }
+
+    // get next sync at the sync point
+    if (q->next_seq == q->next_sync) {
+       get_next_sync(q, &next_sync);
+       while(q->next_seq == next_sync) {
+            get_next_sync(q, &next_sync);
+       }
+       q->next_sync = next_sync;
+    }
+
+    uintptr_t offset =  (q->l_pos*(CACHELINE_SIZE/sizeof(uintptr_t)));
+    //assert (offset<SHMQ_SIZE*CACHELINE_SIZE);
+
+    uintptr_t* slot_start = (uintptr_t*) q->data + offset;
+
+    slot_start[0] = q->next_seq;
+    q->next_seq++;
+
+    // increse write pointer..
+    q->l_pos = q->l_pos+1;
+}
+
 bool shm_q_can_recv(struct shm_context* context)
 {
     uintptr_t* start;
@@ -183,6 +213,26 @@ bool shm_receive_non_blocking(struct shm_context* context,
     return false;
 }
 
+// returns NULL if reader reached writers pos
+bool shm_receive_non_blocking0(struct shm_context* context)
+{
+    //assert (context!=NULL);
+    uintptr_t* start;
+    start = (uintptr_t*) context->data + ((context->l_pos)*
+                 CACHELINE_SIZE/(sizeof(uintptr_t)));
+
+    if (context->next_seq == start[0]) {
+        context->l_pos = (context->l_pos+1);
+        context->next_seq++;
+        if (context->l_pos == context->num_slots) {
+            context->l_pos = 0;
+        }
+
+        context->reader_pos->pos = (context->next_seq -1);
+        return true;
+    }
+    return false;
+}
 
 // blocks
 // TODO make this smarter?
@@ -197,6 +247,12 @@ void shm_q_recv(struct shm_context* context,
 {
     while(!shm_receive_non_blocking(context, p1, p2, p3,
                                  p4, p5, p6, p7)){};
+
+}
+
+void shm_q_recv0(struct shm_context* context)
+{
+    while(!shm_receive_non_blocking0(context)){};
 
 }
 

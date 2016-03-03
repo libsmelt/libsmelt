@@ -182,9 +182,9 @@ bool smlt_queuepair_can_send(struct smlt_qp *qp);
 
 
 /**
- * @brief receives a message or a notification from the queuepair
+ * @brief receives a message from the queuepair
  * 
- * @param ep    the Smelt queuepair to call the operation on
+ * @param qp    the Smelt queuepair to call the operation on
  * @param msg   Smelt message argument
  * 
  * @returns error value
@@ -193,6 +193,17 @@ bool smlt_queuepair_can_send(struct smlt_qp *qp);
  */
 errval_t smlt_queuepair_recv(struct smlt_qp *qp, 
                              struct smlt_msg *msg);
+
+/**
+ * @brief receives a notification from the queuepair
+ * 
+ * @param qp    the Smelt queuepair to call the operation on
+ * 
+ * @returns error value
+ *
+ * this function is BLOCKING if there is no message on the queuepair
+ */
+errval_t smlt_queuepair_recv0(struct smlt_qp *qp);
 /**
  * @brief checks if there is a message to be received
  * 
