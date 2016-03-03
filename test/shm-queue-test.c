@@ -21,7 +21,7 @@
 #include <pthread.h>
 #include <numa.h>
 #include <sched.h>
-#include <backends/shm/shm.h>
+#include <backends/shm/swmr.h>
 
 //#define DEBUG
 #define SHM_SIZE SHMQ_SIZE*64
@@ -39,7 +39,7 @@ static const int num_readers = 3;
 
 void* thr_writer(void* arg)
 {
-    struct shm_queue* queue;
+    struct swmr_queue* queue;
     cpu_set_t cpu_mask;
 
     CPU_ZERO(&cpu_mask);
@@ -47,13 +47,13 @@ void* thr_writer(void* arg)
 
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    queue = shm_init_context(shared_mem,
+    queue = swmr_init_context(shared_mem,
                      num_readers,
                      0);
 
     uint64_t rid = 1;
     while (1) {
-        shm_send_raw(queue, rid, 0, 0, 0, 0, 0, 0);
+        swmr_send_raw(queue, rid, 0, 0, 0, 0, 0, 0);
         rid++;
 
         if (rid == NUM_WRITES) {
@@ -71,7 +71,7 @@ void* thr_writer(void* arg)
 
 void* thr_reader(void* arg)
 {   
-    struct shm_queue* queue;
+    struct swmr_queue* queue;
     cpu_set_t cpu_mask;
 
     CPU_ZERO(&cpu_mask);
@@ -82,7 +82,7 @@ void* thr_reader(void* arg)
 
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    queue = shm_init_context(shared_mem,
+    queue = swmr_init_context(shared_mem,
                      num_readers,
                      (uint64_t) arg);
 ;
@@ -91,7 +91,7 @@ void* thr_reader(void* arg)
     uintptr_t r[8];
 
     while(1) {
-        shm_receive_raw(queue, &r[0], &r[1], &r[2], &r[3],
+        swmr_receive_raw(queue, &r[0], &r[1], &r[2], &r[3],
                         &r[4], &r[5], &r[6]);
 
         if (r[0] != (previous+1)) {
@@ -118,7 +118,7 @@ void* thr_reader(void* arg)
 
 int main(int argc, char ** argv)
 {
-    shared_mem = calloc(1,SHM_SIZE*64);
+    shared_mem = calloc(1,64*64);
     pthread_t *tids = (pthread_t*) malloc((num_readers+1)*sizeof(pthread_t));
     printf("###################################################\n");
     printf("SHM test started (%d writes/reads) \n", NUM_WRITES);

@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#include <shm/shm.h>
+#include <shm/swmr.h>
 
 
 //#define DEBUG_SHM
@@ -43,19 +43,19 @@
  * cluster, starting at 0, i.e. for three readers, the id's would be
  * 0, 1 and 2.
  */
-struct shm_queue* shm_init_context(void* shm,
+struct swmr_queue* swmr_init_context(void* shm,
                                    uint8_t num_readers,
                                    uint8_t id)
 {
 
-    struct shm_queue* queue = (struct shm_queue*) calloc(1, sizeof(struct shm_queue));
+    struct swmr_queue* queue = (struct swmr_queue*) calloc(1, sizeof(struct swmr_queue));
     assert (queue!=NULL);
 
     queue->shm = (uint8_t*) shm;
     queue->num_readers = num_readers;
     queue->id = id;
 
-    queue->num_slots = (SHMQ_SIZE)-(num_readers+2);
+    queue->num_slots = (SWMRQ_SIZE)-(num_readers+2);
 #ifdef DEBUG_SHM
     queue->num_slots = 10;
 #endif
@@ -70,7 +70,7 @@ struct shm_queue* shm_init_context(void* shm,
 }
 
 // get the minimum of the readers pointer
-void get_next_sync(struct shm_queue* context, 
+void swmr_get_next_sync(struct swmr_queue* context, 
                    uint64_t* next)
 {
     uint64_t min = 0xFFFFFFFF;
@@ -85,11 +85,11 @@ void get_next_sync(struct shm_queue* context,
 
 
 
-bool shm_can_send(struct shm_queue* context)
+bool swmr_can_send(struct swmr_queue* context)
 {
     if (context->next_seq == context->next_sync) {
         uint64_t next_sync;
-        get_next_sync(context, &next_sync);
+        swmr_get_next_sync(context, &next_sync);
         if (context->next_sync < next_sync) {
             return true;
         }
@@ -99,7 +99,7 @@ bool shm_can_send(struct shm_queue* context)
     }
 }
 
-void shm_send_raw(struct shm_queue* context,
+void swmr_send_raw(struct swmr_queue* context,
                   uintptr_t p1,
                   uintptr_t p2,
                   uintptr_t p3,
@@ -118,10 +118,10 @@ void shm_send_raw(struct shm_queue* context,
 
     // get next sync at the sync point
     if (context->next_seq == context->next_sync) {
-       get_next_sync(context, &next_sync);
+       swmr_get_next_sync(context, &next_sync);
        // block if there is no empty slot
        while(context->next_seq == next_sync) {
-            get_next_sync(context, &next_sync);
+            swmr_get_next_sync(context, &next_sync);
        }
        context->next_sync = next_sync;
     }
@@ -153,7 +153,7 @@ void shm_send_raw(struct shm_queue* context,
     context->l_pos = context->l_pos+1;
 }
 
-bool shm_can_receive(struct shm_queue* context)
+bool swmr_can_receive(struct swmr_queue* context)
 {
     uintptr_t* start;
     start = (uintptr_t*) context->data + ((context->l_pos)*
@@ -167,7 +167,7 @@ bool shm_can_receive(struct shm_queue* context)
 }
 
 // returns NULL if reader reached writers pos
-bool shm_receive_non_blocking(struct shm_queue* context,
+bool swmr_receive_non_blocking(struct swmr_queue* context,
               uintptr_t *p1,
               uintptr_t *p2,
               uintptr_t *p3,
@@ -218,7 +218,7 @@ bool shm_receive_non_blocking(struct shm_queue* context,
 
 // blocks
 // TODO make this smarter?
-void shm_receive_raw(struct shm_queue* context,
+void swmr_receive_raw(struct swmr_queue* context,
                      uintptr_t *p1,
                      uintptr_t *p2,
                      uintptr_t *p3,
@@ -227,7 +227,7 @@ void shm_receive_raw(struct shm_queue* context,
                      uintptr_t *p6,
                      uintptr_t *p7)
 {
-    while(!shm_receive_non_blocking(context, p1, p2, p3,
+    while(!swmr_receive_non_blocking(context, p1, p2, p3,
                                  p4, p5, p6, p7)){};
 
 }

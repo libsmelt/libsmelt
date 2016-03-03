@@ -13,6 +13,7 @@
 /* backends */
 #include <backends/ffq/ff_queuepair.h>
 #include <backends/ump/ump_queuepair.h>
+#include <backends/shm/shm_qp.h>
 #include "qp_func_wrapper.h"
 #include "debug.h"
 
@@ -80,8 +81,8 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             (*qp1)->queue_tx.shm = *shm_queuepair_create(src, dst);
             (*qp1)->queue_rx.shm = *shm_queuepair_create(dst, src);
 
-            (*qp2)->queue_tx.shm = (*qp1)->queue_rx.shm;
             (*qp2)->queue_rx.shm = (*qp1)->queue_tx.shm;
+            (*qp2)->queue_tx.shm = (*qp1)->queue_rx.shm;
 
             // set function pointers
             (*qp1)->f.send.do_send = smlt_shm_send;

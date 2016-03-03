@@ -124,7 +124,8 @@ test/queuepair-test: test/queuepair-test.c
 	$(CC) $(CFLAGS)  $(INC) -L./ test/queuepair-test.c -o $@ -lsmltrt
 test/ffq-test: test/ffq-test.c
 	$(CC) $(CFLAGS)  $(INC) -L./ test/ffq-test.c -o $@ -lsmltrt
-
+test/shmqp-test: test/shmqp-test.c
+	$(CC) $(CFLAGS)  $(INC) -L./ test/shmqp-test.c -o $@ -lsmltrt
 # Benchmarks
 # --------------------------------------------------
 bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
@@ -156,7 +157,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 clean:
 	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) 
 	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
-	rm -f test/shm-queue-test test/nodes-test test/queuepair-test
+	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 debug:
 	echo $(HEADERS)
