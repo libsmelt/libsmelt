@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     struct smlt_topology *topo = NULL;
     printf("Creating binary tree \n");
-    smlt_topology_create(NULL, name, topo);
+    smlt_topology_create(NULL, name, &topo);
 
     struct smlt_topology *topo2 = NULL;
     struct smlt_generated_model *m = NULL;
@@ -49,6 +49,6 @@ int main(int argc, char **argv)
     m->last_node = last_node;
     m->ncores = 8;
     printf("Creating other tree \n");
-    smlt_topology_create(m, name, topo2);  
+    smlt_topology_create(m, name, &topo2);  
 
 }

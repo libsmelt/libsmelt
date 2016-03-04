@@ -11,10 +11,10 @@
 #include <stdlib.h>
 #include "tree_config.h"
 
-#define NUM_THREADS 4
+#define NUM_THREADS 12
 
-static char *name = "binary_tree";
-static uint32_t cores[NUM_THREADS] = {0,1,2,3};
+static char *name = "adaptive_tree";
+static uint32_t cores[NUM_THREADS] = {0,1,2,3,4,5,6,7,8,9,10,11};
 int main(int argc, char **argv)
 {
     uint16_t* model;

@@ -105,7 +105,7 @@ struct smlt_channel
   * @returns SMLT_SUCCESS or failure 
   */
 errval_t smlt_channel_create(smlt_chan_type_t  type,
-                             struct smlt_channel *chan,
+                             struct smlt_channel **chan,
                              uint32_t src,
                              uint32_t* dst,
                              uint16_t count);
@@ -283,11 +283,9 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
         case SMLT_CHAN_TYPE_MANY_TO_MANY:
             assert(!"NIY");
             break;
-
         default:
             break;
     }
-    return SMLT_SUCCESS;
     return SMLT_SUCCESS;
 }
 

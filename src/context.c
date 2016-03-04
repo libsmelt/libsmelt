@@ -11,6 +11,7 @@
 #include <smlt_topology.h>
 #include <smlt_context.h>
 #include <smlt_channel.h>
+#include "debug.h"
 
 #define SMLT_CONTEXT_NAME_MAX 16
 
@@ -62,9 +63,10 @@ struct smlt_context
 errval_t smlt_context_create(struct smlt_topology *topo,
                              struct smlt_context **ret_ctx)
 {
+
     struct smlt_context *ctx;
 
-    if (ret_ctx == NULL || topo == NULL) {
+    if (topo == NULL) {
         return SMLT_ERR_INVAL;
     }
 
@@ -76,7 +78,6 @@ errval_t smlt_context_create(struct smlt_topology *topo,
     if (ctx == NULL) {
         return SMLT_ERR_MALLOC_FAIL;
     }
-
     ctx->num_nodes = num_nodes;
     ctx->max_nid = 0;
     /* loop over the nodes and allocate resources */
@@ -103,9 +104,12 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
             for (int i = 0; i < num_children; i++) {
                 uint32_t c_id = smlt_topology_node_get_id(children[i]);
+                struct smlt_channel * chan = &(n->children[i]);
                 smlt_channel_create(SMLT_CHAN_TYPE_ONE_TO_ONE,
-                                    &n->children[i], smlt_topology_node_get_id(tn), 
+                                    &chan, smlt_topology_node_get_id(tn), 
                                     &c_id, 1);
+                //printf("Chan %p type %d from %d to %d \n",(void*) chan, 
+                //        chan->type, c_id, smlt_topology_node_get_id(tn));
             }
         }
 
@@ -131,10 +135,11 @@ errval_t smlt_context_create(struct smlt_topology *topo,
     tn = smlt_topology_get_first_node(topo);
 
     for (uint32_t i = 0; i < num_nodes; ++i) {
-
         smlt_nid_t current_nid = smlt_topology_node_get_id(tn);
 
         if (smlt_topology_node_is_root(tn)) {
+            printf("Root %p \n", (void*)tn);
+            tn = smlt_topology_node_next(tn);
             continue;
         }
 
@@ -145,13 +150,15 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         struct smlt_context_node *parent = ctx->nid_to_node[parent_nid];
         struct smlt_context_node *n = ctx->nid_to_node[current_nid];
 
+        
         n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
-
+        //printf("Node id %d Parent %p \n", current_nid, (void*) parent);
+        //printf("Chan %p type %d \n",(void*) n->parent, n->parent->type);
         //ctx->nid_to_node[current_nid]->parent = ctx->nid_to_node[parent_nid];
-
         tn = smlt_topology_node_next(tn);
     }
 
+    *ret_ctx = ctx;
     return SMLT_SUCCESS;
 }
 

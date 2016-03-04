@@ -15,7 +15,6 @@
  * ===========================================================================
  */
 
-
 /**
  * represents a handle to a smelt topology.
  */
@@ -54,7 +53,7 @@ errval_t smlt_topology_init(void);
  */
 errval_t smlt_topology_create(struct smlt_generated_model* model,
                               const char *name,
-                              struct smlt_topology *ret_topology);
+                              struct smlt_topology **ret_topology);
 
 /**
  * @brief destroys a smelt topology.

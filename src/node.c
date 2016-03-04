@@ -74,7 +74,8 @@ errval_t smlt_node_create(struct smlt_node **node,
  */
 errval_t smlt_node_start(struct smlt_node *node, smlt_node_start_fn_t fn, void *arg)
 {
-    SMLT_DEBUG(SMLT_DBG__NODE, "smlt_node_start with node=%p, fn=%p\n", node, fn);
+    SMLT_DEBUG(SMLT_DBG__NODE, "smlt_node_start with node=%p, fn=%p\n", 
+               node, fn);
 
     /* set the start function and the arguments */
     node->fn = fn;
@@ -159,7 +160,7 @@ errval_t smlt_node_lowlevel_init(smlt_nid_t nid)
 errval_t smlt_node_exec_start(struct smlt_node *node)
 {
     smlt_node_self = node;
-
+    
     smlt_node_lowlevel_init(node->id);
 
 #if !defined(USE_THREADS)

@@ -106,6 +106,7 @@ all: $(TARGET) \
 		 test/shm-queue-test \
 		 test/queuepair-test \
 		 test/ffq-test \
+		 test/context-test \
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -139,6 +140,8 @@ test/ffq-test: test/ffq-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/ffq-test.c -o $@ -lsmltrt
 test/shmqp-test: test/shmqp-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/shmqp-test.c -o $@ -lsmltrt
+test/context-test: test/context-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/context-test.c -o $@ -lsmltrt
 # Benchmarks
 # --------------------------------------------------
 bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
@@ -175,6 +178,7 @@ clean:
 	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET))
 	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
+	rm -f test/context-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 debug:
 	echo $(HEADERS)
