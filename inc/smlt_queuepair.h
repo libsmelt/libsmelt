@@ -9,9 +9,9 @@
 #ifndef SMLT_QUEUEPAIR_H_
 #define SMLT_QUEUEPAIR_H_ 1
 
-#include <backends/ump/ump_queuepair.h>
-#include <backends/ffq/ff_queuepair.h>
-#include <backends/shm/shm_qp.h>
+#include <ump/ump_queuepair.h>
+#include <ffq/ff_queuepair.h>
+#include <shm/shm_qp.h>
 /*
  * ===========================================================================
  * Smelt queue pair MACROS
@@ -43,11 +43,11 @@ typedef enum {
 
 
 /**
- * @brief type definition for the OP function of the queuepair. 
- * 
+ * @brief type definition for the OP function of the queuepair.
+ *
  * @param qp    the Smelt queuepair to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * this invokes either the send or recv function
@@ -57,10 +57,10 @@ typedef errval_t (*smlt_qp_op_fn_t)(struct smlt_qp *qp, struct smlt_msg *msg);
 typedef errval_t (*smlt_qp_notify_fn_t)(struct smlt_qp *qp);
 
 /**
- * @brief type definition for the CHECK function of the queuepair. 
- * 
+ * @brief type definition for the CHECK function of the queuepair.
+ *
  * @param ep    the Smelt endpoint to call the check function on
- * 
+ *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  *
@@ -89,7 +89,7 @@ struct smlt_qp
     } queue_rx;
 
     struct {
-        struct {                          
+        struct {
             smlt_qp_op_fn_t do_send;           ///< send operation
             smlt_qp_notify_fn_t notify;
             smlt_qp_check_fn_t can_send;    ///< checks if can be send
@@ -111,7 +111,7 @@ struct smlt_qp
 
 
  /**
-  * @brief creates the queue pair 
+  * @brief creates the queue pair
   *
   * @param TODO: information specification
   *
@@ -124,7 +124,7 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
                                coreid_t dst);
 
  /**
-  * @brief destroys the queuepair 
+  * @brief destroys the queuepair
   *
   * @param
   *
@@ -142,10 +142,10 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp);
 
 /**
  * @brief sends a message on the to the queuepair
- * 
+ *
  * @param ep    the Smelt queuepair to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * This function is BLOCKING if the queuepair cannot take new messages
@@ -153,20 +153,20 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp);
 errval_t smlt_queuepair_send(struct smlt_qp *qp,
                              struct smlt_msg *msg);
 /**
- * @brief sends a notification (zero payload message) 
- * 
+ * @brief sends a notification (zero payload message)
+ *
  * @param ep    the Smelt queuepair to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  */
 errval_t smlt_queuepair_notify(struct smlt_qp *qp);
 
 /**
  * @brief checks if the a message can be sent on the queuepair
- * 
+ *
  * @param ep    the Smelt queuepair to call the check function on
- * 
+ *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  */
@@ -183,22 +183,22 @@ bool smlt_queuepair_can_send(struct smlt_qp *qp);
 
 /**
  * @brief receives a message from the queuepair
- * 
+ *
  * @param qp    the Smelt queuepair to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * this function is BLOCKING if there is no message on the queuepair
  */
-errval_t smlt_queuepair_recv(struct smlt_qp *qp, 
+errval_t smlt_queuepair_recv(struct smlt_qp *qp,
                              struct smlt_msg *msg);
 
 /**
  * @brief receives a notification from the queuepair
- * 
+ *
  * @param qp    the Smelt queuepair to call the operation on
- * 
+ *
  * @returns error value
  *
  * this function is BLOCKING if there is no message on the queuepair
@@ -206,9 +206,9 @@ errval_t smlt_queuepair_recv(struct smlt_qp *qp,
 errval_t smlt_queuepair_recv0(struct smlt_qp *qp);
 /**
  * @brief checks if there is a message to be received
- * 
+ *
  * @param ep    the Smelt queuepair to call the check function on
- * 
+ *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  *
