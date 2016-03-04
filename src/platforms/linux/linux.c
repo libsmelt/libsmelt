@@ -273,7 +273,7 @@ errval_t smlt_platform_node_cancel(struct smlt_node *node)
  */
 void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
 {
-    SMLT_WARNING("%s not fully implemented! (alignment)\n", __FUNCTION__);
+    SMLT_WARNING("smlt_platform_alloc() not fully implemented! (alignment)\n");
     if (do_clear) {
         return calloc(1, bytes);
     }
@@ -296,7 +296,7 @@ void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
 void *smlt_platform_alloc_on_node(uint64_t bytes, uintptr_t align, uint8_t node,
                                   bool do_clear)
 {
-    SMLT_WARNING("%s not fully implemented! (NUMA node)\n", __FUNCTION__);
+    SMLT_WARNING("smlt_platform_alloc_on_node() not fully implemented! (NUMA node)\n");
     return smlt_platform_alloc(bytes, align, do_clear);
 }
 
@@ -312,7 +312,7 @@ void smlt_platform_free(void *buf)
 
 /*
  * ===========================================================================
- * Platform specific NUMA implementation 
+ * Platform specific NUMA implementation
  * ===========================================================================
  */
 
@@ -323,7 +323,7 @@ void smlt_platform_free(void *buf)
  */
 uint32_t smlt_platform_num_clusters(void)
 {
-    return (uint32_t) numa_num_configured_nodes();     
+    return (uint32_t) numa_num_configured_nodes();
 }
 
 /**
@@ -333,7 +333,7 @@ uint32_t smlt_platform_num_clusters(void)
  *
  * @return array of core ids that are within the NUMA node
  */
-errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id, 
+errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id,
                                         coreid_t** cores,
                                         uint32_t* size)
 {
@@ -342,21 +342,21 @@ errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id,
     int node_size = num_cores/max_nodes;
 
     coreid_t* result = (coreid_t*) malloc(sizeof(coreid_t)*node_size);
-    
+
     assert(result != NULL);
-    struct bitmask* node = numa_allocate_cpumask();  
-    
+    struct bitmask* node = numa_allocate_cpumask();
+
     if (!numa_node_to_cpus(cluster_id, node)) {
         int j = 0;
         for (int i = 0; i < num_cores;i++) {
             if (numa_bitmask_isbitset(node, i)) {
                result[j] = i;
                j++;
-            }   
+            }
         }
         *cores = result;
         *size = node_size;
-        
+
         return SMLT_SUCCESS;
     } else {
         *cores = NULL;
