@@ -35,7 +35,7 @@ HEADERS += $(wildcard inc/backends/ffq/*.h)
 # platform specific header files
 HEADERS += $(wildcard inc/platforms/linux/*.h)
 
-# architecture specific 
+# architecture specific
 HEADERS += $(wildcard inc/arch/*.h)
 
 
@@ -53,7 +53,7 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 # --------------------------------------------------
 
 COMMONFLAGS += -Wpedantic -Werror -Wall -Wfatal-errors \
-			   -pthread -fPIC -DVERSION=\"$(GIT_VERSION)\" 
+			   -pthread -fPIC -DVERSION=\"$(GIT_VERSION)\"
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
 CFLAGS += -std=gnu99 $(COMMONFLAGS)
 
@@ -61,6 +61,7 @@ CFLAGS += -std=gnu99 $(COMMONFLAGS)
 # libraries
 # --------------------------------------------------
 LIBS += -lnuma
+LIBS += -L./ -L./contrib/ -lsmltcontrib
 
 
 # setting the dependencies
@@ -68,6 +69,7 @@ LIBS += -lnuma
 DEPS = $(OBJS)
 DEPS += $(HEADERS)
 DEPS += Makefile
+DEPS += contrib/libsmltcontrib.so
 
 
 # Switch buildtype: supported are "debug" and "release"
@@ -96,10 +98,21 @@ CFLAGS += $(OPT)
 #	CXXFLAGS += -DSHL
 #endif
 
-all: test/nodes-test test/topo-create-test test/contrib-lib-test test/shm-queue-test test/queuepair-test test/ffq-test
-#$(TARGET)
 
-test: test/nodes-test test/topo-create-test test/contrib-lib-test /test/shm-queue-test test/queuepair-test test/ffq-test
+all: $(TARGET) \
+	   test/nodes-test \
+		 test/topo-create-test \
+		 test/contrib-lib-test \
+		 test/shm-queue-test \
+		 test/queuepair-test \
+		 test/ffq-test \
+
+test: test/nodes-test \
+			test/topo-create-test \
+			test/contrib-lib-test
+			test/shm-queue-test \
+			test/queuepair-test \
+			test/ffq-test
 
 # Tests
 # --------------------------------------------------
@@ -110,22 +123,22 @@ test/ping-pong: $(DEPS) $(EXTERNAL_OBJS) test/ping-pong.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) test/ping-pong.cpp -o $@
 
 test/nodes-test: test/nodes-test.c $(TARGET)
-	$(CC) $(CFLAGS) $(INC) -L./ test/nodes-test.c -o $@ -lsmltrt
+	$(CC) $(CFLAGS) $(INC) $(LIBS) test/nodes-test.c -o $@ -lsmltrt
 
-test/topo-create-test: test/topo-create-test.c
-	$(CC) $(CFLAGS) $(INC) -L./ test/topo-create-test.c -o $@ -lsmltrt
+test/topo-create-test: test/topo-create-test.c $(TARGET)
+	$(CC) $(CFLAGS) $(INC) $(LIBS) test/topo-create-test.c -o $@ -lsmltrt
 
-test/contrib-lib-test: test/contrib-lib-test.c
-	$(CC) $(CFLAGS) $(INC) -L./contrib/ test/contrib-lib-test.c -o $@ contrib/libsmltcontrib.so
+test/contrib-lib-test: test/contrib-lib-test.c $(TARGET)
+	$(CC) $(CFLAGS) $(INC) $(LIBS) test/contrib-lib-test.c -o $@ contrib/libsmltcontrib.so
 
-test/shm-queue-test: test/shm-queue-test.c
-	$(CC) $(CFLAGS)  $(INC) -L./ test/shm-queue-test.c -o $@ -lsmltrt
-test/queuepair-test: test/queuepair-test.c
-	$(CC) $(CFLAGS)  $(INC) -L./ test/queuepair-test.c -o $@ -lsmltrt
-test/ffq-test: test/ffq-test.c
-	$(CC) $(CFLAGS)  $(INC) -L./ test/ffq-test.c -o $@ -lsmltrt
-test/shmqp-test: test/shmqp-test.c
-	$(CC) $(CFLAGS)  $(INC) -L./ test/shmqp-test.c -o $@ -lsmltrt
+test/shm-queue-test: test/shm-queue-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/shm-queue-test.c -o $@ -lsmltrt
+test/queuepair-test: test/queuepair-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/queuepair-test.c -o $@ -lsmltrt
+test/ffq-test: test/ffq-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/ffq-test.c -o $@ -lsmltrt
+test/shmqp-test: test/shmqp-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/shmqp-test.c -o $@ -lsmltrt
 # Benchmarks
 # --------------------------------------------------
 bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
@@ -143,8 +156,12 @@ bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.cpp
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
-	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET) contrib/libsmltcontrib.so
+	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET)
 	ar rcs $(patsubst %.so,%.a,$(TARGET)) $(OBJS) $(EXTERNAL_OBJS)
+
+contrib/libsmltcontrib.so:
+	make -C contrib
+
 
 # Compile object files
 # --------------------------------------------------
@@ -155,7 +172,7 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 clean:
-	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET)) 
+	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET))
 	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
