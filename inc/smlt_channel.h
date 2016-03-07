@@ -200,7 +200,28 @@ static inline bool smlt_channel_can_recv(struct smlt_channel *chan)
     return result;
 }
 
-
+/**
+ * @brief receives a message or a notification from the queuepair
+ *
+ * @param chan      the Smelt channel to call he operation on
+ * @param msg       Smelt message argument
+ * @param core_id   the core id of child on which the msg is received
+ *
+ * @returns error value
+ *
+ * this function is BLOCKING if there is no message on the queuepair
+ */
+static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
+{
+    // 1:1
+    errval_t err;
+    if (chan->n == chan->m) {
+       err = smlt_queuepair_recv0(&chan->recv[0]);
+    } else {
+       assert(!"1:N recv NIY");
+    }
+    return err;
+}
 /*
  * ===========================================================================
  * state queries

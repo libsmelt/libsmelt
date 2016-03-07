@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <smlt.h>
 #include <smlt_broadcast.h>
+#include <smlt_reduction.h>
 #include <smlt_topology.h>
 #include <smlt_context.h>
 #include <smlt_generator.h>
@@ -22,14 +23,31 @@ struct smlt_context *context = NULL;
 
 static const char *name = "binary_tree";
 
+errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2) 
+{
+    return 0;
+}
+
 void* thr_worker(void* arg)
 {
     struct smlt_msg* msg = smlt_message_alloc(56);
-    if (((uint64_t) arg) == 0) {
-       sleep(3);
+    uintptr_t r = 0;
+    uint64_t id = (uint64_t) arg;
+    for(int i = 0; i < 100; i++) {
+        if (id == 0) {
+            r++;
+            smlt_message_write(msg, &r, 8);
+        }
+        smlt_broadcast(context, msg);
+        smlt_message_read(msg, (void*) &r, 8);
+        if (r != (i+1)) {
+           printf("Tesf failed \n");
+        }
     }
-    printf("%ld :Broadcast \n", (uint64_t) arg);
-    smlt_broadcast(context, msg);
+
+    printf("%ld :Before Reduce \n", (uint64_t) arg);
+    smlt_reduce(context, msg, msg, operation);
+    printf("%ld :Reduce \n", (uint64_t) arg);
     return 0;
 }
 

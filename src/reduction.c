@@ -40,14 +40,14 @@ errval_t smlt_reduce(struct smlt_context *ctx,
 
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
-
+/*
     if (smlt_context_does_shared_memory(ctx)) {
         err = smlt_shm_reduce(input, result);
         if (smlt_err_is_fail(err)) {
             return err;
         }
     }
-    
+  */  
     // --------------------------------------------------
     // Message passing
 
@@ -71,10 +71,13 @@ errval_t smlt_reduce(struct smlt_context *ctx,
     // Receive (this will be from several children)
     // --------------------------------------------------
     for (uint32_t i = 0; i < count; ++i) {
+        //printf("Node %d: trying from child %d \n", smlt_node_get_id() ,i);
         err = smlt_channel_recv(&children[0], result);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
         }
+
+        //printf("Node %d: Received from child %d \n", smlt_node_get_id(), i);
         err = operation(input, result);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
@@ -90,6 +93,7 @@ errval_t smlt_reduce(struct smlt_context *ctx,
     }
 
     if (parent) {
+        //printf("Node %d: send to parent \n", smlt_node_get_id());
         smlt_channel_send(parent, result);
     }
 
@@ -112,14 +116,14 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
 
     // Note: tree is processed in backwards direction, i.e. a receive
     // corresponds to a send and vica-versa.
-
+/*
     if (smlt_context_does_shared_memory(ctx)) {
         err = smlt_shm_reduce_notify();
         if (smlt_err_is_fail(err)) {
             return err;
         }
     }
-
+*/
     // --------------------------------------------------
     // Message passing
 
@@ -136,12 +140,13 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
     uint32_t count = 0;
     struct smlt_channel *children;
     err =  smlt_context_get_children_channels(ctx, &children, &count);
+    printf("Child count %d \n", count);
     if (smlt_err_is_fail(err)) {
         return err; // TODO: adding more error values
     }
 
     for (uint32_t i = 0; i < count; ++i) {
-        err = smlt_channel_recv(&children[i], NULL);
+        err = smlt_channel_recv_notification(&children[i]);
         // TODO: error handling
     }
 
