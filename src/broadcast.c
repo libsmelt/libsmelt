@@ -93,7 +93,7 @@ errval_t smlt_broadcast(struct smlt_context *ctx,
             return err; // TODO: adding more error values
         }
 
-        err = smlt_channel_recv(parent, NULL);
+        err = smlt_channel_recv(parent, msg);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
         }

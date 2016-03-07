@@ -103,13 +103,13 @@ errval_t smlt_context_create(struct smlt_topology *topo,
             children = smlt_topology_node_children(tn, &num_children);
 
             for (int i = 0; i < num_children; i++) {
-                uint32_t c_id = smlt_topology_node_get_id(children[i]);
+                uint32_t dst = smlt_topology_node_get_id(children[i]);
+                uint32_t src = smlt_topology_node_get_id(tn);
                 struct smlt_channel * chan = &(n->children[i]);
-                smlt_channel_create(SMLT_CHAN_TYPE_ONE_TO_ONE,
-                                    &chan, smlt_topology_node_get_id(tn), 
-                                    &c_id, 1);
-                //printf("Chan %p type %d from %d to %d \n",(void*) chan, 
-                //        chan->type, c_id, smlt_topology_node_get_id(tn));
+                smlt_channel_create(&chan, &src, 
+                                    &dst, 1, 1);
+                printf("Channel from %d to %d %p recv %p send %p \n", 
+                        src, dst, (void*)chan, (void*) chan->recv, (void*) chan->send);
             }
         }
 
@@ -138,7 +138,6 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         smlt_nid_t current_nid = smlt_topology_node_get_id(tn);
 
         if (smlt_topology_node_is_root(tn)) {
-            printf("Root %p \n", (void*)tn);
             tn = smlt_topology_node_next(tn);
             continue;
         }
@@ -149,12 +148,10 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
         struct smlt_context_node *parent = ctx->nid_to_node[parent_nid];
         struct smlt_context_node *n = ctx->nid_to_node[current_nid];
-
-        
+       
         n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
-        //printf("Node id %d Parent %p \n", current_nid, (void*) parent);
-        //printf("Chan %p type %d \n",(void*) n->parent, n->parent->type);
-        //ctx->nid_to_node[current_nid]->parent = ctx->nid_to_node[parent_nid];
+        printf("Node id %d, child_id %d : parent->recv %p \n", 
+               i, smlt_topology_node_get_child_idx(tn), (void*)n->parent->recv);
         tn = smlt_topology_node_next(tn);
     }
 

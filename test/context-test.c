@@ -28,7 +28,7 @@ void* thr_worker(void* arg)
     if (((uint64_t) arg) == 0) {
        sleep(3);
     }
-    printf("Broadcast \n");
+    printf("%ld :Broadcast \n", (uint64_t) arg);
     smlt_broadcast(context, msg);
     return 0;
 }

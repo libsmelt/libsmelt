@@ -18,68 +18,6 @@
  * ===========================================================================
  */
 
-static errval_t smlt_channel_o2o_create(struct smlt_channel** chan,
-                                        uint32_t src,
-                                        uint32_t dst)
-{
-    // TODO only ump channels for now 
-    errval_t err;
-    struct smlt_qp* qp1;
-    struct smlt_qp* qp2;
-
-    qp1 = &((*chan)->c.o2o.send);    
-    qp2 = &((*chan)->c.o2o.recv);    
-
-    err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                &qp1, &qp2, src, dst);
-    
-    if (smlt_err_is_fail(err)) {
-        return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
-    }
-    
-    (*chan)->c.o2o.send = *qp1;
-    (*chan)->c.o2o.recv = *qp2;
-    return SMLT_SUCCESS;
-}
-
-static errval_t smlt_channel_o2m_create(struct smlt_channel** chan,
-                                        uint32_t src,
-                                        uint32_t* dst,
-                                        uint16_t count)
-{
-    (*chan)->c.o2m.m = count;
-    (*chan)->c.o2m.backend = SMLT_CHAN_BACKEND_MP;
-    (*chan)->c.o2m.last_polled = 0;
-    // TODO only ump channels for now 
-
-    struct smlt_qp* qp2;
-    struct smlt_qp* qp1;
-    struct smlt_qp* qp_array1;
-    struct smlt_qp* qp_array2;
-    errval_t err;
-
-    qp_array1 = (*chan)->c.o2m.send.qp;
-    qp_array2 = (*chan)->c.o2m.send.qp;
-    // TODO for now allocate only space for pointers, otherwise
-    // have to change smlt_queuepair_create to not allocate memory
-    qp_array1 = (struct smlt_qp *) smlt_platform_alloc(sizeof(struct smlt_qp)*count,
-                                                     SMLT_DEFAULT_ALIGNMENT, false);
-    qp_array2 = (struct smlt_qp *) smlt_platform_alloc(sizeof(struct smlt_qp)*count,
-                                                     SMLT_DEFAULT_ALIGNMENT, false);
-    for (int i = 0 ; i < count; i++) {
-        qp1 = &(qp_array1[i]);
-        qp2 = &(qp_array2[i]);
-        err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                    &qp1, &qp2, src, dst[i]);
-        if (smlt_err_is_fail(err)) {
-            return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
-        }
-
-    }
-
-    return SMLT_SUCCESS;
-}
-
  /**
   * @brief creates the queue pair
   *
@@ -91,37 +29,57 @@ static errval_t smlt_channel_o2m_create(struct smlt_channel** chan,
   *
   * @returns SMLT_SUCCESS or failure 
   */
-errval_t smlt_channel_create(smlt_chan_type_t type,
-                             struct smlt_channel **chan,
-                             uint32_t src,
+errval_t smlt_channel_create(struct smlt_channel **chan,
+                             uint32_t* src,
                              uint32_t* dst,
-                             uint16_t count)
+                             uint16_t count_src,
+                             uint16_t count_dst)
 {
-    *chan = smlt_platform_alloc(sizeof(struct smlt_channel),
-                               SMLT_DEFAULT_ALIGNMENT,      
-                               true);
+    uint32_t num_chan = (count_src > count_dst) ? count_src : count_dst;
+
+    assert(*chan);
+
+    ((*chan)->recv) = (struct smlt_qp*) smlt_platform_alloc(
+                        sizeof(struct smlt_qp)*num_chan,
+                        SMLT_DEFAULT_ALIGNMENT, true);
+    ((*chan)->send) = (struct smlt_qp*) smlt_platform_alloc(
+                        sizeof(struct smlt_qp)*num_chan,
+                        SMLT_DEFAULT_ALIGNMENT, true);
     if (!chan) {
         return SMLT_ERR_MALLOC_FAIL;
     }
-    (*chan)->type = type;
-    switch(type) {
-        case SMLT_CHAN_TYPE_ONE_TO_ONE :
-            return smlt_channel_o2o_create(chan, src, *dst);
-            break;
-        case SMLT_CHAN_TYPE_ONE_TO_MANY :
-            return smlt_channel_o2m_create(chan, src, dst, count);
-            break;
-        case SMLT_CHAN_TYPE_MANY_TO_ONE :
-            assert(!"NIY");
-            break;
-        case SMLT_CHAN_TYPE_MANY_TO_MANY :
-            assert(!"NIY");
-            break;
-        default :
-            return SMLT_ERR_CHAN_UNKNOWN_TYPE;
-            break;
+    
+    if ((count_src > 1) && (count_dst > 1)) {
+        assert(!"M:N Channel NYI");
     }
-    return SMLT_ERR_CHAN_UNKNOWN_TYPE;
+
+    // setn
+    (*chan)->m = count_dst;
+    (*chan)->n = count_src;
+
+    errval_t err;
+    for (int i= 0; i < num_chan; i++) {
+        if (count_src == 1) {
+            // 1_n
+            struct smlt_qp* send = &((*chan)->send[i]);
+            struct smlt_qp* recv = &((*chan)->recv[i]);
+            err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
+                                    &send, &recv, src[0], dst[i]);
+            if (smlt_err_is_fail(err)) {
+                return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
+            }
+        } else {
+            // 1:n
+            struct smlt_qp* send = &((*chan)->send[i]);
+            struct smlt_qp* recv = &((*chan)->recv[i]);
+            err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
+                                    &send, &recv, src[i], dst[0]);
+            if (smlt_err_is_fail(err)) {
+                return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
+            }
+        }
+    }
+    return SMLT_SUCCESS;
 }
 
  /**
@@ -133,28 +91,16 @@ errval_t smlt_channel_create(smlt_chan_type_t type,
   */
 errval_t smlt_channel_destroy(struct smlt_channel *chan)
 {
-    switch(chan->type) {
-        case SMLT_CHAN_TYPE_ONE_TO_ONE :
-            smlt_queuepair_destroy(&chan->c.o2o.send);
-            smlt_platform_free(chan);
-            break;
-        case SMLT_CHAN_TYPE_ONE_TO_MANY :
-            for (int i = 0; i < chan->c.o2m.m; i++) {
-                smlt_queuepair_destroy(&chan->c.o2m.send.qp[i]);
+    uint32_t num_chan = (chan->m > chan->n) ? chan->m : chan->n;
+
+    errval_t err;
+    for (int i = 0; i < num_chan; i++) {
+            err = smlt_queuepair_destroy(&chan->send[i]);
+            if (smlt_err_is_fail(err)) {
+                return smlt_err_push(err, SMLT_ERR_CHAN_DESTROY);
             }
-            smlt_platform_free(chan->c.o2m.send.qp);
-            smlt_platform_free(chan->c.o2m.recv.qp);
-            smlt_platform_free(chan);
-            break;
-        case SMLT_CHAN_TYPE_MANY_TO_ONE :
-            assert(!"NIY");
-            break;
-        case SMLT_CHAN_TYPE_MANY_TO_MANY :
-            assert(!"NIY");
-            break;
-        default :
-            return SMLT_ERR_CHAN_UNKNOWN_TYPE;
-            break;
+            smlt_platform_free(chan->send);
+            smlt_platform_free(chan->recv);
     }
     return SMLT_SUCCESS;
 }

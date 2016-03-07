@@ -53,7 +53,11 @@ enum smlt_err_code {
 
     /* channel error */
     SMLT_ERR_CHAN_CREATE,
-    SMLT_ERR_CHAN_UNKNOWN_TYPE,
+    SMLT_ERR_CHAN_DESTROY,    
+
+    /* send erros */
+    SMLT_ERR_SEND,
+    SMLT_ERR_NOTIFY,
 };
 
 /*
