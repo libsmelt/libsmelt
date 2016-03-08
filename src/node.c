@@ -40,7 +40,7 @@ errval_t smlt_node_create(struct smlt_node **node,
     }
 
     struct smlt_node *new_node = smlt_platform_alloc(SMLT_NODE_SIZE(args->num_nodes),
-                                                     SMLT_CACHELINE_SIZE, true);
+                                                     SMLT_ARCH_CACHELINE_SIZE, true);
     if (!new_node) {
         return SMLT_ERR_MALLOC_FAIL;
     }
@@ -74,7 +74,7 @@ errval_t smlt_node_create(struct smlt_node **node,
  */
 errval_t smlt_node_start(struct smlt_node *node, smlt_node_start_fn_t fn, void *arg)
 {
-    SMLT_DEBUG(SMLT_DBG__NODE, "smlt_node_start with node=%p, fn=%p\n", 
+    SMLT_DEBUG(SMLT_DBG__NODE, "smlt_node_start with node=%p, fn=%p\n",
                node, fn);
 
     /* set the start function and the arguments */
@@ -160,7 +160,7 @@ errval_t smlt_node_lowlevel_init(smlt_nid_t nid)
 errval_t smlt_node_exec_start(struct smlt_node *node)
 {
     smlt_node_self = node;
-    
+
     smlt_node_lowlevel_init(node->id);
 
 #if !defined(USE_THREADS)
@@ -217,4 +217,3 @@ errval_t smlt_node_exec_end(struct smlt_node *node) //int  __thread_end(void)
     //debug_printfff(DBG__INIT, "Thread %d ending %d\n", tid, mp_get_counter("barriers"));
     return 0;
 }
-

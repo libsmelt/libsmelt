@@ -26,7 +26,7 @@ enum smlt_err_code {
     SMLT_ERR_INIT        = 2,
     SMLT_ERR_MALLOC_FAIL = 3, ///< the allocation of memory failed
     SMLT_ERR_INVAL       = 4, ///< invalid argument
-
+    SMLT_ERR_BAD_ALIGNMENT,
     /* platform errors */
     SMLT_ERR_PLATFORM_INIT,
 
@@ -53,7 +53,15 @@ enum smlt_err_code {
 
     /* channel error */
     SMLT_ERR_CHAN_CREATE,
-    SMLT_ERR_CHAN_DESTROY,    
+    SMLT_ERR_CHAN_DESTROY,
+    SMLT_ERR_CHAN_WOULD_BLOCK,
+
+    /* queue errors */
+    SMLT_ERR_QUEUE_RECV,
+    SMLT_ERR_QUEUE_SEND,
+    SMLT_ERR_QUEUE_STATE,
+    SMLT_ERR_QUEUE_EMPTY,
+    SMLT_ERR_QUEUE_PREPARE,
 
     /* send erros */
     SMLT_ERR_SEND,

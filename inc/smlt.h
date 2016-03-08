@@ -14,6 +14,11 @@
 #include <smlt_error.h>
 #include <smlt_message.h>
 
+
+#define SMLT_ASSERT(x)
+
+#define SMLT_STATIC_ASSERT(x)
+
 /*
  * ===========================================================================
  * type declarations
@@ -44,7 +49,7 @@ struct smlt_instance;
  * @param eagerly   create an all-to-all connection mesh
  *
  * @returns SMLT_SUCCESS on success
- * 
+ *
  * This has to be executed once per address space. If threads are used
  * for parallelism, call this only once. With processes, it has to be
  * executed on each process.
@@ -69,10 +74,10 @@ struct smlt_node *smlt_get_node_by_id(smlt_nid_t id);
 
 /**
  * @brief sends a message on the to the node
- * 
+ *
  * @param ep    the Smelt node to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * This function is BLOCKING if the node cannot take new messages
@@ -80,20 +85,20 @@ struct smlt_node *smlt_get_node_by_id(smlt_nid_t id);
 errval_t smlt_send(smlt_nid_t nid, struct smlt_msg *msg);
 
 /**
- * @brief sends a notification (zero payload message) 
- * 
+ * @brief sends a notification (zero payload message)
+ *
  * @param node    the Smelt node to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  */
 errval_t smlt_notify(smlt_nid_t nid);
 
 /**
  * @brief checks if the a message can be sent on the node
- * 
+ *
  * @param node    the Smelt node to call the check function on
- * 
+ *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  */
@@ -110,10 +115,10 @@ bool smlt_can_send(smlt_nid_t nid);
 
 /**
  * @brief receives a message or a notification from the node
- * 
+ *
  * @param node    the Smelt node to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * this function is BLOCKING if there is no message on the node
@@ -122,9 +127,9 @@ errval_t smlt_recv(smlt_nid_t nid, struct smlt_msg *msg);
 
 /**
  * @brief checks if there is a message to be received
- * 
+ *
  * @param node    the Smelt node to call the check function on
- * 
+ *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  *
@@ -134,7 +139,7 @@ bool smlt_can_recv(smlt_nid_t nid);
 
 /**
  * @brief returns the number of processes (or threads) running
- * 
+ *
  * @returns number of processes/threads participating
  *
  * this invokes either the can_send or can_receive function

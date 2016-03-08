@@ -28,7 +28,7 @@ static uint32_t smlt_gbl_all_node_count;
  * @param eagerly   create an all-to-all connection mesh
  *
  * @returns SMLT_SUCCESS on success
- * 
+ *
  * This has to be executed once per address space. If threads are used
  * for parallelism, call this only once. With processes, it has to be
  * executed on each process.
@@ -67,7 +67,7 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
                sizeof(struct smlt_node), sizeof(struct smlt_qp));
 
     smlt_gbl_all_nodes = smlt_platform_alloc(smlt_gbl_num_proc * sizeof(void *),
-                                             SMLT_CACHELINE_SIZE, true);
+                                             SMLT_ARCH_CACHELINE_SIZE, true);
     if (smlt_gbl_all_nodes == NULL) {
         /* TODO: cleanup master share */
         SMLT_ERROR("failed to allocate the node\n");
@@ -148,10 +148,10 @@ errval_t smlt_add_node(struct smlt_node *node)
 
 /**
  * @brief sends a message on the to the node
- * 
+ *
  * @param ep    the Smelt node to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * This function is BLOCKING if the node cannot take new messages
@@ -167,11 +167,11 @@ errval_t smlt_send(smlt_nid_t nid, struct smlt_msg *msg)
 }
 
 /**
- * @brief sends a notification (zero payload message) 
- * 
+ * @brief sends a notification (zero payload message)
+ *
  * @param node    the Smelt node to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  */
 errval_t smlt_notify(smlt_nid_t nid)
@@ -186,9 +186,9 @@ errval_t smlt_notify(smlt_nid_t nid)
 
 /**
  * @brief checks if the a message can be sent on the node
- * 
+ *
  * @param node    the Smelt node to call the check function on
- * 
+ *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  */
@@ -211,9 +211,9 @@ bool smlt_can_send(smlt_nid_t nid)
 
 /**
  * @brief receives a message or a notification from any incoming channel
- * 
+ *
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * this function is BLOCKING if there is no message on the node
@@ -228,10 +228,10 @@ errval_t smlt_recv_any(struct smlt_msg *msg)
 
 /**
  * @brief receives a message or a notification from the node
- * 
+ *
  * @param node    the Smelt node to call the operation on
  * @param msg   Smelt message argument
- * 
+ *
  * @returns error value
  *
  * this function is BLOCKING if there is no message on the node
@@ -248,9 +248,9 @@ errval_t smlt_recv(smlt_nid_t nid, struct smlt_msg *msg)
 
 /**
  * @brief checks if there is a message to be received
- * 
+ *
  * @param node    the Smelt node to call the check function on
- * 
+ *
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  *
@@ -268,7 +268,7 @@ bool smlt_can_recv(smlt_nid_t nid)
 
 /**
  * @brief returns the number of processes (or threads) running
- * 
+ *
  * @returns number of processes/threads participating
  *
  * this invokes either the can_send or can_receive function
