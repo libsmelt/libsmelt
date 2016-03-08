@@ -17,12 +17,13 @@
 #include <smlt_channel.h>
 #include <smlt_context.h>
 #include <smlt_generator.h>
+#include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 32
 #define NUM_RUNS 10000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
-#define NUM_EXP 2
+#define NUM_EXP 5
 
 struct smlt_context *context = NULL;
 
@@ -40,6 +41,35 @@ errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
 {
     return 0;
 }
+
+
+static uint32_t* get_leafs(struct smlt_topology* topo, uint32_t* count)
+{
+        struct smlt_topology_node* tn;
+        tn = smlt_topology_get_first_node(active_topo);
+        int num_leafs = 0;
+        for (int i = 0; i < NUM_THREADS; i++) {
+            if (smlt_topology_node_is_leaf(tn)) {
+                num_leafs++;
+            }
+            tn = smlt_topology_node_next(tn);
+        }
+
+        uint32_t* ret = (uint32_t*) malloc(sizeof(uint32_t)*num_leafs);
+
+        int index = 0;
+        tn = smlt_topology_get_first_node(active_topo);
+        for (int i = 0; i < NUM_THREADS; i++) {
+            if (smlt_topology_node_is_leaf(tn)) {
+               ret[index] = smlt_topology_node_get_id(tn);
+               index++;
+            }
+            tn = smlt_topology_node_next(tn);
+        }
+        *count = num_leafs;
+        return ret;
+} 
+
 
 static void* pingpong(void* a)
 {
@@ -93,39 +123,151 @@ static void* pingpong(void* a)
 }
 
 
-
-void* thr_worker(void* arg)
+static void* ab(void* a)
 {
-    pthread_barrier_wait(&bar);
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "ab");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    uint32_t count = 0;
+    uint32_t* leafs;
+    leafs = get_leafs(active_topo, &count);
+
     struct smlt_msg* msg = smlt_message_alloc(56);
-    uintptr_t r = 0;
-    uint64_t id = (uint64_t) arg;
-    for(int i = 0; i < NUM_RUNS; i++) {
-        if (id == 0) {
-            r++;
-            smlt_message_write(msg, &r, 8);
+    for (int i = 0; i < count; i++) {
+        coreid_t last_node = (coreid_t) leafs[i];
+        sk_m_reset(&m);
+    
+        for (int j = 0; j < NUM_RUNS; j++) {
+            sk_m_restart_tsc(&m);
+
+            if (smlt_node_get_id() == last_node) {
+                smlt_channel_send(&chan[last_node][0], msg);
+            }
+
+            if (smlt_node_get_id() == 0) {
+                smlt_channel_recv(&chan[last_node][0], msg);
+                smlt_broadcast(context, msg);
+            } else {
+                smlt_broadcast(context, msg);
+            }
+            sk_m_add(&m);
         }
-        smlt_broadcast(context, msg);
-        smlt_message_read(msg, (void*) &r, 8);
-        if (r != (i+1)) {
-           printf("Node %ld: Test failed %ld should be %d \n", 
-                  id, r, i+1);
+
+        if (smlt_node_get_id() == last_node) {
+            sk_m_print(&m);
+        }
+    }
+    return 0;
+}
+
+static void* reduction(void* a)
+{
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "reduction");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    uint32_t count = 0;
+    uint32_t* leafs;
+    leafs = get_leafs(active_topo, &count);
+
+    struct smlt_msg* msg = smlt_message_alloc(56);
+    for (int i = 0; i < count; i++) {
+        coreid_t last_node = (coreid_t) leafs[i];
+        sk_m_reset(&m);
+    
+        for (int j = 0; j < NUM_RUNS; j++) {
+            sk_m_restart_tsc(&m);
+
+            smlt_reduce(context, msg, msg, operation);
+
+            
+            if (smlt_node_get_id() == 0) {
+                smlt_channel_send(&chan[last_node][0], msg);
+            } else if (smlt_node_get_id() == last_node) {
+                smlt_channel_recv(&chan[last_node][0], msg);
+                sk_m_add(&m);
+            }
+        }
+
+        if (smlt_node_get_id() == last_node) {
+            sk_m_print(&m);
+        }
+    }
+    return 0;
+}
+
+static void* barrier(void* a) 
+{
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "barriers");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    for (int j = 0; j < NUM_RUNS; j++) {
+        sk_m_restart_tsc(&m);
+
+        smlt_barrier_wait(context);
+
+        if (smlt_node_get_id() == (NUM_THREADS-1)) {
+            sk_m_add(&m);
         }
     }
 
-    printf("%ld :Broadcast Finished \n", (uint64_t) arg);
-    pthread_barrier_wait(&bar);
-    struct smlt_msg* msg2 = smlt_message_alloc(56);
-    for(int i = 0; i < NUM_RUNS; i++) {
-        smlt_reduce(context, msg2, msg2, operation);
+    if (smlt_node_get_id() == 0 || 
+        smlt_node_get_id() == NUM_THREADS-1) {
+        sk_m_print(&m);
     }
-    printf("%ld :Reduction Finished \n", (uint64_t) arg);
-    pthread_barrier_wait(&bar);
-    for(int i = 0; i < NUM_RUNS; i++) {
-        smlt_reduce(context, NULL, NULL, NULL);
+
+    return 0;
+}
+
+static void* agreement(void* a) 
+{
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "agreement");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    uint32_t count = 0;
+    uint32_t* leafs;
+    leafs = get_leafs(active_topo, &count);
+
+    struct smlt_msg* msg = smlt_message_alloc(56);
+    for (int i = 0; i < count; i++) {
+        coreid_t last_node = (coreid_t) leafs[i];
+        sk_m_reset(&m);
+    
+        for (int j = 0; j < NUM_RUNS; j++) {
+            sk_m_restart_tsc(&m);
+
+            if (smlt_node_get_id() == last_node) {
+                smlt_channel_send(&chan[last_node][0], msg);
+            }
+
+            if (smlt_node_get_id() == 0) {
+                smlt_channel_recv(&chan[last_node][0], msg);
+                smlt_broadcast(context, msg);
+            } else {
+                smlt_broadcast(context, msg);
+            }
+
+            smlt_reduce(context, msg, msg, operation);
+            smlt_broadcast(context, msg);
+        
+            sk_m_add(&m);
+        }
+
+        if (smlt_node_get_id() == last_node) {
+            sk_m_print(&m);
+        }
     }
-    printf("%ld :Reduction 0 Payload Finished \n", (uint64_t) arg);
-    pthread_barrier_wait(&bar);
     return 0;
 }
 
@@ -134,12 +276,18 @@ int main(int argc, char **argv)
     typedef void* (worker_func_t)(void*);
     worker_func_t * workers[NUM_EXP] = {
         &pingpong,
-        &thr_worker,
+        &ab,
+        &reduction,
+        &agreement,
+        &barrier,
     };
 
     const char *labels[NUM_EXP] = {
         "Ping pong",
-        "Worker",
+        "Atomic Broadcast",
+        "Reduction",
+        "Agreement",
+        "Barrier",
     };
 
     pthread_barrier_init(&bar, NULL, NUM_THREADS);
