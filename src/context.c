@@ -12,6 +12,7 @@
 #include <smlt_context.h>
 #include <smlt_channel.h>
 #include "debug.h"
+#include <stdio.h>
 
 #define SMLT_CONTEXT_NAME_MAX 16
 
@@ -73,7 +74,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
     uint32_t num_nodes = smlt_topology_get_num_nodes(topo);
 
     ctx = smlt_platform_alloc(sizeof(*ctx) + num_nodes * sizeof(struct smlt_context_node),
-                              SMLT_CACHELINE_SIZE, true);
+                              SMLT_ARCH_CACHELINE_SIZE, true);
 
     if (ctx == NULL) {
         return SMLT_ERR_MALLOC_FAIL;
@@ -93,7 +94,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
         if (num_children) {
             n->children = smlt_platform_alloc(num_children * sizeof(*(n->children)),
-                                       SMLT_CACHELINE_SIZE, true);
+                                       SMLT_ARCH_CACHELINE_SIZE, true);
             if (!n->children) {
                 /* PANIC !*/
             }
@@ -106,9 +107,9 @@ errval_t smlt_context_create(struct smlt_topology *topo,
                 uint32_t dst = smlt_topology_node_get_id(children[i]);
                 uint32_t src = smlt_topology_node_get_id(tn);
                 struct smlt_channel * chan = &(n->children[i]);
-                smlt_channel_create(&chan, &src, 
+                smlt_channel_create(&chan, &src,
                                     &dst, 1, 1);
-                printf("Channel from %d to %d %p recv %p send %p \n", 
+                printf("Channel from %d to %d %p recv %p send %p \n",
                         src, dst, (void*)chan, (void*) chan->recv, (void*) chan->send);
             }
         }
@@ -122,7 +123,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
     }
 
     ctx->nid_to_node = smlt_platform_alloc((ctx->max_nid+1)  * sizeof(void *),
-                                           SMLT_CACHELINE_SIZE, true);
+                                           SMLT_ARCH_CACHELINE_SIZE, true);
     if (!ctx->nid_to_node) {
 
     }
@@ -148,9 +149,9 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
         struct smlt_context_node *parent = ctx->nid_to_node[parent_nid];
         struct smlt_context_node *n = ctx->nid_to_node[current_nid];
-       
+
         n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
-        printf("Node id %d, child_id %d : parent->recv %p \n", 
+        printf("Node id %d, child_id %d : parent->recv %p \n",
                i, smlt_topology_node_get_child_idx(tn), (void*)n->parent->recv);
         tn = smlt_topology_node_next(tn);
     }
@@ -335,4 +336,3 @@ bool smlt_context_node_does_inter_machine(struct smlt_context *ctx,
     assert(!"NYI");
     return 0;
 }
-
