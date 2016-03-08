@@ -120,7 +120,7 @@ static void *smlt_platform_node_start_wrapper(void *arg)
     /* ending Smelt node */
     smlt_node_exec_end(node);
 
-    SMLT_DEBUG(SMLT_DBG__PLATFORM, "thread ended execution\n");
+    SMLT_DEBUG(SMLT_DBG__PLATFORM, "node %d thread ended execution\n", node->id);
     return result;
 }
 

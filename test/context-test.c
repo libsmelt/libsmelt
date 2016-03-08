@@ -16,12 +16,16 @@
 #include <smlt_topology.h>
 #include <smlt_context.h>
 #include <smlt_generator.h>
+#include <pthread.h>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 32
+#define NUM_RUNS 10000000
 
 struct smlt_context *context = NULL;
 
 static const char *name = "binary_tree";
+static pthread_barrier_t bar;
+
 
 errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2) 
 {
@@ -30,10 +34,11 @@ errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
 
 void* thr_worker(void* arg)
 {
+    pthread_barrier_wait(&bar);
     struct smlt_msg* msg = smlt_message_alloc(56);
     uintptr_t r = 0;
     uint64_t id = (uint64_t) arg;
-    for(int i = 0; i < 100; i++) {
+    for(int i = 0; i < NUM_RUNS; i++) {
         if (id == 0) {
             r++;
             smlt_message_write(msg, &r, 8);
@@ -41,18 +46,30 @@ void* thr_worker(void* arg)
         smlt_broadcast(context, msg);
         smlt_message_read(msg, (void*) &r, 8);
         if (r != (i+1)) {
-           printf("Tesf failed \n");
+           printf("Node %ld: Test failed %ld should be %d \n", 
+                  id, r, i+1);
         }
     }
 
-    printf("%ld :Before Reduce \n", (uint64_t) arg);
-    smlt_reduce(context, msg, msg, operation);
-    printf("%ld :Reduce \n", (uint64_t) arg);
+    printf("%ld :Broadcast Finished \n", (uint64_t) arg);
+    pthread_barrier_wait(&bar);
+    struct smlt_msg* msg2 = smlt_message_alloc(56);
+    for(int i = 0; i < NUM_RUNS; i++) {
+        smlt_reduce(context, msg2, msg2, operation);
+    }
+    printf("%ld :Reduction Finished \n", (uint64_t) arg);
+    pthread_barrier_wait(&bar);
+    for(int i = 0; i < NUM_RUNS; i++) {
+        smlt_reduce(context, NULL, NULL, NULL);
+    }
+    printf("%ld :Reduction 0 Payload Finished \n", (uint64_t) arg);
+    pthread_barrier_wait(&bar);
     return 0;
 }
 
 int main(int argc, char **argv)
 {
+    pthread_barrier_init(&bar, NULL, NUM_THREADS);
     errval_t err;
     err = smlt_init(NUM_THREADS, true);
     if (smlt_err_is_fail(err)) {

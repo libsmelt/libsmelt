@@ -121,7 +121,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         tn = smlt_topology_node_next(tn);
     }
 
-    ctx->nid_to_node = smlt_platform_alloc(ctx->max_nid  * sizeof(void *),
+    ctx->nid_to_node = smlt_platform_alloc((ctx->max_nid+1)  * sizeof(void *),
                                            SMLT_CACHELINE_SIZE, true);
     if (!ctx->nid_to_node) {
 
