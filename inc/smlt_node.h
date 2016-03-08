@@ -9,7 +9,7 @@
 #ifndef SMLT_NODE_H_
 #define SMLT_NODE_H_ 1
 
-#include <smlt_queuepair.h>
+#include <smlt_channel.h>
 
 /**
  * @brief
@@ -38,7 +38,7 @@ struct smlt_node
     uint8_t shm_send;
     uint8_t shm_recv;
 
-    struct smlt_qp qp[];  // XXX: we need multiple queue pairs here
+    struct smlt_channel chan[];  // XXX: we need multiple queue pairs here
 };
 
 extern __thread struct smlt_node *smlt_node_self;
@@ -57,7 +57,7 @@ struct smlt_node_args
 #define SMLT_NODE_CHECK(_node)
 
 #define SMLT_NODE_SIZE(_num) ((sizeof(struct smlt_node)          \
-                                 + _num * sizeof(struct smlt_qp)))
+                                 + _num * sizeof(struct smlt_channel)))
 
 /*
  * ===========================================================================
@@ -228,7 +228,7 @@ static inline errval_t smlt_node_send(struct smlt_node *node,
 {
     SMLT_NODE_CHECK(node);
     
-    return smlt_queuepair_send(&node->qp[smlt_node_self_id], msg);
+    return smlt_channel_send(&node->chan[smlt_node_self_id], msg);
 }
 
 /**
@@ -244,7 +244,7 @@ static inline errval_t smlt_node_notify(struct smlt_node *node)
     SMLT_NODE_CHECK(node);
 
     /* XXX: maybe provide another function */
-    return smlt_queuepair_notify(&node->qp[smlt_node_self_id]);
+    return smlt_channel_notify(&node->chan[smlt_node_self_id]);
 }
 
 /**
@@ -259,7 +259,7 @@ static inline bool smlt_node_can_send(struct smlt_node *node)
 {
     SMLT_NODE_CHECK(node);
     
-    return smlt_queuepair_can_send(&node->qp[smlt_node_self_id]);
+    return smlt_channel_can_send(&node->chan[smlt_node_self_id]);
 }
 
 /* TODO: include also non blocking variants ? */
@@ -287,7 +287,7 @@ static inline errval_t smlt_node_recv(struct smlt_node *node,
 {
     SMLT_NODE_CHECK(node);
     
-    return smlt_queuepair_recv(&node->qp[smlt_node_self_id], msg);
+    return smlt_channel_recv(&node->chan[smlt_node_self_id], msg);
 }
 
 /**
@@ -304,7 +304,7 @@ static inline bool smlt_node_can_recv(struct smlt_node *node)
 {
     SMLT_NODE_CHECK(node);
 
-    return smlt_queuepair_can_recv(&node->qp[smlt_node_self_id]);
+    return smlt_channel_can_recv(&node->chan[smlt_node_self_id]);
 }
 
 

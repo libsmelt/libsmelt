@@ -17,9 +17,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sched.h>
 
 #ifdef __linux__
-#include "backends/linux.h"
+#include "linux.h"
 #endif
 
 #ifdef BARRELFISH

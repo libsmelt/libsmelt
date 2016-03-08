@@ -14,8 +14,6 @@
 #include <smlt_error.h>
 #include <smlt_message.h>
 
-
-
 /*
  * ===========================================================================
  * type declarations

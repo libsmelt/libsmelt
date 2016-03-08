@@ -55,7 +55,7 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 COMMONFLAGS += -Wpedantic -Werror -Wall -Wfatal-errors \
 			   -pthread -fPIC -DVERSION=\"$(GIT_VERSION)\"
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
-CFLAGS += -std=gnu99 $(COMMONFLAGS)
+CFLAGS += -std=gnu99 $(COMMONFLAGS) -D_GNU_SOURCE
 
 
 # libraries
@@ -107,6 +107,7 @@ all: $(TARGET) \
 		 test/queuepair-test \
 		 test/ffq-test \
 		 test/context-test \
+		 bench/ab-bench-new \
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -144,8 +145,9 @@ test/context-test: test/context-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/context-test.c -o $@ -lsmltrt
 # Benchmarks
 # --------------------------------------------------
-bench/ab-bench: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench.cpp
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-bench.cpp -o $@
+
+bench/ab-bench-new: bench/ab-bench-new.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
 
 bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-throughput.cpp -o $@

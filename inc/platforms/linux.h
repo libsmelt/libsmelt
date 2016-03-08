@@ -1,12 +1,13 @@
 #ifndef SMLT_PLATFORM_LINUX_H_
 #define SMLT_PLATFORM_LINUX_H_ 1
 
-#define _GNU_SOURCE
+//#define _GNU_SOURCE
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <assert.h>
+#include <sched.h>
 
 /*
  * ===========================================================================
@@ -30,13 +31,10 @@ typedef pthread_spinlock_t smlt_platform_lock_t;
 typedef uint32_t coreid_t;
 
 typedef uint64_t cycles_t;
-cycles_t bench_tscoverhead(void);
 
 cycles_t bench_tsc(void);
-coreid_t disp_get_core_id(void);
 void domain_span_all_cores(void);
 
-void bench_init(void);
 
 #define BASE_PAGE_SIZE 4096U
 #define UMP_QUEUE_SIZE 1000U // 64 aka one page does not work well on 815
@@ -54,6 +52,20 @@ static inline uint64_t rdtscp(void)
     uint32_t eax, edx;
     __asm volatile ("rdtscp" : "=a" (eax), "=d" (edx) :: "ecx");
     return ((uint64_t)edx << 32) | eax;
+}
+
+inline coreid_t disp_get_core_id(void)
+{
+    return sched_getcpu();
+}
+
+inline void bench_init(void)
+{
+}
+
+inline cycles_t bench_tscoverhead(void)
+{
+    return 0;
 }
 
 #define bench_tsc() rdtscp()

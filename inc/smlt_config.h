@@ -10,9 +10,6 @@
 #define SMLT_CONFIG_H_ 1
 
 
-#include <smlt_config.h>
-#include <smlt_platform.h>
-
 /*
  * ===========================================================================
  * Smelt configuration

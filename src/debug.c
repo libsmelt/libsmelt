@@ -9,7 +9,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <smlt.h>
+#include <stdint.h>
 #include "debug.h"
 
 /**

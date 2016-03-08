@@ -13,7 +13,7 @@
  * Attn: Systems Group.
  */
 
-#define _GNU_SOURCE
+//#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
