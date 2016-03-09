@@ -296,10 +296,9 @@ static inline volatile bool smlt_ump_queue_can_recv(struct smlt_ump_queue *c)
         return false;
     }
 
-    union smlt_ump_ctrl ctrl;
-    ctrl.raw = c->buf[c->pos].ctrl.raw;
+    volatile struct smlt_ump_message *m = c->buf + c->pos;
 
-    return (ctrl.c.epoch == c->epoch);
+    return (m->ctrl.c.epoch == c->epoch);
 }
 
 /**
