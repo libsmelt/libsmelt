@@ -43,7 +43,7 @@ errval_t smlt_platform_pin_thread(coreid_t core)
     err = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
     if (err) {
         SMLT_ERROR("sched_setaffinity");
-        exit(1);
+        return -1;
     }
 
     return SMLT_SUCCESS;
