@@ -25,6 +25,8 @@
 
 #define NUM_RUNS 10000000
 
+volatile uint8_t signal = 0;
+
 void* thr_worker1(void* arg)
 {
     struct smlt_qp* qp = (struct smlt_qp*) arg;;
@@ -33,19 +35,20 @@ void* thr_worker1(void* arg)
     CPU_ZERO(&cpu_mask);
     CPU_SET(0, &cpu_mask);
 
-    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);    
+    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    struct smlt_msg* msg = smlt_message_alloc(56);
+    struct smlt_msg* msg = smlt_message_alloc(7);
 
-    uint64_t data[2];
     int num_wrong = 0;
     for (uint64_t i = 0; i < NUM_RUNS; i++) {
-        data[0] = i; 
-        smlt_message_write(msg, (void*) data, 8);
+        msg->data[0] = i;
+        msg->words = 1;
         smlt_queuepair_send(qp, msg);
+        signal = 1;
+        msg->words = 1;
         smlt_queuepair_recv(qp, msg);
-        smlt_message_read(msg, (void*) data, 8);
-        if (data[0] != i) {
+        if (msg->data[0] != i) {
+            printf("wrong: %lu / %lu\n", msg->data[0], i);
            num_wrong++;
         }
 
@@ -53,7 +56,7 @@ void* thr_worker1(void* arg)
         smlt_queuepair_notify(qp);
         smlt_queuepair_recv(qp,msg);
         //smlt_queuepair_recv0(qp); // TODO does not work for UMP
-    }   
+    }
 
     if (!num_wrong) {
        printf("Core 0 Test Success \n");
@@ -71,22 +74,23 @@ void* thr_worker2(void* arg)
     CPU_ZERO(&cpu_mask);
     CPU_SET(1, &cpu_mask);
 
-    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);    
+    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    struct smlt_msg* msg = smlt_message_alloc(56);
-   
-    uint64_t data[2];
+    struct smlt_msg* msg = smlt_message_alloc(7);
+
     int num_wrong = 0;
     for (uint64_t i = 0; i < NUM_RUNS; i++) {
+        msg->words = 1;
         // test send/receive
         smlt_queuepair_recv(qp, msg);
-        smlt_message_read(msg, (void*) data, 8);  
-        if (data[0] != i) {
+        if (msg->data[0] != i) {
+            printf("wrong: %lu / %lu\n", msg->data[0], i);
            num_wrong++;
         }
-        smlt_message_write(msg, (void*) data, 8);
+        msg->data[0] = i;
+        msg->words = 1;
         smlt_queuepair_send(qp, msg);
-        
+
         // Test notify
         smlt_queuepair_recv(qp, msg);
         smlt_queuepair_notify(qp);
@@ -102,14 +106,14 @@ void* thr_worker2(void* arg)
 }
 
 void run(struct smlt_qp* qp1, struct smlt_qp* qp2,
-         pthread_t* tids) 
+         pthread_t* tids)
 {
     printf("##################################################\n");
     switch (qp1->type) {
         case SMLT_QP_TYPE_UMP:
             printf("Staring QP UMP test \n");
             break;
-        
+
         case SMLT_QP_TYPE_FFQ:
             printf("Staring QP FFQ test \n");
             break;
@@ -133,9 +137,12 @@ void run(struct smlt_qp* qp1, struct smlt_qp* qp2,
 
 int main(int argc, char **argv)
 {
-    
+
     struct smlt_qp* qp1 = (struct smlt_qp*) malloc(sizeof(struct smlt_qp));
     struct smlt_qp* qp2 = (struct smlt_qp*) malloc(sizeof(struct smlt_qp));
+
+    printf("qp1=%p, qp2=%p\n", (void *)qp1, (void *)qp2);
+
     pthread_t *tids = (pthread_t*) malloc(sizeof(pthread_t));
 
     if (argc > 1) {
@@ -169,7 +176,7 @@ int main(int argc, char **argv)
         smlt_queuepair_create(SMLT_QP_TYPE_UMP, &qp1,
                       &qp2, 0, 1);
         run(qp1, qp2, tids);
-        
+
         smlt_queuepair_destroy(qp1);
         smlt_queuepair_destroy(qp2);
 
@@ -182,7 +189,7 @@ int main(int argc, char **argv)
         smlt_queuepair_destroy(qp1);
         smlt_queuepair_destroy(qp2);
 
-        sleep(1);        
+        sleep(1);
 
         smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
                       &qp2, 0, 1);
@@ -192,4 +199,3 @@ int main(int argc, char **argv)
         smlt_queuepair_destroy(qp2);
     }
 }
-

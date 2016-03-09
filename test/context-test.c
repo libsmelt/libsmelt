@@ -27,7 +27,7 @@ static const char *name = "binary_tree";
 static pthread_barrier_t bar;
 
 
-errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2) 
+errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
 {
     return 0;
 }
@@ -41,12 +41,12 @@ void* thr_worker(void* arg)
     for(int i = 0; i < NUM_RUNS; i++) {
         if (id == 0) {
             r++;
-            smlt_message_write(msg, &r, 8);
+            msg->data[0] = r;
         }
         smlt_broadcast(context, msg);
-        smlt_message_read(msg, (void*) &r, 8);
+        r = msg->data[0];
         if (r != (i+1)) {
-           printf("Node %ld: Test failed %ld should be %d \n", 
+           printf("Node %ld: Test failed %ld should be %d \n",
                   id, r, i+1);
         }
     }
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
         printf("FAILED TO INITIALIZE CONTEXT !\n");
         return 1;
     }
- 
+
     struct smlt_node *node;
     for (uint64_t i = 0; i < NUM_THREADS; i++) {
         node = smlt_get_node_by_id(i);
@@ -99,5 +99,5 @@ int main(int argc, char **argv)
     for (int i=0; i < NUM_THREADS; i++) {
         node = smlt_get_node_by_id(i);
         smlt_node_join(node);
-    }   
+    }
 }

@@ -127,7 +127,9 @@ errval_t smlt_ump_queuepair_send(struct smlt_qp *qp,
         return smlt_err_push(err, SMLT_ERR_QUEUE_PREPARE);
     }
 
-    smlt_message_read(msg, m->data, SMLT_UMP_PAYLOAD_BYTES);
+    for (uint32_t i = 0; i < msg->words; ++i) {
+        m->data[i] = msg->data[i];
+    }
 
     return smlt_ump_queuepair_send_raw(&qp->q.ump, m, 0);
 }
@@ -184,7 +186,9 @@ errval_t smlt_ump_queuepair_recv(struct smlt_qp *qp,
         return smlt_err_push(err, SMLT_ERR_QUEUE_RECV);
     }
 
-    smlt_message_write(msg, m->data, SMLT_UMP_PAYLOAD_BYTES);
+    for (uint32_t i = 0; i < msg->words; ++i) {
+        msg->data[i] = m->data[i];
+    }
 
     return SMLT_SUCCESS;
 }

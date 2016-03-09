@@ -22,13 +22,14 @@
 struct smlt_msg *smlt_message_alloc(uint32_t size)
 {
     struct smlt_msg* msg;
+    if (size < SMELT_MESSAGE_MIN_SIZE) {
+        size = SMELT_MESSAGE_MIN_SIZE;
+    }
     msg = (struct smlt_msg*) smlt_platform_alloc(sizeof(struct smlt_msg),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-    msg->offset = 0;
-    msg->datalen = size;
-    // TODO maxlen = total size?
-    msg->maxlen = sizeof(struct smlt_msg)+size;
+    msg->words = 0;
+    msg->bufsize = size;
     msg->data = smlt_platform_alloc(size, SMLT_DEFAULT_ALIGNMENT,
                                     true);
     return msg;
@@ -46,15 +47,13 @@ struct smlt_msg *smlt_message_alloc_no_buffer(void)
     msg = (struct smlt_msg*) smlt_platform_alloc(sizeof(struct smlt_msg),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-    msg->offset = 0;
-    msg->datalen = 0;
-    // TODO maxlen = total size?
-    msg->maxlen = sizeof(struct smlt_msg);
+    msg->words = 0;
+    msg->bufsize = 0;
     return msg;
 }
 /**
  * @brief frees a Smelt message
- * 
+ *
  * @param msg   The Smelt message to be freed
  */
 void smlt_message_free(struct smlt_msg *msg)
@@ -68,41 +67,3 @@ void smlt_message_free(struct smlt_msg *msg)
  * payload operations
  * ===========================================================================
  */
-
-
-/**
- * @brief writes data into the message buffer
- * 
- * @param msg   the Smelt message to write to
- * @param data  data to write (source buffer)
- * @param bytes number of bytes inteded to write
- *
- * @returns number of bytes written
- */
-uint32_t smlt_message_write(struct smlt_msg *msg,
-                            void *data, 
-                            uint32_t bytes)
-{
-    // TODO change interface since return value
-    // is the same as bytes?
-    memcpy(msg->data, data, bytes);
-    return bytes;
-}
-
-/**
- * @brief reads data from the message buffer
- * 
- * @param msg   the Smelt message to read from
- * @param data  buffer to read into (destination buffer)
- * @param bytes number of bytes inteded to read
- *
- * @returns number of bytes read
- */
-uint32_t smlt_message_read(struct smlt_msg *msg,
-                           void *data, uint32_t size)
-{
-    memcpy(data, msg->data, size);
-    return size;
-}
-
-

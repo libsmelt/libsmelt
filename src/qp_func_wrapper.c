@@ -24,7 +24,7 @@
 
 errval_t smlt_ffq_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
-    if (msg->datalen <= 56) {
+    if (msg->words <= 7) {
         uintptr_t* data = (uintptr_t*) msg->data;
         ffq_enqueue_full(&qp->queue_tx.ffq.src,
                          data[0], data[1], data[2],
@@ -76,7 +76,7 @@ bool smlt_ffq_can_send(struct smlt_qp *qp)
 
 errval_t smlt_shm_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
-    if (msg->datalen <= 56) {
+    if (msg->words <= 7) {
         uintptr_t* data = (uintptr_t*) msg->data;
         shm_q_send(&qp->queue_tx.shm.src,
                     data[0], data[1], data[2],

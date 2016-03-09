@@ -16,7 +16,9 @@
  * Smelt configuration
  * ===========================================================================
  */
-#define SMELT_MESSAGE_MAX_SIZE 128
+#define SMELT_MESSAGE_MIN_SIZE 64
+
+typedef uint64_t smlt_msg_payload_t;
 
 /*
  * ===========================================================================
@@ -30,11 +32,9 @@
  */
 struct smlt_msg
 {
-    uint32_t offset;    ///< offset into the data region
-    uint32_t datalen;   ///< length of the data region in bytes
-    uint32_t maxlen;    ///< maximum length of the data region
-    uint32_t _pad;      ///< unused padding for now
-    void*    data;
+    uint32_t words;
+    uint32_t bufsize;
+    smlt_msg_payload_t* data;
 };
 
 
@@ -65,7 +65,7 @@ struct smlt_msg *smlt_message_alloc_no_buffer(void);
 
 /**
  * @brief frees a Smelt message
- * 
+ *
  * @param msg   The Smelt message to be freed
  */
 void smlt_message_free(struct smlt_msg *msg);
@@ -78,31 +78,6 @@ void smlt_message_free(struct smlt_msg *msg);
  */
 
 
-/**
- * @brief writes data into the message buffer
- * 
- * @param msg   the Smelt message to write to
- * @param data  data to write (source buffer)
- * @param bytes number of bytes inteded to write
- *
- * @returns number of bytes written
- */
-uint32_t smlt_message_write(struct smlt_msg *msg,
-                            void *data, 
-                            uint32_t bytes);
-
-/**
- * @brief writes data into the message buffer
- * 
- * @param msg   the Smelt message to read from
- * @param data  buffer to read into (destination buffer)
- * @param bytes number of bytes inteded to read
- *
- * @returns number of bytes written
- */
-uint32_t smlt_message_read(struct smlt_msg *msg,
-                           void *data, uint32_t size);
-
 
 /*
  * ===========================================================================
@@ -113,56 +88,67 @@ uint32_t smlt_message_read(struct smlt_msg *msg,
 
 /**
  * @brief gets a pointer to the data part of the message
- * 
- * @param msg   the Smelt message to get the data pointer 
+ *
+ * @param msg   the Smelt message to get the data pointer
  *
  * @returns pointer ot the buffer or NULL if not set
  */
-static inline void *smlt_message_get_data(struct smlt_msg *msg)
+static inline smlt_msg_payload_t *smlt_message_get_data(struct smlt_msg *msg)
 {
     return msg->data;
 }
 
 /**
  * @brief sets the data pointer
- * 
+ *
  * @param msg   the Smelt message to udpate the buffer
  * @param data  buffer to contain the message content
- * @param bytes size of the buffer
+ * @param words size of the buffer in words
+ * @param size  maximum size of the buffer in bytes
  *
  * @returns number of bytes written
  */
-static inline void smlt_message_set_data(struct smlt_msg *msg, 
-                                         void *data, uint32_t length)
+static inline void smlt_message_set_data(struct smlt_msg *msg,
+                                         smlt_msg_payload_t *data, uint32_t words,
+                                         uint32_t size)
 {
     msg->data = data;
-    msg->maxlen = length;    
+    msg->words = words;
+    msg->bufsize = size;
 }
+
+
+static inline void smlt_msg_set_length(struct smlt_msg *msg,
+                                       uint32_t words)
+{
+    msg->words= words;
+}
+
 
 /**
  * @brief obtains the data length
- * 
- * @param msg   the Smelt message 
+ *
+ * @param msg   the Smelt message
  *
  * @returns size of the data written to buffer in bytes
  */
-static inline uint32_t smlt_message_get_datalen(struct smlt_msg *msg)
+static inline uint32_t smlt_message_length_words(struct smlt_msg *msg)
 {
-    return msg->datalen;
+    return msg->words;
 }
+
 
 /**
  * @brief obtains the data length
- * 
- * @param msg   the Smelt message 
  *
- * @returns maximum capacity size of the data buffer in bytes
+ * @param msg   the Smelt message
+ *
+ * @returns size of the data written to buffer in bytes
  */
-static inline uint32_t smlt_message_get_maxlen(struct smlt_msg *msg)
+static inline uint32_t smlt_message_length_bytes(struct smlt_msg *msg)
 {
-    return msg->maxlen;
+    return msg->words * sizeof(smlt_msg_payload_t);
 }
-
 
 
 #endif /* SMLT_SMLT_H_ */
