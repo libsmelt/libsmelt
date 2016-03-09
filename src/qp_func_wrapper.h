@@ -13,12 +13,6 @@
 
 struct smlt_qp;
 
-errval_t smlt_ump_send(struct smlt_qp *qp, struct smlt_msg *msg);
-errval_t smlt_ump_recv(struct smlt_qp *qp, struct smlt_msg *msg);
-errval_t smlt_ump_send0(struct smlt_qp *qp);
-errval_t smlt_ump_recv0(struct smlt_qp *qp);
-bool smlt_ump_can_send (struct smlt_qp *qp);
-bool smlt_ump_can_recv(struct smlt_qp *qp);
 
 
 errval_t smlt_ffq_send (struct smlt_qp *qp, struct smlt_msg *msg);

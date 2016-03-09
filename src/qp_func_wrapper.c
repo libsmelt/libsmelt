@@ -8,64 +8,14 @@
  */
 #include <smlt.h>
 #include <smlt_queuepair.h>
-#include <backends/ump/ump_queuepair.h>
-#include <backends/ump/ump_queue.h>
+#include <backends/ump/smlt_ump_queuepair.h>
+#include <backends/ump/smlt_ump_queue.h>
 #include <backends/ffq/ff_queuepair.h>
 #include <backends/ffq/ff_queue.h>
 #include <backends/shm/shm_qp.h>
 #include "qp_func_wrapper.h"
 #include "debug.h"
-/* ===========================================================
- * UMP wrapper functions
- * ===========================================================
- */
 
-errval_t smlt_ump_send(struct smlt_qp *qp, struct smlt_msg *msg)
-{
-    if (msg->datalen <= 56) {
-        uintptr_t* data = (uintptr_t*) msg->data;
-        ump_enqueue(&qp->queue_tx.ump.src.queue, 
-                    data[0], data[1], data[2],
-                    data[3], data[4], data[5], data[6]);
-    } else {
-        // TODO Fragment ? Or Bulkload style?
-    }
-    return SMLT_SUCCESS;
-}
-
-
-errval_t smlt_ump_recv(struct smlt_qp *qp, struct smlt_msg *msg)
-{
-    // TODO msg struct must be allocated i.e. where to encode msg 
-    //      size that is allocated
-    // TODO Fragmentation
-    uintptr_t* data = (uintptr_t*) msg->data;
-    ump_dequeue(&qp->queue_rx.ump.dst.queue, data);
-    return SMLT_SUCCESS;
-}
-
-
-errval_t smlt_ump_recv0(struct smlt_qp *qp)
-{
-    ump_dequeue_zero(&qp->queue_rx.ump.dst.queue);
-    return SMLT_SUCCESS;
-}
-
-errval_t smlt_ump_send0(struct smlt_qp *qp)
-{
-    ump_enqueue_zero(&qp->queue_tx.ump.src.queue);
-    return SMLT_SUCCESS;
-}
-
-bool smlt_ump_can_recv(struct smlt_qp *qp)
-{
-    return ump_can_dequeue(&qp->queue_rx.ump.dst.queue);
-}
-
-bool smlt_ump_can_send(struct smlt_qp *qp)
-{
-    return ump_can_enqueue(&qp->queue_tx.ump.src.queue);
-}
 
 /* ===========================================================
  * FFQ wrapper functions
@@ -76,7 +26,7 @@ errval_t smlt_ffq_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
     if (msg->datalen <= 56) {
         uintptr_t* data = (uintptr_t*) msg->data;
-        ffq_enqueue_full(&qp->queue_tx.ffq.src, 
+        ffq_enqueue_full(&qp->queue_tx.ffq.src,
                          data[0], data[1], data[2],
                          data[3], data[4], data[5], data[6]);
     } else {
@@ -88,7 +38,7 @@ errval_t smlt_ffq_send(struct smlt_qp *qp, struct smlt_msg *msg)
 
 errval_t smlt_ffq_recv(struct smlt_qp *qp, struct smlt_msg *msg)
 {
-    // TODO msg struct must be allocated i.e. where to encode msg 
+    // TODO msg struct must be allocated i.e. where to encode msg
     //      size that is allocated
     // TODO Fragmentation
     uintptr_t* data = (uintptr_t*) msg->data;
@@ -128,7 +78,7 @@ errval_t smlt_shm_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
     if (msg->datalen <= 56) {
         uintptr_t* data = (uintptr_t*) msg->data;
-        shm_q_send(&qp->queue_tx.shm.src, 
+        shm_q_send(&qp->queue_tx.shm.src,
                     data[0], data[1], data[2],
                     data[3], data[4], data[5], data[6]);
     } else {
@@ -140,7 +90,7 @@ errval_t smlt_shm_send(struct smlt_qp *qp, struct smlt_msg *msg)
 
 errval_t smlt_shm_recv(struct smlt_qp *qp, struct smlt_msg *msg)
 {
-    // TODO msg struct must be allocated i.e. where to encode msg 
+    // TODO msg struct must be allocated i.e. where to encode msg
     //      size that is allocated
     // TODO Fragmentation
     uintptr_t* data = (uintptr_t*) msg->data;
