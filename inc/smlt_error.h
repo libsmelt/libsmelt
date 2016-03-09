@@ -62,6 +62,7 @@ enum smlt_err_code {
     SMLT_ERR_QUEUE_STATE,
     SMLT_ERR_QUEUE_EMPTY,
     SMLT_ERR_QUEUE_PREPARE,
+    SMLT_ERR_QUEUE_INIT,
 
     /* send erros */
     SMLT_ERR_SEND,
