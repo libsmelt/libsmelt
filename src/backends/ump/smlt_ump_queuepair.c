@@ -115,23 +115,19 @@ errval_t smlt_ump_queuepair_send(struct smlt_qp *qp,
                                  struct smlt_msg *msg)
 {
     errval_t err;
+    struct smlt_ump_message *m;
 
     SMLT_ASSERT(qp->type == SMLT_QP_TYPE_UMP);
 
-    while(!smlt_ump_queuepair_can_send_raw(&qp->q.ump))
-        ;
-
-    struct smlt_ump_message *m;
-    err = smlt_ump_queuepair_prepare_send(&qp->q.ump, &m);
-    if (smlt_err_is_fail(err)) {
-        return smlt_err_push(err, SMLT_ERR_QUEUE_PREPARE);
-    }
+    do {
+        err = smlt_ump_queuepair_prepare_send(&qp->q.ump, &m);
+    } while(err != SMLT_SUCCESS);
 
     for (uint32_t i = 0; i < msg->words; ++i) {
         m->data[i] = msg->data[i];
     }
 
-    return smlt_ump_queuepair_send_raw(&qp->q.ump, m, 0);
+    return smlt_ump_queuepair_send_raw(&qp->q.ump, m);
 }
 /**
 * @brief sends a notification on the queuepair
@@ -173,18 +169,13 @@ errval_t smlt_ump_queuepair_recv(struct smlt_qp *qp,
                                  struct smlt_msg *msg)
 {
     errval_t err;
+    struct smlt_ump_message *m;
 
     SMLT_ASSERT(qp->type == SMLT_QP_TYPE_UMP);
 
-    while(!smlt_ump_queuepair_can_recv_raw(&qp->q.ump))
-        ;
-
-    struct smlt_ump_message *m;
-
-    err =  smlt_ump_queuepair_recv_raw(&qp->q.ump, &m);
-    if (smlt_err_is_fail(err)) {
-        return smlt_err_push(err, SMLT_ERR_QUEUE_RECV);
-    }
+    do {
+        err =  smlt_ump_queuepair_recv_raw(&qp->q.ump, &m);
+    } while(err != SMLT_SUCCESS);
 
     for (uint32_t i = 0; i < msg->words; ++i) {
         msg->data[i] = m->data[i];

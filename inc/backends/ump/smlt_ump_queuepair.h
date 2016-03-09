@@ -96,9 +96,7 @@ static inline errval_t smlt_ump_queuepair_notify_raw(struct smlt_ump_queuepair *
 {
     union smlt_ump_ctrl ctrl;
 
-    if (!smlt_ump_queuepair_can_send_raw(qp)) {
-        return SMLT_ERR_CHAN_WOULD_BLOCK;
-    }
+    SMLT_ASSERT(smlt_ump_queuepair_can_send_raw(qp));
 
     ctrl.c.header = (uintptr_t)qp->seq_id;
     qp->seq_id++;
@@ -109,16 +107,13 @@ static inline errval_t smlt_ump_queuepair_notify_raw(struct smlt_ump_queuepair *
 }
 
 static inline errval_t smlt_ump_queuepair_send_raw(struct smlt_ump_queuepair *qp,
-                                                   struct smlt_ump_message *msg,
-                                                   smlt_ump_msgtag_t mtag)
+                                                   struct smlt_ump_message *msg)
 {
     union smlt_ump_ctrl ctrl;
 
-    if (!smlt_ump_queuepair_can_send_raw(qp)) {
-        return SMLT_ERR_CHAN_WOULD_BLOCK;
-    }
+    SMLT_ASSERT(smlt_ump_queuepair_can_send_raw(qp));
 
-    ctrl.c.header = ((uintptr_t)mtag << SMLT_UMP_IDX_BITS) | (uintptr_t)qp->seq_id;
+    ctrl.c.header = qp->seq_id;
 
     qp->seq_id++;
     smlt_ump_queue_send(&qp->tx, msg, ctrl);
@@ -166,6 +161,18 @@ bool smlt_ump_queuepair_can_send(struct smlt_qp *qp);
 
 
  /**
+  * @brief checks (polls) whether a new message can be sent on the queuepair
+  *
+  * @param qp    the UMP queuepair to check
+  *
+  * @returns TRUE if there is something pending on the queue, FALSE otherwise
+  */
+ static inline volatile bool smlt_ump_queuepair_can_recv_raw(struct smlt_ump_queuepair *qp)
+ {
+     return smlt_ump_queue_can_recv(&qp->rx);
+ }
+
+ /**
   * @brief Retrieve an incoming message, if present from the queuepair
   *
   * @param qp    the UMP queuepair
@@ -184,25 +191,11 @@ bool smlt_ump_queuepair_can_send(struct smlt_qp *qp);
  static inline errval_t smlt_ump_queuepair_recv_raw(struct smlt_ump_queuepair *qp,
                                                     struct smlt_ump_message **msg)
  {
-     errval_t err;
-
-     struct smlt_ump_message *m;
-     err = smlt_ump_queue_recv_raw(&qp->rx, &m);
-     if (smlt_err_is_fail(err)) {
-         return smlt_err_push(err, SMLT_ERR_QUEUE_RECV);
-     }
-
-     smlt_ump_msgtag_t mtag = m->ctrl.c.header >> SMLT_UMP_IDX_BITS;
-
-     if (mtag == SMLT_UMP_MSGTAG_ACK) {
+     if (!smlt_ump_queue_can_recv(&qp->rx)) {
          return SMLT_ERR_QUEUE_EMPTY;
      }
 
-     if (msg) {
-         *msg = m;
-     }
-
-     return SMLT_SUCCESS;
+     return smlt_ump_queue_recv_raw(&qp->rx, msg);
  }
 
 /* recv function pointer */
@@ -236,17 +229,5 @@ errval_t smlt_ump_queuepair_recv_notify(struct smlt_qp *qp);
 */
 bool smlt_ump_queuepair_can_recv(struct smlt_qp *qp);
 
-
-/**
- * @brief checks (polls) whether a new message can be sent on the queuepair
- *
- * @param qp    the UMP queuepair to check
- *
- * @returns TRUE if there is something pending on the queue, FALSE otherwise
- */
-static inline volatile bool smlt_ump_queuepair_can_recv_raw(struct smlt_ump_queuepair *qp)
-{
-    return smlt_ump_queue_can_recv(&qp->rx);
-}
 
 #endif

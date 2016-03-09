@@ -61,6 +61,8 @@ static errval_t smlt_ump_queue_init_common(struct smlt_ump_queue *q, void *buf,
     q->pos = 0;
     q->last_ack = (smlt_ump_idx_t *) buf;
     q->buf = (struct smlt_ump_message*) ((uintptr_t)buf + SMLT_UMP_MSG_BYTES);
+
+    assert(((uintptr_t)q->buf & (SMLT_UMP_MSG_BYTES -1)) == 0 );
     q->num_msg = slots - 1;
     q->epoch = 1;
 
