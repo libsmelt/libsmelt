@@ -12,9 +12,11 @@
 #include "../../internal.h"
 
 #include <sched.h>
-
+#include <errno.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <numa.h>
+
 
 
 /*
@@ -38,21 +40,26 @@
  */
 void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
 {
-    void *buf;
     SMLT_WARNING("smlt_platform_alloc() not fully implemented! (alignment)\n");
-    if (do_clear) {
-        buf = calloc(1, bytes << 1);
-    } else {
-        buf = malloc(bytes << 1);
+
+    if (align < sizeof(void *)) {
+        align = sizeof(void *);
     }
 
-    if (align) {
-        return (void *)((uintptr_t)buf + align - ((align - 1) & (intptr_t)buf));
+    void *buf;
+    int ret = posix_memalign(&buf, align, bytes);
+    if (ret) {
+        if (ret == EINVAL) {
+            SMLT_WARNING("smlt_platform_alloc() alignment not a power of two\n");
+        }
+        return NULL;
+    }
+
+    if (do_clear) {
+        memset(buf, 0, bytes);
     }
 
     return buf;
-
-
 }
 
 /**
