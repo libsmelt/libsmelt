@@ -9,7 +9,7 @@
 #ifndef SMLT_DEBUG_H_
 #define SMLT_DEBUG_H_ 1
 
-#define SMLT_DEBUG_ENABLED 1
+//#define SMLT_DEBUG_ENABLED 1
 
 #define SMLT_DBG_ERR       (1 << 31)
 #define SMLT_DBG_WARN      (1 << 30)
@@ -49,7 +49,7 @@
             smlt_debug_print(_subs,  __VA_ARGS__);              \
     } while(0);
 #else
-#define SMLT_DEBUG(_subs, _fmt, ...) void()
+#define SMLT_DEBUG(_subs, ...) 
 #endif
 
 #define SMLT_ERROR(...) smlt_debug_print(SMLT_DBG_ERR,  __VA_ARGS__);

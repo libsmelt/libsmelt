@@ -30,6 +30,8 @@ errval_t smlt_ump_queuepair_init(smlt_ump_idx_t num_slots, uint8_t node_src,
 {
     errval_t err;
 
+    printf("creating UMP queuepair\n");
+
     /* make sure the number of slots is even */
     if (num_slots < 2) {
         printf("INVAL\n");
@@ -43,7 +45,7 @@ errval_t smlt_ump_queuepair_init(smlt_ump_idx_t num_slots, uint8_t node_src,
 
     /* initialize queue SRC->DST */
     void *shm_src = smlt_platform_alloc_on_node(chan_size, BASE_PAGE_SIZE,
-                                                node_src, true);
+                                                node_dst, true);
     if (shm_src == NULL) {
         return SMLT_ERR_MALLOC_FAIL;
     }
@@ -62,7 +64,7 @@ errval_t smlt_ump_queuepair_init(smlt_ump_idx_t num_slots, uint8_t node_src,
 
     /* initialize queue DST->SRC */
     void *shm_dst = smlt_platform_alloc_on_node(chan_size, BASE_PAGE_SIZE,
-                                                node_dst, true);
+                                                node_src, true);
     if (shm_dst == NULL) {
         smlt_platform_free(shm_src);
         return SMLT_ERR_MALLOC_FAIL;
