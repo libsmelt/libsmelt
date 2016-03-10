@@ -155,10 +155,10 @@ bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.cpp
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-throughput.c -o $@
 
 bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.c
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.c -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.c -o $@
 
 bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.c
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise_raw.c -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise_raw.c -o $@
 
 # Build shared library
 # --------------------------------------------------
