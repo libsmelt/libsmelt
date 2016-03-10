@@ -39,6 +39,34 @@ struct smlt_topology;
 #error "unsupported architecture"
 #endif
 
+
+/*
+ * ===========================================================================
+ * Macros
+ * ===========================================================================
+ */
+
+/**
+ * checks if a value is a power of two
+ */
+#define SMLT_MEM_IS_POWER_OF_TWO(x) \
+            (((uintptr_t)(x) > 0) && !((uintptr_t)(x) & ((uintptr_t)(x) - 1)))
+
+/**
+ * aligns a memory address
+ */
+#define SMLT_MEM_ALIGN(addr, align) \
+            (void *)(((uintptr_t)(addr) \
+                             + ((uintptr_t)(align) - 1)) & -(uintptr_t)(align))
+
+
+/*
+* ===========================================================================
+* Initialization
+* ===========================================================================
+*/
+
+
 /**
  * @brief initializes the platform specific backend
  *
@@ -70,7 +98,7 @@ errval_t smlt_platform_barrier_init(smlt_platform_barrier_t *bar,
 /**
  * @brief destroys a created barrier
  *
- * @param bar     pointer to the barrier 
+ * @param bar     pointer to the barrier
 
  * @returns SMELT_SUCCESS or error value
  */
@@ -79,7 +107,7 @@ errval_t smlt_platform_barrier_destroy(smlt_platform_barrier_t *barrier);
 /**
  * @brief waits on the barrier untill all threads have entered the barrier
  *
- * @param bar     pointer to the barrier 
+ * @param bar     pointer to the barrier
  *
  * @returns SMELT_SUCCESS or error value
  */
@@ -229,7 +257,7 @@ errval_t smlt_platform_topology_prepare(struct smlt_topology *topo);
  *
  * @return array of core ids that are within the NUMA node
  */
-errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id, 
+errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id,
                                         coreid_t** cores,
                                         uint32_t* size);
 

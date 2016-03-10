@@ -25,7 +25,6 @@
  * ===========================================================================
  */
 
-
 /**
  * @brief allocates a buffer reachable by all nodes on this machine
  *
@@ -40,12 +39,16 @@
  */
 void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
 {
-    SMLT_WARNING("smlt_platform_alloc() not fully implemented! (alignment)\n");
-
     if (align < sizeof(void *)) {
         align = sizeof(void *);
     }
 
+    if (!SMLT_MEM_IS_POWER_OF_TWO(align)) {
+        SMLT_ERROR("Alignment is not a power of two.\n");
+        return NULL;
+    }
+
+#ifdef SMLT_CONFIG_LINUX_NUMA_ALIGN
     void *buf;
     int ret = posix_memalign(&buf, align, bytes);
     if (ret) {
@@ -60,7 +63,28 @@ void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
     }
 
     return buf;
+#else
+    void *buf = numa_alloc_local(bytes + align + 2* sizeof(void *));
+    if (!buf) {
+        return NULL;
+    }
+
+    void *buf_aligned = SMLT_MEM_ALIGN((char *)buf + 2 * sizeof(uintptr_t), align);
+
+    uintptr_t *ret_buf = buf_aligned;
+
+    *(ret_buf - 1) = (uintptr_t)buf;
+    *(ret_buf - 2) = (uintptr_t)(bytes + align + 2* sizeof(void *));
+
+    if (do_clear) {
+        memset(ret_buf, 0, bytes);
+    }
+
+    return ret_buf;
+#endif
 }
+
+
 
 /**
  * @brief allocates a buffer reachable by all nodes on this machine on a NUMA node
@@ -78,8 +102,53 @@ void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
 void *smlt_platform_alloc_on_node(uint64_t bytes, uintptr_t align, uint8_t node,
                                   bool do_clear)
 {
-    SMLT_WARNING("smlt_platform_alloc_on_node() not fully implemented! (NUMA node)\n");
-    return smlt_platform_alloc(bytes, align, do_clear);
+    if (align < sizeof(void *)) {
+        align = sizeof(void *);
+    }
+
+    if (node > numa_max_node()) {
+        return NULL;
+    }
+
+    if (!SMLT_MEM_IS_POWER_OF_TWO(align)) {
+        SMLT_ERROR("Alignment is not a power of two.\n");
+        return NULL;
+    }
+
+#ifdef SMLT_CONFIG_LINUX_NUMA_ALIGN
+    struct bitmask *current_mask = numa_get_membind();
+    struct bitmask *new_nodes = numa_allocate_nodemask();
+
+    numa_bitmask_setbit(new_nodes, node);
+
+    numa_set_membind(new_nodes);
+    numa_set_bind_policy(1);
+
+    void *buf = smlt_platform_alloc(bytes, align, do_clear);
+
+    numa_set_membind(current_mask);
+    numa_set_bind_policy(0);
+    numa_free_nodemask(new_nodes);
+    // allso free current mask ?
+    return buf;
+#else
+    void *buf = numa_alloc_onnode(bytes + align + 2* sizeof(void *), node);
+    if (!buf) {
+        return NULL;
+    }
+
+    void *buf_aligned =  SMLT_MEM_ALIGN((char *)buf + 2 * sizeof(uintptr_t), align);
+
+    uintptr_t *ret_buf = buf_aligned;
+
+    *(ret_buf - 1) = (uintptr_t)buf;
+    *(ret_buf - 2) = (uintptr_t)(bytes + align + 2* sizeof(void *));
+
+    if (do_clear) {
+        memset(buf_aligned, 0, bytes);
+    }
+    return buf_aligned;
+#endif
 }
 
 /**
@@ -89,5 +158,10 @@ void *smlt_platform_alloc_on_node(uint64_t bytes, uintptr_t align, uint8_t node,
  */
 void smlt_platform_free(void *buf)
 {
+#ifdef SMLT_CONFIG_LINUX_NUMA_ALIGN
     free(buf);
+#else
+    uintptr_t *hdr = buf;
+    numa_free((void *)hdr[-1], hdr[-2]);
+#endif
 }

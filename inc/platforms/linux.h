@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <sched.h>
 
+//#define SMLT_CONFIG_LINUX_NUMA_ALIGN 1
+
 /*
  * ===========================================================================
  * error values
