@@ -56,6 +56,7 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
     // setn
     (*chan)->m = count_dst;
     (*chan)->n = count_src;
+    (*chan)->owner = src[0];
 
     errval_t err;
     for (int i= 0; i < num_chan; i++) {

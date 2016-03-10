@@ -10,6 +10,7 @@
 #include <smlt_channel.h>
 #include <smlt_context.h>
 #include <smlt_broadcast.h>
+#include "debug.h"
 
 /**
  * @brief performs a broadcast to the nodes of the subtree routed at the 
@@ -33,6 +34,10 @@ errval_t smlt_broadcast_subtree(struct smlt_context *ctx,
     }
 
     for (uint32_t i = 0; i < count; ++i) {
+
+        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to %p \n",
+        //           smlt_node_get_id(), (void*) &children[i].send->queue_tx);
+
         err = smlt_channel_send(&children[i], msg);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
@@ -62,6 +67,10 @@ errval_t smlt_broadcast_notify_subtree(struct smlt_context *ctx)
     }
 
     for (uint32_t i = 0; i < count; ++i) {
+
+        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to qp %p \n",
+        //           smlt_node_get_id(), (void*) &children[i].send->queue_tx);
+
         err = smlt_channel_notify(&children[i]);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
@@ -93,6 +102,9 @@ errval_t smlt_broadcast(struct smlt_context *ctx,
             return err; // TODO: adding more error values
         }
 
+        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from chan %p \n",
+        //           smlt_node_get_id(), (void*) &parent->recv->queue_rx);
+
         err = smlt_channel_recv(parent, msg);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
@@ -120,6 +132,9 @@ errval_t smlt_broadcast_notify(struct smlt_context *ctx)
         if (smlt_err_is_fail(err)) {
             return err; // TODO: adding more error values
         }
+
+        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from chan %p \n",
+        //           smlt_node_get_id(), (void*) &parent->recv->queue_rx);
 
         err = smlt_channel_recv_notification(parent);
         if (smlt_err_is_fail(err)) {

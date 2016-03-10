@@ -151,8 +151,17 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         struct smlt_context_node *n = ctx->nid_to_node[current_nid];
 
         n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
-        printf("Node id %d, child_id %d : parent->recv %p \n",
-               i, smlt_topology_node_get_child_idx(tn), (void*)n->parent->recv);
+        /*
+        n->parent = smlt_platform_alloc(sizeof(struct smlt_channel),
+                                        SMLT_ARCH_CACHELINE_SIZE, false);
+        struct smlt_channel* parent_chan = &parent->children[
+                                           smlt_topology_node_get_child_idx(tn)];
+        // TODO switch this too ?
+        n->parent->m = parent_chan->m;
+        n->parent->n = parent_chan->n;
+        n->parent->send = parent_chan->recv;
+        n->parent->recv = parent_chan->send;
+        */
         tn = smlt_topology_node_next(tn);
     }
 

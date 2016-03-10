@@ -20,13 +20,12 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_THREADS 24
+#define NUM_THREADS 4
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
 
 struct smlt_context *context = NULL;
-struct smlt_context *context2 = NULL;
 
 static const char *name = "binary_tree";
 static pthread_barrier_t bar;
@@ -42,7 +41,6 @@ errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
 {
     return 0;
 }
-
 
 static uint32_t* get_leafs(struct smlt_topology* topo, uint32_t* count)
 {
@@ -71,7 +69,6 @@ static uint32_t* get_leafs(struct smlt_topology* topo, uint32_t* count)
         return ret;
 } 
 
-
 static void* pingpong(void* a)
 {
     char outname[1024];
@@ -91,7 +88,7 @@ static void* pingpong(void* a)
             smlt_channel_send(&chan[0][NUM_THREADS-1], msg);
 
             sk_m_restart_tsc(&m2);
-            smlt_channel_recv(&chan[NUM_THREADS-1][0], msg);
+            smlt_channel_recv(&chan[0][NUM_THREADS-1], msg);
 
             sk_m_add(&m2);            
             sk_m_add(&m);            
@@ -107,7 +104,7 @@ static void* pingpong(void* a)
 
             sk_m_add(&m2);
 
-            smlt_channel_send(&chan[NUM_THREADS-1][0], msg);
+            smlt_channel_send(&chan[0][NUM_THREADS-1], msg);
 
             sk_m_add(&m2);
         }
@@ -210,10 +207,13 @@ static void* barrier(void* a)
 
     sk_m_init(&m, NUM_RESULTS, outname, buf);
 
+    sleep(1);
+    pthread_barrier_wait(&bar);
+
     for (int j = 0; j < NUM_RUNS; j++) {
         sk_m_restart_tsc(&m);
 
-        smlt_barrier_wait(context, context2);
+        smlt_barrier_wait(context, NULL);
 
         if (smlt_node_get_id() == (NUM_THREADS-1)) {
             sk_m_add(&m);
@@ -262,7 +262,7 @@ static void* agreement(void* a)
                 smlt_broadcast(context, msg);
             }
 
-            smlt_reduce(context2, msg, msg, operation);
+            smlt_reduce(context, msg, msg, operation);
             smlt_broadcast(context, msg);
             sk_m_add(&m);
         }
@@ -279,8 +279,8 @@ int main(int argc, char **argv)
     typedef void* (worker_func_t)(void*);
     worker_func_t * workers[NUM_EXP] = {
         &pingpong,
-        &ab,
         &reduction,
+        &ab,
         &agreement,
         &barrier,
     };
@@ -324,12 +324,6 @@ int main(int argc, char **argv)
         return 1;
     }
  
-    err = smlt_context_create(topo, &context2);
-    if (smlt_err_is_fail(err)) {
-        printf("FAILED TO INITIALIZE CONTEXT !\n");
-        return 1;
-    }
-
     for (int i = 0; i < NUM_EXP; i++){
 
         printf("----------------------------------------\n");

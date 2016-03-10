@@ -12,6 +12,7 @@
 #include <smlt_reduction.h>
 #include <smlt_broadcast.h>
 #include <shm/smlt_shm.h>
+#include "debug.h"
 
 
 /**
@@ -71,6 +72,7 @@ errval_t smlt_reduce(struct smlt_context *ctx,
     // Receive (this will be from several children)
     // --------------------------------------------------
     for (uint32_t i = 0; i < count; ++i) {
+
         err = smlt_channel_recv(&children[i], result);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling
@@ -142,6 +144,10 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
     }
 
     for (uint32_t i = 0; i < count; ++i) {
+
+ //       SMLT_DEBUG(SMLT_DBG__REDUCE, "Node %d: reduction recv from chan %p \n",
+ //                  smlt_node_get_id(), (void*) &children[i].recv->queue_rx);
+
         err = smlt_channel_recv_notification(&children[i]);
         // TODO: error handling
     }
@@ -155,6 +161,9 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
     }
 
     if (parent) {
+
+   //     SMLT_DEBUG(SMLT_DBG__REDUCE, "Node %d: reduction send to chan %p \n",
+   //                smlt_node_get_id(), (void*) &parent->send->queue_tx);
         smlt_channel_notify(parent);
     }
 

@@ -18,6 +18,7 @@
  #define SMLT_CHAN_CHECK(_chan) \
     assert(_chan)
 
+extern __thread smlt_nid_t smlt_node_self_id; ///< caches the node id
 
 /*
  * ===========================================================================
@@ -30,6 +31,7 @@
  */
 struct smlt_channel
 {
+    smlt_nid_t owner;
     uint32_t m;
     uint32_t n;
 
@@ -96,13 +98,18 @@ static inline errval_t smlt_channel_send(struct smlt_channel *chan,
     errval_t err;
     uint32_t num_chan = chan->m > chan->n ? chan->m : chan->n;
     for (int i = 0; i < num_chan; i++) {
-        err = smlt_queuepair_send(&chan->send[i], msg);
+        if (chan->owner == smlt_node_self_id) {
+            err = smlt_queuepair_send(&chan->send[i], msg);
+        } else {
+            err = smlt_queuepair_send(&chan->recv[i], msg);
+        }
         if (smlt_err_is_fail(err)){
             return smlt_err_push(err, SMLT_ERR_SEND);
         }   
     }
     return SMLT_SUCCESS;
 }
+
 
 /**
  * @brief sends a notification (zero payload message)
@@ -117,13 +124,19 @@ static inline errval_t smlt_channel_notify(struct smlt_channel *chan)
     errval_t err;
     uint32_t num_chan = chan->m > chan->n ? chan->m : chan->n;
     for (int i = 0; i < num_chan; i++) {
-        err = smlt_queuepair_notify(&chan->send[i]); 
+        if (chan->owner == smlt_node_self_id) {
+            err = smlt_queuepair_notify(&chan->send[i]); 
+        } else {
+            err = smlt_queuepair_notify(&chan->recv[i]); 
+        }
         if (smlt_err_is_fail(err)){
             return smlt_err_push(err, SMLT_ERR_SEND);
-        }   
+        }
+           
     }
     return SMLT_SUCCESS;
 }
+
 
 /**
  * @brief checks if the a message can be sent on the channel
@@ -138,8 +151,14 @@ static inline bool smlt_channel_can_send(struct smlt_channel *chan)
     bool result = true;
     uint32_t num_chan = chan->m > chan->n ? chan->m : chan->n;
     for (int i = 0; i < num_chan; i++) {
-        if (!smlt_queuepair_can_send(&chan->send[i])) {
-            result = false;
+        if (chan->owner == smlt_node_self_id) {
+            if (!smlt_queuepair_can_send(&chan->send[i])) {
+                result = false;
+            }
+        } else {
+            if (!smlt_queuepair_can_send(&chan->recv[i])) {
+                result = false;
+            }
         }   
     }
     return result;
@@ -171,7 +190,12 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
     // 1:1
     errval_t err;
     if (chan->n == chan->m) {
-       err = smlt_queuepair_recv(&chan->recv[0], msg);
+        if (chan->owner == smlt_node_self_id){
+            err = smlt_queuepair_recv(&chan->send[0], msg);
+        } else {
+            err = smlt_queuepair_recv(&chan->recv[0], msg);
+        }
+        // TODO error checking
     } else {
        assert(!"1:N recv NIY");
     }
@@ -193,9 +217,15 @@ static inline bool smlt_channel_can_recv(struct smlt_channel *chan)
     bool result = true;
     uint32_t num_chan = chan->m > chan->n ? chan->m : chan->n;
     for (int i = 0; i < num_chan; i++) {
-        if (!smlt_queuepair_can_recv(&chan->send[i])) {
-            result = false;
-        }   
+        if (chan->owner == smlt_node_self_id) {
+            if (!smlt_queuepair_can_recv(&chan->send[i])) {
+                result = false;
+            }   
+        } else {
+            if (!smlt_queuepair_can_recv(&chan->recv[i])) {
+                result = false;
+            }   
+        }
     }
     return result;
 }
@@ -216,12 +246,18 @@ static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
     // 1:1
     errval_t err;
     if (chan->n == chan->m) {
-       err = smlt_queuepair_recv0(&chan->recv[0]);
+        if (chan->owner == smlt_node_self_id){
+            err = smlt_queuepair_recv0(&chan->send[0]);
+        } else {
+            err = smlt_queuepair_recv0(&chan->recv[0]);
+        }
+        // TODO error checking
     } else {
        assert(!"1:N recv NIY");
     }
     return err;
 }
+
 /*
  * ===========================================================================
  * state queries

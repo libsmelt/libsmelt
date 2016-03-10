@@ -160,6 +160,7 @@ errval_t smlt_node_lowlevel_init(smlt_nid_t nid)
 errval_t smlt_node_exec_start(struct smlt_node *node)
 {
     smlt_node_self = node;
+    smlt_node_self_id = node->id;
 
     smlt_node_lowlevel_init(node->id);
 
