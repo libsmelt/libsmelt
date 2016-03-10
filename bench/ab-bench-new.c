@@ -20,12 +20,13 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_THREADS 32
-#define NUM_RUNS 10000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_THREADS 24
+#define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
 
 struct smlt_context *context = NULL;
+struct smlt_context *context2 = NULL;
 
 static const char *name = "binary_tree";
 static pthread_barrier_t bar;
@@ -212,7 +213,7 @@ static void* barrier(void* a)
     for (int j = 0; j < NUM_RUNS; j++) {
         sk_m_restart_tsc(&m);
 
-        smlt_barrier_wait(context);
+        smlt_barrier_wait(context, context2);
 
         if (smlt_node_get_id() == (NUM_THREADS-1)) {
             sk_m_add(&m);
@@ -220,7 +221,7 @@ static void* barrier(void* a)
     }
 
     if (smlt_node_get_id() == 0 || 
-        smlt_node_get_id() == NUM_THREADS-1) {
+        smlt_node_get_id() == (NUM_THREADS-1)) {
         sk_m_print(&m);
     }
 
@@ -240,6 +241,9 @@ static void* agreement(void* a)
     leafs = get_leafs(active_topo, &count);
 
     struct smlt_msg* msg = smlt_message_alloc(56);
+    
+    pthread_barrier_wait(&bar);    
+
     for (int i = 0; i < count; i++) {
         coreid_t last_node = (coreid_t) leafs[i];
         sk_m_reset(&m);
@@ -258,9 +262,8 @@ static void* agreement(void* a)
                 smlt_broadcast(context, msg);
             }
 
-            smlt_reduce(context, msg, msg, operation);
+            smlt_reduce(context2, msg, msg, operation);
             smlt_broadcast(context, msg);
-        
             sk_m_add(&m);
         }
 
@@ -321,6 +324,12 @@ int main(int argc, char **argv)
         return 1;
     }
  
+    err = smlt_context_create(topo, &context2);
+    if (smlt_err_is_fail(err)) {
+        printf("FAILED TO INITIALIZE CONTEXT !\n");
+        return 1;
+    }
+
     for (int i = 0; i < NUM_EXP; i++){
 
         printf("----------------------------------------\n");

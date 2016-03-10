@@ -180,7 +180,7 @@ clean:
 	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET))
 	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
-	rm -f test/context-test
+	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 debug:
 	echo $(HEADERS)

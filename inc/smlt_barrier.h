@@ -65,11 +65,13 @@ errval_t smlt_barrier_destroy(struct smlt_context *ctx);
 /**
  * @brief waits on the supplied barrier
  *
- * @param ctx the Smelt context
+ * @param ctx the Smelt context to reduce
+ * @param ctx the Smelt context to broadcast
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_wait(struct smlt_context *ctx);
+errval_t smlt_barrier_wait(struct smlt_context *ctx_red,
+                           struct smlt_context *ctx_broad);
 
 
 
