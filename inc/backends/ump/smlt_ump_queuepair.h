@@ -98,7 +98,7 @@ static inline errval_t smlt_ump_queuepair_notify_raw(struct smlt_ump_queuepair *
 
     SMLT_ASSERT(smlt_ump_queuepair_can_send_raw(qp));
 
-    ctrl.c.header = (uintptr_t)qp->seq_id;
+    ctrl.c.last_ack = (uintptr_t)qp->seq_id;
     qp->seq_id++;
 
     smlt_ump_queue_notify(&qp->tx, ctrl);
@@ -113,7 +113,7 @@ static inline errval_t smlt_ump_queuepair_send_raw(struct smlt_ump_queuepair *qp
 
     SMLT_ASSERT(smlt_ump_queuepair_can_send_raw(qp));
 
-    ctrl.c.header = qp->seq_id;
+    ctrl.c.last_ack = qp->seq_id;
 
     qp->seq_id++;
     smlt_ump_queue_send(&qp->tx, msg, ctrl);

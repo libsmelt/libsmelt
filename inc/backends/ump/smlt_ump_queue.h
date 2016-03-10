@@ -35,7 +35,7 @@ typedef  uint32_t smlt_ump_ctrl_word_t;
 typedef uint64_t smlt_ump_payload_word_t;
 
 /* the size of a contorl word had to be smaller than the payload word */
-//STATIC_ASSERT1(sizeof(ump_control_word_t) <= sizeof(ump_payload_word_t));
+SMLT_STATIC_ASSERT(sizeof(smlt_ump_ctrl_word_t) <= sizeof(smlt_ump_payload_word_t));
 
 /**
  * the size of a UMP message in bytes
@@ -90,32 +90,21 @@ typedef uint16_t smlt_ump_idx_t;
  */
 union smlt_ump_ctrl {
     struct {
-        smlt_ump_ctrl_word_t epoch  : SMLT_UMP_EPOCH_BITS;  ///< UMP epoch
-        smlt_ump_ctrl_word_t header : SMLT_UMP_HEADER_BITS; ///< UMP header
+
+        smlt_ump_idx_t epoch;    ///< UMP epoch
+        smlt_ump_idx_t last_ack; ///< UMP header
     } c;
     smlt_ump_ctrl_word_t raw;   ///<< raw  field
 };
 
 /* the size of the contorl structure must be of size control word */
-SMLT_STATIC_ASSERT(sizeof(union smlt_ump_ctrl) == sizeof(smlt_ump_ctrl_word_t),
-                    "foobar");
+SMLT_STATIC_ASSERT(sizeof(union smlt_ump_ctrl) == sizeof(smlt_ump_ctrl_word_t));
 
 
 /*
  * UMP message
  * ---------------------------------------------------------------------------
  */
-
-///< number of bits available for the message tag
-#define SMLT_UMP_MSGTAG_BITS (SMLT_UMP_HEADER_BITS - SMLT_UMP_IDX_BITS)
-
-/**
- * message tags for special messages
- */
-typedef enum smlt_ump_msgtag {
-    SMLT_UMP_MSGTAG_ACK = (1 << SMLT_UMP_MSGTAG_BITS) - 1,
-} smlt_ump_msgtag_t;
-
 
 /**
  * the UMP message format on the channel
@@ -126,7 +115,7 @@ struct smlt_ump_message {
 };
 
 /* the size of the message has to be the right size */
-SMLT_STATIC_ASSERT(sizeof(struct smlt_ump_message) == SMLT_UMP_MSG_BYTES, "foobar");
+SMLT_STATIC_ASSERT(sizeof(struct smlt_ump_message) == SMLT_UMP_MSG_BYTES);
 
 
 /*
@@ -219,7 +208,7 @@ static inline smlt_ump_idx_t smlt_ump_queue_last_ack(struct smlt_ump_queue *q)
 static inline struct smlt_ump_message *smlt_ump_queue_get_next(struct smlt_ump_queue *c)
 {
     SMLT_ASSERT(c->direction == SMLT_UMP_DIRECTION_SEND);
-    return &c->buf[c->pos];
+    return c->buf + c->pos;
 }
 
 
@@ -332,7 +321,7 @@ static inline errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
     if (++q->pos == q->num_msg) {
         q->pos = 0;
         q->epoch = !q->epoch;
-        *(q->last_ack) = (smlt_ump_idx_t)(ctrl.c.header);
+        *(q->last_ack) = ctrl.c.last_ack;
     }
 
     if (msg) {
