@@ -21,6 +21,8 @@
 #include <sched.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <numa.h>
+#include <smlt_platform.h>
 
 #include <shm/swmr.h>
 
@@ -43,12 +45,9 @@
  * cluster, starting at 0, i.e. for three readers, the id's would be
  * 0, 1 and 2.
  */
-struct swmr_queue* swmr_init_context(void* shm,
-                                   uint8_t num_readers,
-                                   uint8_t id)
+void swmr_init_context(void* shm, struct swmr_context* queue, 
+                         uint8_t num_readers, uint8_t id)
 {
-
-    struct swmr_queue* queue = (struct swmr_queue*) calloc(1, sizeof(struct swmr_queue));
     assert (queue!=NULL);
 
     queue->shm = (uint8_t*) shm;
@@ -65,12 +64,35 @@ struct swmr_queue* swmr_init_context(void* shm,
     queue->next_sync = queue->num_slots-1;
     queue->next_seq = 1;
     queue->r_mask = 0xF;
+}
 
-    return queue;
+struct swmr_queue* swmr_queue_create(uint32_t src,
+                                     uint32_t* dst,
+                                     uint16_t count)
+{
+    struct swmr_queue* qp = (struct swmr_queue*) smlt_platform_alloc_on_node(
+                                        sizeof(struct swmr_queue),
+                                        numa_node_of_cpu(src),
+                                        SMLT_ARCH_CACHELINE_SIZE,
+                                        true);
+
+    void* shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
+                                            numa_node_of_cpu(dst[0]),
+                                            SMLT_ARCH_CACHELINE_SIZE, true);
+
+    swmr_init_context(shm, &qp->src, count, 0);
+    qp->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
+                                          numa_node_of_cpu(dst[0]),
+                                          SMLT_DEFAULT_ALIGNMENT, true);
+
+    for (int i = 0; i < count ; i++) {
+        swmr_init_context(shm, &qp->dst[i], count, i);
+    }
+    return qp;    
 }
 
 // get the minimum of the readers pointer
-void swmr_get_next_sync(struct swmr_queue* context, 
+void swmr_get_next_sync(struct swmr_context* context, 
                    uint64_t* next)
 {
     uint64_t min = 0xFFFFFFFF;
@@ -85,7 +107,7 @@ void swmr_get_next_sync(struct swmr_queue* context,
 
 
 
-bool swmr_can_send(struct swmr_queue* context)
+bool swmr_can_send(struct swmr_context* context)
 {
     if (context->next_seq == context->next_sync) {
         uint64_t next_sync;
@@ -99,7 +121,7 @@ bool swmr_can_send(struct swmr_queue* context)
     }
 }
 
-void swmr_send_raw(struct swmr_queue* context,
+void swmr_send_raw(struct swmr_context* context,
                   uintptr_t p1,
                   uintptr_t p2,
                   uintptr_t p3,
@@ -153,7 +175,7 @@ void swmr_send_raw(struct swmr_queue* context,
     context->l_pos = context->l_pos+1;
 }
 
-bool swmr_can_receive(struct swmr_queue* context)
+bool swmr_can_receive(struct swmr_context* context)
 {
     uintptr_t* start;
     start = (uintptr_t*) context->data + ((context->l_pos)*
@@ -167,7 +189,7 @@ bool swmr_can_receive(struct swmr_queue* context)
 }
 
 // returns NULL if reader reached writers pos
-bool swmr_receive_non_blocking(struct swmr_queue* context,
+bool swmr_receive_non_blocking(struct swmr_context* context,
               uintptr_t *p1,
               uintptr_t *p2,
               uintptr_t *p3,
@@ -218,7 +240,7 @@ bool swmr_receive_non_blocking(struct swmr_queue* context,
 
 // blocks
 // TODO make this smarter?
-void swmr_receive_raw(struct swmr_queue* context,
+void swmr_receive_raw(struct swmr_context* context,
                      uintptr_t *p1,
                      uintptr_t *p2,
                      uintptr_t *p3,

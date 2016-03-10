@@ -28,7 +28,7 @@ union __attribute__((aligned(64))) pos_pointer{
 /**
  * \brief Per-thread datastructure representing a SHM queue.
  */
-struct swmr_queue {
+struct swmr_context {
 
     // The shared memory itself
     uint8_t* shm;
@@ -58,11 +58,19 @@ struct swmr_queue {
     uint64_t next_seq;
 };
 
-struct swmr_queue* swmr_init_context(void* shm,
-                                   uint8_t num_readers,
-                                   uint8_t id);
+struct swmr_queue {
+    struct swmr_context src;
+    struct swmr_context* dst;
+};
 
-void swmr_send_raw(struct swmr_queue* context,
+void swmr_init_context(void* shm, struct swmr_context* queue,
+                       uint8_t num_readers, uint8_t id);
+
+struct swmr_queue* swmr_init_queue(uint32_t src,
+                                   uint32_t* dst,
+                                   uint16_t count);
+
+void swmr_send_raw(struct swmr_context* context,
                   uintptr_t p1,
                   uintptr_t p2,
                   uintptr_t p3,
@@ -71,7 +79,7 @@ void swmr_send_raw(struct swmr_queue* context,
                   uintptr_t p6,
                   uintptr_t p7);
 
-void swmr_receive_raw(struct swmr_queue* context,
+void swmr_receive_raw(struct swmr_context* context,
               uintptr_t *p1,
               uintptr_t *p2,
               uintptr_t *p3,
@@ -80,7 +88,7 @@ void swmr_receive_raw(struct swmr_queue* context,
               uintptr_t *p6,
               uintptr_t *p7);
 
-bool swmr_can_send(struct swmr_queue* context);
-bool swmr_can_receive(struct swmr_queue* context);
+bool swmr_can_send(struct swmr_context* context);
+bool swmr_can_receive(struct swmr_context* context);
 
 #endif /* SYNC_SHM_H */
