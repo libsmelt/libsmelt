@@ -12,6 +12,7 @@
 #include <ump/smlt_ump_queuepair.h>
 #include <ffq/ff_queuepair.h>
 #include <shm/shm_qp.h>
+#include <shm/swmr.h>
 /*
  * ===========================================================================
  * Smelt queue pair MACROS
@@ -30,7 +31,7 @@ struct smlt_msg;
 struct smlt_ump_queuepair;
 struct ff_queuepair;
 struct shm_qp;
-
+struct swmr_queue;
 /**
  * encodes the backend type of the Smelt queuepair
  */
@@ -38,7 +39,8 @@ typedef enum {
     SMLT_QP_TYPE_INVALID=0,     ///< qp type is invalid
     SMLT_QP_TYPE_UMP,           ///< qp uses the UMP backend
     SMLT_QP_TYPE_FFQ,           ///< qp uses the FFQ backend
-    SMLT_QP_TYPE_SHM            ///< qp uses shared memory backend
+    SMLT_QP_TYPE_SHM,            ///< qp uses shared memory backend
+    SMLT_QP_TYPE_SWMR            ///< qp uses shared memory backend
 } smlt_qp_type_t;
 
 
@@ -85,12 +87,14 @@ struct smlt_qp
         struct smlt_ump_queuepair ump;
         struct ff_queuepair ffq;
         struct shm_qp shm;
+        struct swmr_queue swmr;
     } queue_tx;
 
     union {
         struct smlt_ump_queuepair ump;
         struct ff_queuepair ffq;
         struct shm_qp shm;
+        struct swmr_queue swmr;
     } queue_rx;
 
     struct {

@@ -19,8 +19,7 @@
 #define SWMRQ_SIZE 64 // Number of slots in shared memory queue
 #define CACHELINE_SIZE 64
 
-union __attribute__((aligned(64))) pos_pointer{
-    uint64_t p[2];
+union __attribute__((aligned(64))) pos_point{
     uint64_t pos;
     uint8_t padding[CACHELINE_SIZE];
 };
@@ -35,8 +34,8 @@ struct swmr_context {
     uint8_t* data;
 
     // Positions of readers/writer within shared queue
-    volatile union pos_pointer* write_pos;
-    volatile union pos_pointer* readers_pos;
+    volatile union pos_point* write_pos;
+    volatile union pos_point* readers_pos;
     // Number of readers
     uint8_t num_readers;
     // Reader id, only unique within cluster

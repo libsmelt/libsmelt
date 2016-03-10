@@ -38,7 +38,8 @@ static const int num_readers = 3;
 
 void* thr_writer(void* arg)
 {
-    struct swmr_queue* queue;
+    struct swmr_context* queue = (struct swmr_context*) 
+                        malloc(sizeof(struct swmr_context));
     cpu_set_t cpu_mask;
 
     CPU_ZERO(&cpu_mask);
@@ -46,9 +47,7 @@ void* thr_writer(void* arg)
 
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    queue = swmr_init_context(shared_mem,
-                     num_readers,
-                     0);
+    swmr_init_context(shared_mem, queue, num_readers, 0);
 
     uint64_t rid = 1;
     while (1) {
@@ -70,7 +69,8 @@ void* thr_writer(void* arg)
 
 void* thr_reader(void* arg)
 {   
-    struct swmr_queue* queue;
+    struct swmr_context* queue = (struct swmr_context*) 
+                                malloc(sizeof(struct swmr_context));
     cpu_set_t cpu_mask;
 
     CPU_ZERO(&cpu_mask);
@@ -81,10 +81,7 @@ void* thr_reader(void* arg)
 
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    queue = swmr_init_context(shared_mem,
-                     num_readers,
-                     (uint64_t) arg);
-;
+    swmr_init_context(shared_mem, queue,num_readers, (uint64_t) arg);
     uint64_t previous = 0;
     uint64_t num_wrong = 0;
     uintptr_t r[8];

@@ -46,7 +46,7 @@
  * 0, 1 and 2.
  */
 void swmr_init_context(void* shm, struct swmr_context* queue, 
-                         uint8_t num_readers, uint8_t id)
+                       uint8_t num_readers, uint8_t id)
 {
     assert (queue!=NULL);
 
@@ -58,9 +58,9 @@ void swmr_init_context(void* shm, struct swmr_context* queue,
 #ifdef DEBUG_SHM
     queue->num_slots = 10;
 #endif
-    queue->readers_pos = (union pos_pointer*) shm;
+    queue->readers_pos = (union pos_point*) shm;
     queue->l_pos = 0;
-    queue->data = (uint8_t*) shm+((num_readers+2)*sizeof(union pos_pointer));
+    queue->data = (uint8_t*) shm+((num_readers+2)*sizeof(union pos_point));
     queue->next_sync = queue->num_slots-1;
     queue->next_seq = 1;
     queue->r_mask = 0xF;
@@ -97,8 +97,8 @@ void swmr_get_next_sync(struct swmr_context* context,
 {
     uint64_t min = 0xFFFFFFFF;
     for (int i = 0; i < context->num_readers; i++) {
-        if (min > context->readers_pos[i].p[0]) {
-            min = context->readers_pos[i].p[0];
+        if (min > context->readers_pos[i].pos) {
+            min = context->readers_pos[i].pos;
         }
     }
 
@@ -230,7 +230,7 @@ bool swmr_receive_non_blocking(struct swmr_context* context,
 
 	// only update read pointer every 16th read
         if ((context->next_seq & 0xF) == 0) {
-            context->readers_pos[context->id].p[0] = (context->next_seq -1);
+            context->readers_pos[context->id].pos = (context->next_seq -1);
         }
         return true;
     }
