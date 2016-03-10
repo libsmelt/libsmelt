@@ -97,7 +97,8 @@ union smlt_ump_ctrl {
 };
 
 /* the size of the contorl structure must be of size control word */
-//STATIC_ASSERT1(sizeof(union smlt_ump_ctrl) == sizeof(smlt_ump_ctrl_word_t));
+SMLT_STATIC_ASSERT(sizeof(union smlt_ump_ctrl) == sizeof(smlt_ump_ctrl_word_t),
+                    "foobar");
 
 
 /*
@@ -125,7 +126,7 @@ struct smlt_ump_message {
 };
 
 /* the size of the message has to be the right size */
-//STATIC_ASSERT1(sizeof(struct ump_message) == UMP_MSG_BYTES);
+SMLT_STATIC_ASSERT(sizeof(struct smlt_ump_message) == SMLT_UMP_MSG_BYTES, "foobar");
 
 
 /*
@@ -150,11 +151,12 @@ typedef enum {
 struct smlt_ump_queue
 {
     struct smlt_ump_message *buf;   ///< the messages ring buffer`
+    smlt_ump_idx_t *last_ack;       ///< memory to store the last ACK
     smlt_ump_idx_t pos;             ///< current position on the buffer`
     smlt_ump_idx_t num_msg;         ///< buffer size in message
     bool epoch;                     ///< next message epoch
     smlt_ump_direction_t direction; ///< direction of the channel
-    smlt_ump_idx_t *last_ack;       ///< memory to store the last ACK
+
 };
 
 
@@ -318,12 +320,9 @@ static inline errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
     struct smlt_ump_message *m;
 
     SMLT_ASSERT(q);
+    SMLT_ASSERT(q->direction != SMLT_UMP_DIRECTION_RECV);
 
-    if (q->direction != SMLT_UMP_DIRECTION_RECV) {
-        return SMLT_ERR_QUEUE_STATE;
-    }
-
-    m = &q->buf[q->pos];
+    m = q->buf + q->pos;
 
     ctrl.raw = m->ctrl.raw;
     if (ctrl.c.epoch != q->epoch) {
@@ -332,8 +331,8 @@ static inline errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
 
     if (++q->pos == q->num_msg) {
         q->pos = 0;
-        *(q->last_ack) = (smlt_ump_idx_t)(ctrl.c.header & SMLT_UMP_IDX_MASK);
         q->epoch = !q->epoch;
+        *(q->last_ack) = (smlt_ump_idx_t)(ctrl.c.header);
     }
 
     if (msg) {

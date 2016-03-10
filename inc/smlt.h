@@ -15,9 +15,15 @@
 #include <smlt_message.h>
 
 
+//#define SMLT_ASSERT(x) assert(x)
 #define SMLT_ASSERT(x)
 
-#define SMLT_STATIC_ASSERT(x)
+#define SMLT_ASSERT_CONCAT_(a, b) a##b
+#define SMLT_ASSERT_CONCAT(a, b) SMLT_ASSERT_CONCAT_(a, b)
+
+#define SMLT_STATIC_ASSERT(e,m) \
+    enum { SMLT_ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
+
 
 /*
  * ===========================================================================

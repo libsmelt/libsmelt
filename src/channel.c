@@ -23,11 +23,11 @@
   *
   * @param type     type of the channel (o2o o2m m2o m2m)
   * @param chan     return pointer to the channel
-  * @param src      src core id // TODO use nid ? 
+  * @param src      src core id // TODO use nid ?
   * @param dst      array of core ids to desinations
-  * @param count    length of array dst;   
+  * @param count    length of array dst;
   *
-  * @returns SMLT_SUCCESS or failure 
+  * @returns SMLT_SUCCESS or failure
   */
 errval_t smlt_channel_create(struct smlt_channel **chan,
                              uint32_t* src,
@@ -48,7 +48,7 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
     if (!chan) {
         return SMLT_ERR_MALLOC_FAIL;
     }
-    
+
     if ((count_src > 1) && (count_dst > 1)) {
         assert(!"M:N Channel NYI");
     }
@@ -63,7 +63,7 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
             // 1_n
             struct smlt_qp* send = &((*chan)->send[i]);
             struct smlt_qp* recv = &((*chan)->recv[i]);
-            err = smlt_queuepair_create(SMLT_QP_TYPE_SHM,
+            err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
                                     &send, &recv, src[0], dst[i]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
