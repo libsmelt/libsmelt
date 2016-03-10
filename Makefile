@@ -108,6 +108,8 @@ all: $(TARGET) \
 		 test/ffq-test \
 		 test/context-test \
 		 bench/ab-bench-new \
+		 bench/pairwise \
+		 bench/pairwise_raw
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -150,13 +152,13 @@ bench/ab-bench-new: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
 
 bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.cpp
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-throughput.cpp -o $@
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-throughput.c -o $@
 
-bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.cpp
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.cpp -o $@
+bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.c
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.c -o $@
 
-bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.cpp
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise_raw.cpp -o $@
+bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.c
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise_raw.c -o $@
 
 # Build shared library
 # --------------------------------------------------
