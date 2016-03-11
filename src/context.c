@@ -109,8 +109,6 @@ errval_t smlt_context_create(struct smlt_topology *topo,
                 struct smlt_channel * chan = &(n->children[i]);
                 smlt_channel_create(&chan, &src,
                                     &dst, 1, 1);
-                printf("Channel from %d to %d %p recv %p send %p \n",
-                        src, dst, (void*)chan, (void*) chan->recv, (void*) chan->send);
             }
         }
 

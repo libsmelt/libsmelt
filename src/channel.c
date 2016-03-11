@@ -39,10 +39,10 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
 
     assert(*chan);
 
-    ((*chan)->recv) = (struct smlt_qp*) smlt_platform_alloc(
+    ((*chan)->c.mp.recv) = (struct smlt_qp*) smlt_platform_alloc(
                         sizeof(struct smlt_qp)*num_chan,
                         SMLT_DEFAULT_ALIGNMENT, true);
-    ((*chan)->send) = (struct smlt_qp*) smlt_platform_alloc(
+    ((*chan)->c.mp.send) = (struct smlt_qp*) smlt_platform_alloc(
                         sizeof(struct smlt_qp)*num_chan,
                         SMLT_DEFAULT_ALIGNMENT, true);
     if (!chan) {
@@ -60,10 +60,10 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
 
     errval_t err;
     for (int i= 0; i < num_chan; i++) {
-        if (count_src == 1) {
+        if (count_dst == 1) {
             // 1_n
-            struct smlt_qp* send = &((*chan)->send[i]);
-            struct smlt_qp* recv = &((*chan)->recv[i]);
+            struct smlt_qp* send = &((*chan)->c.mp.send[i]);
+            struct smlt_qp* recv = &((*chan)->c.mp.recv[i]);
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
                                     &send, &recv, src[0], dst[i]);
             if (smlt_err_is_fail(err)) {
@@ -71,8 +71,8 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
             }
         } else {
             // 1:n
-            struct smlt_qp* send = &((*chan)->send[i]);
-            struct smlt_qp* recv = &((*chan)->recv[i]);
+            struct smlt_qp* send = &((*chan)->c.mp.send[i]);
+            struct smlt_qp* recv = &((*chan)->c.mp.recv[i]);
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
                                     &send, &recv, src[i], dst[0]);
             if (smlt_err_is_fail(err)) {
@@ -96,12 +96,12 @@ errval_t smlt_channel_destroy(struct smlt_channel *chan)
 
     errval_t err;
     for (int i = 0; i < num_chan; i++) {
-            err = smlt_queuepair_destroy(&chan->send[i]);
+            err = smlt_queuepair_destroy(&chan->c.mp.send[i]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_DESTROY);
             }
-            smlt_platform_free(chan->send);
-            smlt_platform_free(chan->recv);
+            smlt_platform_free(chan->c.mp.send);
+            smlt_platform_free(chan->c.mp.recv);
     }
     return SMLT_SUCCESS;
 }
