@@ -322,7 +322,7 @@ errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
     }
 
     if (++q->mcurr == q->mlast) {
-        q->mcurr = (volatile struct smlt_ump_message *)q->mbuf;
+        q->mcurr = (volatile struct smlt_ump_message *)q->mlast;
         q->epoch = !q->epoch;
         *(q->last_ack) = ctrl.c.last_ack;
     }

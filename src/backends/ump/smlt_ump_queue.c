@@ -58,16 +58,13 @@ static errval_t smlt_ump_queue_init_common(struct smlt_ump_queue *q, void *buf,
         return err;
     }
 
+    q->pos = 0;
+    q->last_ack = (smlt_ump_idx_t *) buf;
+    q->buf = (struct smlt_ump_message*) ((uintptr_t)buf + SMLT_UMP_MSG_BYTES);
+
+    assert(((uintptr_t)q->buf & (SMLT_UMP_MSG_BYTES -1)) == 0 );
     q->num_msg = slots - 1;
     q->epoch = 1;
-
-    q->mbuf = (struct smlt_ump_message*) ((uintptr_t)buf + SMLT_UMP_MSG_BYTES);
-    q->mcurr = (volatile struct smlt_ump_message*)q->mbuf;
-    q->mlast = q->mbuf + q->num_msg;
-    q->last_ack = (smlt_ump_idx_t *) buf;
-
-    assert(((uintptr_t)q->mbuf & (SMLT_UMP_MSG_BYTES -1)) == 0 );
-
 
     return SMLT_SUCCESS;
 }
@@ -100,7 +97,7 @@ errval_t smlt_ump_queue_init_tx(struct smlt_ump_queue *q, void *buf,
      * we clear the buffer of the messages, this has to be done on the sending
      * side
      */
-    memset(buf, 0, slots* SMLT_UMP_MSG_BYTES);
+    memset(q->buf, 0, slots * SMLT_UMP_MSG_BYTES);
 
     SMLT_ASSERT(q->buf && q->epoch);
 

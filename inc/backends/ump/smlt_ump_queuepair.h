@@ -82,13 +82,13 @@ static inline volatile bool smlt_ump_queuepair_can_send_raw(struct smlt_ump_queu
  */
 static inline
 errval_t smlt_ump_queuepair_prepare_send(struct smlt_ump_queuepair *qp,
-                                         struct smlt_ump_message **msg)
+                                        volatile struct smlt_ump_message **msg)
 {
     if (!smlt_ump_queuepair_can_send_raw(qp)) {
         return SMLT_ERR_CHAN_WOULD_BLOCK;
     }
 
-    *msg = (struct smlt_ump_message *)smlt_ump_queue_get_next(&qp->tx);
+    *msg = smlt_ump_queue_get_next(&qp->tx);
 
     return SMLT_SUCCESS;
 }
