@@ -7,3 +7,13 @@ bench/ab-bench
 bench/pairwise
 test/mp-test
 *.so
+*.a
+bench/ab-bench-new
+bench/pairwise_raw
+test/context-test
+test/contrib-lib-test
+test/ffq-test
+test/nodes-test
+test/queuepair-test
+test/shm-queue-test
+test/topo-create-test
