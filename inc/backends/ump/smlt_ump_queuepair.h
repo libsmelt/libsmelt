@@ -19,11 +19,11 @@ struct smlt_message;
  */
 struct smlt_ump_queuepair
 {
-    struct smlt_ump_queue tx SMLT_ARCH_ATTR_ALIGN;         ///< transmit queue
-    struct smlt_ump_queue rx SMLT_ARCH_ATTR_ALIGN;         ///< receive queue
-    struct smlt_ump_queuepair *other;   ///< pointer to the other queue pair
-    smlt_ump_idx_t seq_id;              ///< last sequence number of the message
-    smlt_ump_idx_t last_ack;            ///< last ACKed sequence number
+    struct smlt_ump_queue tx;         ///< transmit queue
+    struct smlt_ump_queue rx;         ///< receive queue
+    struct smlt_ump_queuepair *other; ///< pointer to the other queue pair
+    smlt_ump_idx_t seq_id;            ///< last sequence number of the message
+    smlt_ump_idx_t last_ack;          ///< last ACKed sequence number
 };
 
 /**
@@ -80,9 +80,8 @@ static inline volatile bool smlt_ump_queuepair_can_send_raw(struct smlt_ump_queu
  *
  * @returns SMLT_SUCCESS if the queuepair is prepared, error value otherwise
  */
-static inline
-errval_t smlt_ump_queuepair_prepare_send(struct smlt_ump_queuepair *qp,
-                                        volatile struct smlt_ump_message **msg)
+static inline errval_t smlt_ump_queuepair_prepare_send(struct smlt_ump_queuepair *qp,
+                                                       struct smlt_ump_message **msg)
 {
     if (!smlt_ump_queuepair_can_send_raw(qp)) {
         return SMLT_ERR_CHAN_WOULD_BLOCK;
