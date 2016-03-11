@@ -21,8 +21,9 @@
  */
 #define SMLT_ARCH_CHAR_BITS 8
 
+#define SMLT_ARCH_ATTR_ALIGN __attribute__((aligned(SMLT_ARCH_CACHELINE_SIZE)))
 
-
+#define SMLT_ARCH_PREFETCH(addr) 
 
 /// Emit memory barrier needed between writing UMP payload and header
 static inline void smlt_arch_write_barrier(void)
