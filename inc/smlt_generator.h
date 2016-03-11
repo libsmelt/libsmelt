@@ -36,7 +36,7 @@ struct smlt_generated_model {
 errval_t smlt_generate_model(coreid_t* cores, 
                          uint32_t len,
                          char* name,
-                         struct smlt_generated_model* model);
+                         struct smlt_generated_model** model);
 /**
  * @brief generates a model from a file storing a json string
  *
@@ -49,7 +49,7 @@ errval_t smlt_generate_model(coreid_t* cores,
  *                      SMLT_ERR_GENERATOR
  */
 errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
-                                   struct smlt_generated_model* model);
+                                   struct smlt_generated_model** model);
 
 /**
  * @brief update measurements on the generator

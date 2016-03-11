@@ -25,18 +25,31 @@
  *
  */
 errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
-                         char* name, struct smlt_generated_model* model)
+                         char* name, struct smlt_generated_model** model)
 {
-    model = (struct smlt_generated_model*) smlt_platform_alloc(
-                                                (2*sizeof(uint32_t))+
-                                                (sizeof(uint16_t)*len*len)+
-                                                (sizeof(uint32_t)*len),
+    *model = (struct smlt_generated_model*) smlt_platform_alloc(
+                                                sizeof(struct smlt_generated_model),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-    model->ncores = len;
-    int err = smlt_tree_generate(len, cores, name, &(model->model),
-                                 &(model->leafs), &(model->last_node));
+
+    (*model)->leafs = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*len,
+                                                    SMLT_DEFAULT_ALIGNMENT,
+                                                    true);
+
+    (*model)->model = (uint16_t*) smlt_platform_alloc(sizeof(uint16_t)*len*len,
+                                                    SMLT_DEFAULT_ALIGNMENT,
+                                                    true);
+    (*model)->ncores = len;
+    int err = smlt_tree_generate(len, cores, name, &((*model)->model),
+                                 &((*model)->leafs), &((*model)->last_node));
     
+    printf("Model Generated \n");
+    for (int i = 0; i < len; i++) {
+        for (int j = 0; j < len; j++) {
+            printf("%d ", (*model)->model[i*len+j]);
+        }
+        printf("\n");
+    }
     if (err) {
         return SMLT_ERR_GENERATOR;
     } else {
@@ -52,15 +65,22 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
  *
  */
 errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
-                                       struct smlt_generated_model* model)
+                                       struct smlt_generated_model** model)
 {
-    model = (struct smlt_generated_model*) smlt_platform_alloc(
-                                                (2*sizeof(uint32_t))+
-                                                (sizeof(uint16_t)*ncores*ncores)+
-                                                (sizeof(uint32_t)*ncores),
+
+    *model = (struct smlt_generated_model*) smlt_platform_alloc(
+                                                sizeof(struct smlt_generated_model),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-    model->ncores = ncores;
+    (*model)->leafs = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*ncores,
+                                                    SMLT_DEFAULT_ALIGNMENT,
+                                                    true);
+
+    (*model)->model = (uint16_t*) smlt_platform_alloc(sizeof(uint16_t)*ncores*ncores,
+                                                    SMLT_DEFAULT_ALIGNMENT,
+                                                    true);
+
+    (*model)->ncores = ncores;
     char *json_string;
     uint64_t file_size;
     FILE *file = fopen(filepath, "rb");
@@ -80,8 +100,8 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
 
     fclose(file);
 
-    int err = smlt_tree_parse(json_string, ncores, &(model->model), 
-                              &(model->leafs), &(model->last_node));
+    int err = smlt_tree_parse(json_string, ncores, &((*model)->model), 
+                              &((*model)->leafs), &((*model)->last_node));
 
     if (err) {
         return SMLT_ERR_GENERATOR;

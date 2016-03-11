@@ -44,17 +44,18 @@ int smlt_tree_parse_wrapper(char* json_string,
 
     reader->parse(json_string, json_string+strlen(json_string)-1, 
                   &root, &errs);
-
     // Extract last node
     Json::Value ln = root.get("last_node", "");
     int lnval = ln.asInt();
     *last_node = (uint32_t)lnval;
 
     // Extract leaf node
+
     Json::Value leafs_j = root.get("leaf_nodes", "");
     assert(*leafs != NULL);
+
     for (unsigned i=0; i<leafs_j.size(); i++) {
-        *leafs[i] = leafs_j.get(i, Json::Value()).asInt();
+        (*leafs)[i] = leafs_j.get(i, Json::Value()).asInt();
     }
     
     Json::Value elem = root.get("model", "");
@@ -67,7 +68,7 @@ int smlt_tree_parse_wrapper(char* json_string,
         for (Json::ValueIterator k=inner.begin(); k != inner.end(); k++) {
 
             Json::Value val = (*k);
-            *model[x*ncores+y] = (uint32_t) val.asInt();
+            (*model)[x*ncores+y] = (uint32_t) val.asInt();
             y++;
         }
         x++;
@@ -189,7 +190,8 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     wbuilder["indentatin"] = "\t";
     
     Json::Value root;   // 'root' will contain the root value after parsing.
-    root["machine"] = thishost;
+ //   root["machine"] = thishost;
+    root["machine"] = "gottardo";
     if (tree_name == NULL) {
         root["topology"] = "adaptivetree";
     } else {

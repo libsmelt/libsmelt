@@ -9,18 +9,23 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "tree_config.h"
+#include <smlt.h>
+#include <smlt_generator.h>
 
-#define NUM_THREADS 12
+#define NUM_THREADS 32
 
-static char *name = "adaptive_tree";
-static uint32_t cores[NUM_THREADS] = {0,1,2,3,4,5,6,7,8,9,10,11};
+static char *name = "adaptivetree";
+static uint32_t cores[NUM_THREADS];
 int main(int argc, char **argv)
-{
-    uint16_t* model;
-    uint32_t* leafs;
-    uint32_t last_node;
+{   
+    for (int i = 0; i < NUM_THREADS; i++) {
+        cores[i] = i;
+    }
+    struct smlt_generated_model* model;
+    smlt_generate_model(cores, NUM_THREADS, name, &model);
+    
+/*
     smlt_tree_generate(NUM_THREADS, cores, name,
                        &model, &leafs, &last_node);
-
+*/
 }

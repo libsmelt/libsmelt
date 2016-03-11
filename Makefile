@@ -133,7 +133,7 @@ test/topo-create-test: test/topo-create-test.c $(TARGET)
 	$(CC) $(CFLAGS) $(INC) $(LIBS) test/topo-create-test.c -o $@ -lsmltrt
 
 test/contrib-lib-test: test/contrib-lib-test.c $(TARGET)
-	$(CC) $(CFLAGS) $(INC) $(LIBS) test/contrib-lib-test.c -o $@ contrib/libsmltcontrib.so
+	$(CC) $(CFLAGS) $(INC) $(LIBS) test/contrib-lib-test.c -o $@ contrib/libsmltcontrib.so -lsmltrt
 
 test/shm-queue-test: test/shm-queue-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/shm-queue-test.c -o $@ -lsmltrt
