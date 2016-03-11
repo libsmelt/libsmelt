@@ -139,14 +139,17 @@ typedef enum {
  */
 struct smlt_ump_queue
 {
-    struct smlt_ump_message *buf;   ///< the messages ring buffer`
+    volatile struct smlt_ump_message *mcurr;  ///< the current message slot
+    struct smlt_ump_message *mlast;           ///< the last message slot
+    struct smlt_ump_message *mbuf;            ///< the messages ring buffer`
+
     smlt_ump_idx_t *last_ack;       ///< memory to store the last ACK
-    smlt_ump_idx_t pos;             ///< current position on the buffer`
     smlt_ump_idx_t num_msg;         ///< buffer size in message
     bool epoch;                     ///< next message epoch
     smlt_ump_direction_t direction; ///< direction of the channel
-
 };
+
+SMLT_STATIC_ASSERT(sizeof(struct smlt_ump_queue) <= SMLT_ARCH_CACHELINE_SIZE);
 
 
 /*
@@ -205,10 +208,11 @@ static inline smlt_ump_idx_t smlt_ump_queue_last_ack(struct smlt_ump_queue *q)
  *
  * @return pointer to a message slot
  */
-static inline struct smlt_ump_message *smlt_ump_queue_get_next(struct smlt_ump_queue *c)
+static inline volatile
+struct smlt_ump_message *smlt_ump_queue_get_next(struct smlt_ump_queue *c)
 {
     SMLT_ASSERT(c->direction == SMLT_UMP_DIRECTION_SEND);
-    return c->buf + c->pos;
+    return c->mcurr;
 }
 
 
@@ -224,7 +228,7 @@ static inline void smlt_ump_queue_send(struct smlt_ump_queue *c,
                                        union smlt_ump_ctrl ctrl)
 {
     // must submit in order
-    SMLT_ASSERT(msg == &c->buf[c->pos]);
+    SMLT_ASSERT(msg == c->mcurr);
 
     // write barrier for message payload
     smlt_arch_write_barrier();
@@ -234,8 +238,8 @@ static inline void smlt_ump_queue_send(struct smlt_ump_queue *c,
     msg->ctrl.raw = ctrl.raw;
 
     // update pos
-    if (++c->pos == c->num_msg) {
-        c->pos = 0;
+    if (++c->mcurr == c->mlast) {
+        c->mcurr = (volatile struct smlt_ump_message *)c->mbuf;
         c->epoch = !c->epoch;
     }
 
@@ -254,11 +258,11 @@ static inline void smlt_ump_queue_notify(struct smlt_ump_queue *c,
 {
     // write the contorl block triggers the sending operation
     ctrl.c.epoch = c->epoch;
-    c->buf[c->pos].ctrl.raw = ctrl.raw;
+    c->mcurr->ctrl.raw = ctrl.raw;
 
     // update index state
-    if (++c->pos == c->num_msg) {
-        c->pos = 0;
+    if (++c->mcurr == c->mlast) {
+        c->mcurr = (volatile struct smlt_ump_message *)c->mbuf;
         c->epoch = !c->epoch;
     }
 }
@@ -287,9 +291,7 @@ static inline volatile bool smlt_ump_queue_can_recv(struct smlt_ump_queue *c)
         return false;
     }
 
-    volatile struct smlt_ump_message *m = c->buf + c->pos;
-
-    return (m->ctrl.c.epoch == c->epoch);
+    return (c->mcurr->ctrl.c.epoch == c->epoch);
 }
 
 /**
@@ -302,30 +304,31 @@ static inline volatile bool smlt_ump_queue_can_recv(struct smlt_ump_queue *c)
  * the returned pointer is the raw UMP message in the channel and will be
  * overwritten on reuse.
  */
-static inline errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
-                                               struct smlt_ump_message **msg)
+static inline
+errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
+                                 struct smlt_ump_message **msg)
 {
     union smlt_ump_ctrl ctrl;
-    struct smlt_ump_message *m;
+
 
     SMLT_ASSERT(q);
     SMLT_ASSERT(q->direction != SMLT_UMP_DIRECTION_RECV);
 
-    m = q->buf + q->pos;
+    volatile struct smlt_ump_message *m = q->mcurr;
 
     ctrl.raw = m->ctrl.raw;
     if (ctrl.c.epoch != q->epoch) {
         return SMLT_ERR_QUEUE_EMPTY;
     }
 
-    if (++q->pos == q->num_msg) {
-        q->pos = 0;
+    if (++q->mcurr == q->mlast) {
+        q->mcurr = (volatile struct smlt_ump_message *)q->mlast;
         q->epoch = !q->epoch;
         *(q->last_ack) = ctrl.c.last_ack;
     }
 
     if (msg) {
-        *msg = m;
+        *msg = (struct smlt_ump_message *)m;
     }
 
     return SMLT_SUCCESS;
