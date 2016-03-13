@@ -10,6 +10,7 @@
 #include <smlt_topology.h>
 #include <smlt_generator.h>
 #include "debug.h"
+#include <stdio.h>
 
 /**
  * this is a node in the current topology
@@ -188,18 +189,19 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
         // find number of children and allocate accordingly
         int max_child = 0;
         for(int y = 0; y < model->ncores; y++){
-            if (model->model[x*model->ncores+y] > max_child){
+            int tmp = model->model[x*model->ncores+y];
+            if ((tmp > max_child) && (tmp != 99)){
                max_child = model->model[x*model->ncores+y];
             }
         }
-    
+        node->node_id = x;   
         node->children = (struct smlt_topology_node**)
                              smlt_platform_alloc(sizeof(struct smlt_topology_node*)*
                                                  max_child, SMLT_DEFAULT_ALIGNMENT, 
                                                  true);
         // set model
         for(int y = 0; y < model->ncores; y++){
-            int val = model->model[x*model->ncores+y];
+            int val = model->model[x*(model->ncores)+y];
             if (val > 0) {
                 if (val == 99) {
                     SMLT_DEBUG(SMLT_DBG__INIT,"Parent of %d is %d \n", x, y);
@@ -207,16 +209,19 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                 } else {
                     // TODO add channel type
                     SMLT_DEBUG(SMLT_DBG__INIT,"Child of %d is %d at pos %d \n", 
-                               x, y, val);
+                               x, y, val-1);
                     node->topology = *topo;
-                    node->children[val] = &((*topo)->all_nodes[y]);
-                    node->num_children = max_child;
+                    node->children[val-1] = &((*topo)->all_nodes[y]);
                     node->node_id = x; // TODO change to real node ID
-                    (*topo)->all_nodes[y].array_index = val;
+                    (*topo)->all_nodes[y].array_index = val-1;
                 }
             }
-        }        
+
+        }   
+    
+        node->num_children = max_child;
     }
+
 
     for (int i = 0; i < model->ncores; i++) {
         for (int j = 0; j < model->ncores; j++) {

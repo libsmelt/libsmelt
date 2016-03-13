@@ -35,8 +35,8 @@ errval_t smlt_broadcast_subtree(struct smlt_context *ctx,
 
     for (uint32_t i = 0; i < count; ++i) {
 
-        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to %p \n",
-        //           smlt_node_get_id(), (void*) &children[i].send->queue_tx);
+        SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to child[%i] %p \n",
+                   smlt_node_get_id(), i, (void*) &children[i]);
 
         err = smlt_channel_send(&children[i], msg);
         if (smlt_err_is_fail(err)) {
@@ -68,8 +68,8 @@ errval_t smlt_broadcast_notify_subtree(struct smlt_context *ctx)
 
     for (uint32_t i = 0; i < count; ++i) {
 
-        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to qp %p \n",
-        //           smlt_node_get_id(), (void*) &children[i].send->queue_tx);
+        SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to child[%] chan  %p \n",
+                   smlt_node_get_id(), i, (void*) &children[i]);
 
         err = smlt_channel_notify(&children[i]);
         if (smlt_err_is_fail(err)) {
@@ -96,14 +96,16 @@ errval_t smlt_broadcast(struct smlt_context *ctx,
     if (smlt_context_is_root(ctx)) {
         return smlt_broadcast_subtree(ctx, msg);
     } else {
+
         struct smlt_channel *parent;
         err =  smlt_context_get_parent_channel(ctx, &parent);
         if (smlt_err_is_fail(err)) {
             return err; // TODO: adding more error values
         }
 
-        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from chan %p \n",
-        //           smlt_node_get_id(), (void*) &parent->recv->queue_rx);
+        SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from parent chan %p \n",
+                   smlt_node_get_id(), (void*) &parent);
+
 
         err = smlt_channel_recv(parent, msg);
         if (smlt_err_is_fail(err)) {
@@ -133,8 +135,8 @@ errval_t smlt_broadcast_notify(struct smlt_context *ctx)
             return err; // TODO: adding more error values
         }
 
-        //SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from chan %p \n",
-        //           smlt_node_get_id(), (void*) &parent->recv->queue_rx);
+        SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from parent chan %p \n",
+                   smlt_node_get_id(), (void*) &parent);
 
         err = smlt_channel_recv_notification(parent);
         if (smlt_err_is_fail(err)) {

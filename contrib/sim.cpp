@@ -191,7 +191,7 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     
     Json::Value root;   // 'root' will contain the root value after parsing.
  //   root["machine"] = thishost;
-    root["machine"] = "gottardo";
+    root["machine"] = "sgs-r820-01";
     if (tree_name == NULL) {
         root["topology"] = "adaptivetree";
     } else {

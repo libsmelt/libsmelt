@@ -20,14 +20,14 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 32
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
+#define NUM_TOPOS 6
 
 struct smlt_context *context = NULL;
 
-static const char *name = "binary_tree";
 static pthread_barrier_t bar;
 static struct smlt_channel chan[NUM_THREADS][NUM_THREADS];
 static struct smlt_topology *active_topo;
@@ -140,6 +140,7 @@ static void* ab(void* a)
     
         for (int j = 0; j < NUM_RUNS; j++) {
             sk_m_restart_tsc(&m);
+
 
             if (smlt_node_get_id() == last_node) {
                 smlt_channel_send(&chan[last_node][0], msg);
@@ -279,8 +280,8 @@ int main(int argc, char **argv)
     typedef void* (worker_func_t)(void*);
     worker_func_t * workers[NUM_EXP] = {
         &pingpong,
-        &reduction,
         &ab,
+        &reduction,
         &agreement,
         &barrier,
     };
@@ -291,6 +292,15 @@ int main(int argc, char **argv)
         "Reduction",
         "Agreement",
         "Barrier",
+    };
+
+    char *topo_names[NUM_TOPOS] = {
+        "adaptivetree",
+        "cluster",
+        "badtree",
+        "sequential",
+        "fibonacci",
+        "bintree",
     };
 
     pthread_barrier_init(&bar, NULL, NUM_THREADS);
@@ -313,35 +323,46 @@ int main(int argc, char **argv)
         }
     }
 
-    struct smlt_topology *topo = NULL;
-    printf("Creating binary tree \n");
-    smlt_topology_create(NULL, name, &topo);
-    active_topo = topo;
-
-    err = smlt_context_create(topo, &context);
-    if (smlt_err_is_fail(err)) {
-        printf("FAILED TO INITIALIZE CONTEXT !\n");
-        return 1;
+    uint32_t cores[NUM_THREADS];
+    for (int i = 0; i < NUM_THREADS; i++) {
+        cores[i] = i;
     }
- 
-    for (int i = 0; i < NUM_EXP; i++){
 
-        printf("----------------------------------------\n");
-        printf("Executing experiment %s\n", labels[i]);
-        printf("----------------------------------------\n");
-        
-        struct smlt_node *node;
-        for (uint64_t j = 0; j < NUM_THREADS; j++) {
-            node = smlt_get_node_by_id(j);
-            err = smlt_node_start(node, workers[i], (void*) j);
-            if (smlt_err_is_fail(err)) {
-                printf("Staring node failed \n");
-            }   
-        }
+    for (int j = 0; j < NUM_TOPOS; j++) {
+        struct smlt_generated_model* model = NULL;
+        err = smlt_generate_model(cores, NUM_THREADS, topo_names[j],
+                                  &model);
 
-        for (int j=0; j < NUM_THREADS; j++) {
-            node = smlt_get_node_by_id(j);
-            smlt_node_join(node);
+        struct smlt_topology *topo = NULL;
+        smlt_topology_create(model, topo_names[j], &topo);
+        active_topo = topo;
+
+        err = smlt_context_create(topo, &context);
+        if (smlt_err_is_fail(err)) {
+            printf("FAILED TO INITIALIZE CONTEXT !\n");
+            return 1;
         }
-   }
+       
+        for (int i = 0; i < NUM_EXP; i++){
+
+
+            printf("----------------------------------------\n");
+            printf("Executing experiment %s\n", labels[i]);
+            printf("----------------------------------------\n");
+            
+            struct smlt_node *node;
+            for (uint64_t j = 0; j < NUM_THREADS; j++) {
+                node = smlt_get_node_by_id(j);
+                err = smlt_node_start(node, workers[i], (void*) j);
+                if (smlt_err_is_fail(err)) {
+                    printf("Staring node failed \n");
+                }   
+            }
+
+            for (int j=0; j < NUM_THREADS; j++) {
+                node = smlt_get_node_by_id(j);
+                smlt_node_join(node);
+            }
+       }
+    }
 }
