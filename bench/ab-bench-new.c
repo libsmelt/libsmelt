@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <smlt.h>
 #include <smlt_broadcast.h>
 #include <smlt_reduction.h>
@@ -20,22 +21,63 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_THREADS 32
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
-#define NUM_TOPOS 7
+#define NUM_MACHINES 7
+
+static char *machine_names[NUM_MACHINES] = {
+        "gottardo",
+        "ziger1",
+        "ziger2",
+        "appenzeller",
+        "sgs-r820-01",
+        "sgs-r815-03",
+        "sgs-r815-01",
+};
+
+uint32_t num_topos = 7;
+uint32_t num_threads;
 
 struct smlt_context *context = NULL;
 
 static pthread_barrier_t bar;
-static struct smlt_channel chan[NUM_THREADS][NUM_THREADS];
+static struct smlt_channel** chan;
 static struct smlt_topology *active_topo;
 
 __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
 #define TOPO_NAME(x,y) sprintf(x, "%s_%s", y, smlt_topology_get_name(active_topo));
+
+
+/**
+ * \brief Read from environment variable as string
+ */
+static char* get_env_str(const char *envname, const char *defaultvalue)
+{
+    char *env;
+    env = getenv (envname);
+
+    if (env==NULL) {
+
+        return (char*) defaultvalue;
+    }
+
+    return env;
+}
+
+static bool do_generate_model(void) {
+    char* name = get_env_str("SMLT_MACHINE", "");
+
+    for (int i = 0; i < NUM_MACHINES; i++) {
+        if (strcmp(name, machine_names[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2) 
 {
@@ -47,7 +89,7 @@ static uint32_t* get_leafs(struct smlt_topology* topo, uint32_t* count)
         struct smlt_topology_node* tn;
         tn = smlt_topology_get_first_node(active_topo);
         int num_leafs = 0;
-        for (int i = 0; i < NUM_THREADS; i++) {
+        for (int i = 0; i < num_threads; i++) {
             if (smlt_topology_node_is_leaf(tn)) {
                 num_leafs++;
             }
@@ -58,7 +100,7 @@ static uint32_t* get_leafs(struct smlt_topology* topo, uint32_t* count)
 
         int index = 0;
         tn = smlt_topology_get_first_node(active_topo);
-        for (int i = 0; i < NUM_THREADS; i++) {
+        for (int i = 0; i < num_threads; i++) {
             if (smlt_topology_node_is_leaf(tn)) {
                ret[index] = smlt_topology_node_get_id(tn);
                index++;
@@ -81,14 +123,14 @@ static void* pingpong(void* a)
     sk_m_init(&m, NUM_RESULTS, outname, buf);
     sk_m_init(&m2, NUM_RESULTS, outname2, buf2);
 
-    if (smlt_node_get_id() == NUM_THREADS-1) {
+    if (smlt_node_get_id() == num_threads-1) {
         struct smlt_msg* msg = smlt_message_alloc(56);
         for (int i = 0; i < NUM_RUNS; i++) {
             sk_m_restart_tsc(&m);
-            smlt_channel_send(&chan[0][NUM_THREADS-1], msg);
+            smlt_channel_send(&chan[0][num_threads-1], msg);
 
             sk_m_restart_tsc(&m2);
-            smlt_channel_recv(&chan[0][NUM_THREADS-1], msg);
+            smlt_channel_recv(&chan[0][num_threads-1], msg);
 
             sk_m_add(&m2);            
             sk_m_add(&m);            
@@ -100,17 +142,17 @@ static void* pingpong(void* a)
         for (int i = 0; i < NUM_RUNS; i++) {
             sk_m_restart_tsc(&m);
             sk_m_restart_tsc(&m2);
-            smlt_channel_recv(&chan[0][NUM_THREADS-1], msg);
+            smlt_channel_recv(&chan[0][num_threads-1], msg);
 
             sk_m_add(&m2);
 
-            smlt_channel_send(&chan[0][NUM_THREADS-1], msg);
+            smlt_channel_send(&chan[0][num_threads-1], msg);
 
             sk_m_add(&m2);
         }
     }
 
-    if ((smlt_node_get_id() == NUM_THREADS-1) ||
+    if ((smlt_node_get_id() == num_threads-1) ||
         (smlt_node_get_id() == 0)) {
         sk_m_print(&m);
         sk_m_print(&m2);
@@ -216,13 +258,13 @@ static void* barrier(void* a)
 
         smlt_barrier_wait(context, NULL);
 
-        if (smlt_node_get_id() == (NUM_THREADS-1)) {
+        if (smlt_node_get_id() == (num_threads-1)) {
             sk_m_add(&m);
         }
     }
 
     if (smlt_node_get_id() == 0 || 
-        smlt_node_get_id() == (NUM_THREADS-1)) {
+        smlt_node_get_id() == (num_threads-1)) {
         sk_m_print(&m);
     }
 
@@ -277,6 +319,13 @@ static void* agreement(void* a)
 
 int main(int argc, char **argv)
 {
+    num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+
+    chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*num_threads);
+    for (int i = 0; i < num_threads; i++) {
+        chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*num_threads);
+    }
+
     typedef void* (worker_func_t)(void*);
     worker_func_t * workers[NUM_EXP] = {
         &pingpong,
@@ -294,7 +343,7 @@ int main(int argc, char **argv)
         "Barrier",
     };
 
-    char *topo_names[NUM_TOPOS] = {
+    char *topo_names[7] = {
         "adaptivetree",
         "mst",
         "bintree",
@@ -304,17 +353,17 @@ int main(int argc, char **argv)
         "sequential",
     };
 
-    pthread_barrier_init(&bar, NULL, NUM_THREADS);
+    pthread_barrier_init(&bar, NULL, num_threads);
     errval_t err;
-    err = smlt_init(NUM_THREADS, true);
+    err = smlt_init(num_threads, true);
     if (smlt_err_is_fail(err)) {
         printf("FAILED TO INITIALIZE !\n");
         return 1;
     }
 
     // TODO to many channels
-    for (int i = 0; i < NUM_THREADS; i++) {
-        for (int j = 0; j < NUM_THREADS; j++) {
+    for (int i = 0; i < num_threads; i++) {
+        for (int j = 0; j < num_threads; j++) {
             struct smlt_channel* ch = &chan[i][j];
             err = smlt_channel_create(&ch, (uint32_t *)&i, (uint32_t*) &j, 1, 1);
             if (smlt_err_is_fail(err)) {
@@ -324,15 +373,26 @@ int main(int argc, char **argv)
         }
     }
 
-    uint32_t cores[NUM_THREADS];
-    for (int i = 0; i < NUM_THREADS; i++) {
+    uint32_t cores[num_threads];
+    for (int i = 0; i < num_threads; i++) {
         cores[i] = i;
     }
 
-    for (int j = 0; j < NUM_TOPOS; j++) {
+    for (int j = 0; j < num_topos; j++) {
         struct smlt_generated_model* model = NULL;
-        err = smlt_generate_model(cores, NUM_THREADS, topo_names[j],
-                                  &model);
+        if (do_generate_model()) {
+            err = smlt_generate_model(cores, num_threads, topo_names[j],
+                                      &model);
+            if (smlt_err_is_fail(err)) {
+                model = NULL;
+                num_topos = 1;
+                topo_names[0] = "bintree";
+            }
+        } else {
+            model = NULL;
+            num_topos = 1;
+            topo_names[0] = "bintree";
+        }
 
         struct smlt_topology *topo = NULL;
         smlt_topology_create(model, topo_names[j], &topo);
@@ -352,7 +412,7 @@ int main(int argc, char **argv)
             printf("----------------------------------------\n");
             
             struct smlt_node *node;
-            for (uint64_t j = 0; j < NUM_THREADS; j++) {
+            for (uint64_t j = 0; j < num_threads; j++) {
                 node = smlt_get_node_by_id(j);
                 err = smlt_node_start(node, workers[i], (void*) j);
                 if (smlt_err_is_fail(err)) {
@@ -360,7 +420,7 @@ int main(int argc, char **argv)
                 }   
             }
 
-            for (int j=0; j < NUM_THREADS; j++) {
+            for (int j=0; j < num_threads; j++) {
                 node = smlt_get_node_by_id(j);
                 smlt_node_join(node);
             }

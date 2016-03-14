@@ -44,13 +44,22 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
                                  &((*model)->leafs), &((*model)->last_node));
     
     printf("Model Generated \n");
+    bool all_zeros = true;
     for (int i = 0; i < len; i++) {
         for (int j = 0; j < len; j++) {
             printf("%d ", (*model)->model[i*len+j]);
+            if ((*model)->model[i*len+j] != 0) {
+                all_zeros = false;
+            }
         }
         printf("\n");
     }
+
+    
+
     if (err) {
+        return SMLT_ERR_GENERATOR;
+    } else if (all_zeros) {
         return SMLT_ERR_GENERATOR;
     } else {
         return SMLT_SUCCESS;
