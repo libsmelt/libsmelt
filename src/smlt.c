@@ -104,6 +104,17 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
         smlt_gbl_all_node_count++;
     }
 
+
+    // setup channels
+    for (uint32_t i = 0; i < smlt_gbl_num_proc; i++) {
+        for (uint32_t j = i+1; j < smlt_gbl_num_proc; j++) {
+            struct smlt_channel* chan = &(smlt_gbl_all_nodes[i]->chan[j]);
+            err = smlt_channel_create(&chan , &i, &j, 1, 1);
+            smlt_gbl_all_nodes[j]->chan[i] = smlt_gbl_all_nodes[i]->chan[j];  
+        }
+    }
+
+
     /* initialize the topology subsystem */
     err = smlt_topology_init();
     if (smlt_err_is_fail(err)) {

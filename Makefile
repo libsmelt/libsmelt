@@ -107,9 +107,10 @@ all: $(TARGET) \
 		 test/queuepair-test \
 		 test/ffq-test \
 		 test/context-test \
+		 test/smlt-mp-test \
 		 bench/ab-bench-new \
 		 bench/pairwise \
-		 bench/pairwise_raw
+		 bench/pairwise_raw \
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -145,6 +146,8 @@ test/shmqp-test: test/shmqp-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/shmqp-test.c -o $@ -lsmltrt
 test/context-test: test/context-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/context-test.c -o $@ -lsmltrt
+test/smlt-mp-test: test/smlt-mp-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/smlt-mp-test.c -o $@ -lsmltrt
 # Benchmarks
 # --------------------------------------------------
 
@@ -184,6 +187,7 @@ clean:
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
 	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
+	rm -f test/smlt-mp-test
 debug:
 	echo $(HEADERS)
 
