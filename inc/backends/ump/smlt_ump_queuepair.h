@@ -87,7 +87,7 @@ static inline errval_t smlt_ump_queuepair_prepare_send(struct smlt_ump_queuepair
         return SMLT_ERR_CHAN_WOULD_BLOCK;
     }
 
-    *msg = smlt_ump_queue_get_next(&qp->tx);
+    *msg = (struct smlt_ump_message *)smlt_ump_queue_get_next(&qp->tx);
 
     return SMLT_SUCCESS;
 }
