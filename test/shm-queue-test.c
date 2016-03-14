@@ -23,7 +23,6 @@
 #include <backends/shm/swmr.h>
 
 //#define DEBUG
-#define SHM_SIZE SHMQ_SIZE*64
 #ifdef DEBUG
 #define NUM_WRITES 40
 #else

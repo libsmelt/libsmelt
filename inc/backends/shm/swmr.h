@@ -11,6 +11,8 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include <smlt.h>
+#include <smlt_error.h>
 
 /*
  * Definitions for shared memory queue
@@ -65,9 +67,10 @@ struct swmr_queue {
 void swmr_init_context(void* shm, struct swmr_context* queue,
                        uint8_t num_readers, uint8_t id);
 
-struct swmr_queue* swmr_init_queue(uint32_t src,
-                                   uint32_t* dst,
-                                   uint16_t count);
+void swmr_queue_create(struct swmr_queue**,
+                       uint32_t src,
+                       uint32_t* dst,
+                       uint16_t count);
 
 void swmr_send_raw(struct swmr_context* context,
                   uintptr_t p1,
@@ -90,4 +93,6 @@ void swmr_receive_raw(struct swmr_context* context,
 bool swmr_can_send(struct swmr_context* context);
 bool swmr_can_receive(struct swmr_context* context);
 
+
+errval_t smlt_swmr_send(struct swmr_queue *qp, struct smlt_msg *msg);
 #endif /* SYNC_SHM_H */

@@ -11,6 +11,7 @@
 
 #include <smlt_queuepair.h>
 #include <backends/shm/swmr.h>
+
 /*
  * ===========================================================================
  * Smelt channel MACROS
@@ -36,7 +37,7 @@ struct smlt_channel
     smlt_nid_t owner;
     uint32_t m;
     uint32_t n;
-
+    bool use_shm;
     /* type specific queue pair */
     union {
         struct mp {
@@ -107,15 +108,26 @@ static inline errval_t smlt_channel_send(struct smlt_channel *chan,
 {
     errval_t err;
     uint32_t num_chan = chan->m > chan->n ? chan->m : chan->n;
-    for (int i = 0; i < num_chan; i++) {
-        if (chan->owner == smlt_node_self_id) {
-            err = smlt_queuepair_send(&chan->c.mp.send[i], msg);
-        } else {
-            err = smlt_queuepair_send(&chan->c.mp.recv[i], msg);
+    if (!chan->use_shm) {
+        for (int i = 0; i < num_chan; i++) {
+            if (chan->owner == smlt_node_self_id) {
+                err = smlt_queuepair_send(&chan->c.mp.send[i], msg);
+            } else {
+                err = smlt_queuepair_send(&chan->c.mp.recv[i], msg);
+            }
+            if (smlt_err_is_fail(err)){
+                return smlt_err_push(err, SMLT_ERR_SEND);
+            }   
         }
-        if (smlt_err_is_fail(err)){
-            return smlt_err_push(err, SMLT_ERR_SEND);
-        }   
+
+    } else {
+        if (chan->owner == smlt_node_self_id) {
+           smlt_swmr_send(&chan->c.shm.send, msg);
+        } else {
+            for (int i = 0; i < num_chan; i++) {
+                smlt_queuepair_send(&chan->c.shm.recv[i], msg);
+            }
+        }
     }
     return SMLT_SUCCESS;
 }

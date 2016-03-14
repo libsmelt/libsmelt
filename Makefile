@@ -108,6 +108,7 @@ all: $(TARGET) \
 		 test/ffq-test \
 		 test/context-test \
 		 test/smlt-mp-test \
+		 test/channel-test \
 		 bench/ab-bench-new \
 		 bench/pairwise \
 		 bench/pairwise_raw \
@@ -150,6 +151,8 @@ test/context-test: test/context-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/context-test.c -o $@ -lsmltrt
 test/smlt-mp-test: test/smlt-mp-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/smlt-mp-test.c -o $@ -lsmltrt
+test/channel-test: test/channel-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/channel-test.c -o $@ -lsmltrt
 # Benchmarks
 # --------------------------------------------------
 

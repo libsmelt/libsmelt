@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <numa.h>
 #include <smlt_platform.h>
+#include <smlt_message.h>
 
 #include <shm/swmr.h>
 
@@ -66,29 +67,45 @@ void swmr_init_context(void* shm, struct swmr_context* queue,
     queue->r_mask = 0xF;
 }
 
-struct swmr_queue* swmr_queue_create(uint32_t src,
-                                     uint32_t* dst,
-                                     uint16_t count)
+void swmr_queue_create(struct swmr_queue** queue,
+                       uint32_t src,
+                       uint32_t* dst,
+                       uint16_t count)
 {
-    struct swmr_queue* qp = (struct swmr_queue*) smlt_platform_alloc_on_node(
+    /*
+    *queue = (struct swmr_queue*) smlt_platform_alloc_on_node(
                                         sizeof(struct swmr_queue),
                                         numa_node_of_cpu(src),
                                         SMLT_ARCH_CACHELINE_SIZE,
                                         true);
-
+    */
     void* shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
                                             numa_node_of_cpu(dst[0]),
                                             SMLT_ARCH_CACHELINE_SIZE, true);
 
-    swmr_init_context(shm, &qp->src, count, 0);
-    qp->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
+    swmr_init_context(shm, &(*queue)->src, count, 0);
+
+    (*queue)->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
                                           numa_node_of_cpu(dst[0]),
                                           SMLT_DEFAULT_ALIGNMENT, true);
 
     for (int i = 0; i < count ; i++) {
-        swmr_init_context(shm, &qp->dst[i], count, i);
+        printf("SWMR %d context %p \n", i, (void*) &((*queue)->dst[i]));
+        swmr_init_context(shm, &((*queue)->dst[i]), count, i);
     }
-    return qp;    
+}
+
+
+errval_t smlt_swmr_send(struct swmr_queue *qp, struct smlt_msg *msg)
+{
+    if (msg->words <= 7) {
+        uintptr_t* data = (uintptr_t*) msg->data;
+        swmr_send_raw(&qp->src, data[0], data[1], data[2],
+                      data[3], data[4], data[5], data[6]);
+    } else {
+        // TODO Fragment ? Or Bulkload style?
+    }
+    return SMLT_SUCCESS;
 }
 
 // get the minimum of the readers pointer
