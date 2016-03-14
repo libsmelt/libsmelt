@@ -20,11 +20,11 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_THREADS 32
+#define NUM_THREADS 4
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
-#define NUM_TOPOS 6
+#define NUM_TOPOS 7
 
 struct smlt_context *context = NULL;
 
@@ -301,6 +301,7 @@ int main(int argc, char **argv)
         "sequential",
         "fibonacci",
         "bintree",
+        "mst",
     };
 
     pthread_barrier_init(&bar, NULL, NUM_THREADS);

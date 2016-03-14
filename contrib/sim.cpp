@@ -174,6 +174,7 @@ int smlt_tree_generate_wrapper(unsigned ncores,
 {
     // Ask the Simulator to build a model
     const char *host = get_env_str("SMLT_HOSTNAME", "");
+    const char *machine = get_env_str("SMLT_MACHINE", "");
 
     // Determine hostname of this machine
     char thishost[NAMELEN];
@@ -191,7 +192,7 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     
     Json::Value root;   // 'root' will contain the root value after parsing.
  //   root["machine"] = thishost;
-    root["machine"] = "sgs-r820-01";
+    root["machine"] = machine;
     if (tree_name == NULL) {
         root["topology"] = "adaptivetree";
     } else {
