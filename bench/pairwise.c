@@ -17,7 +17,7 @@
  #include <platforms/measurement_framework.h>
 
 
-#define NUM_EXP 10000
+#define NUM_EXP 1000
 
 #define INIT_SKM(func, sender, receiver)                                \
         char _str_buf[1024];                                            \
