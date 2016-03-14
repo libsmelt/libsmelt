@@ -191,7 +191,7 @@ bool smlt_ump_queuepair_can_send(struct smlt_qp *qp);
  static inline errval_t smlt_ump_queuepair_recv_raw(struct smlt_ump_queuepair *qp,
                                                     struct smlt_ump_message **msg)
  {
-     if (!smlt_ump_queue_can_recv(&qp->rx)) {
+     if (!smlt_ump_queuepair_can_recv_raw(qp)) {
          return SMLT_ERR_QUEUE_EMPTY;
      }
 

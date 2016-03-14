@@ -47,7 +47,8 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             struct smlt_ump_queuepair *umpq_src = &(*qp1)->q.ump;
             struct smlt_ump_queuepair *umpq_dst = &(*qp2)->q.ump;
 
-            err = smlt_ump_queuepair_init(64, smlt_platform_cluster_of_core(src),
+            err = smlt_ump_queuepair_init(SMLT_UMP_DEFAULT_SLOTS,
+                                          smlt_platform_cluster_of_core(src),
                                           smlt_platform_cluster_of_core(dst),
                                           umpq_src, umpq_dst);
             if (smlt_err_is_fail(err)) {

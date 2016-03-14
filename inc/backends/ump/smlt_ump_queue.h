@@ -284,11 +284,15 @@ static inline volatile bool smlt_ump_queue_can_recv(struct smlt_ump_queue *c)
 {
     SMLT_ASSERT(c);
     SMLT_ASSERT(c->buf);
+    SMLT_ASSERT(c->direction == SMLT_UMP_DIRECTION_RECV);
+
 
     /* check the direction */
+    /*
     if (c->direction != SMLT_UMP_DIRECTION_RECV) {
         return false;
     }
+    */
 
     volatile struct smlt_ump_message *m = c->buf + c->pos;
 
