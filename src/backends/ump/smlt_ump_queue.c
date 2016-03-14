@@ -97,7 +97,7 @@ errval_t smlt_ump_queue_init_tx(struct smlt_ump_queue *q, void *buf,
      * we clear the buffer of the messages, this has to be done on the sending
      * side
      */
-    memset(q->buf, 0, slots * SMLT_UMP_MSG_BYTES);
+    memset(buf, 0, slots * SMLT_UMP_MSG_BYTES);
 
     SMLT_ASSERT(q->buf && q->epoch);
 

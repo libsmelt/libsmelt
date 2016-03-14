@@ -43,6 +43,8 @@ SMLT_STATIC_ASSERT(sizeof(smlt_ump_ctrl_word_t) <= sizeof(smlt_ump_payload_word_
  */
 #define SMLT_UMP_MSG_BYTES  (1 * SMLT_ARCH_CACHELINE_SIZE)
 
+#define SMLT_UMP_DEFAULT_SLOTS (BASE_PAGE_SIZE / SMLT_UMP_MSG_BYTES)
+
 /**
  * the number of (payload) words a message consists of.
  */
@@ -139,7 +141,7 @@ typedef enum {
  */
 struct smlt_ump_queue
 {
-    struct smlt_ump_message *buf;   ///< the messages ring buffer`
+    volatile struct smlt_ump_message *buf;   ///< the messages ring buffer`
     smlt_ump_idx_t *last_ack;       ///< memory to store the last ACK
     smlt_ump_idx_t pos;             ///< current position on the buffer`
     smlt_ump_idx_t num_msg;         ///< buffer size in message
@@ -205,7 +207,8 @@ static inline smlt_ump_idx_t smlt_ump_queue_last_ack(struct smlt_ump_queue *q)
  *
  * @return pointer to a message slot
  */
-static inline struct smlt_ump_message *smlt_ump_queue_get_next(struct smlt_ump_queue *c)
+static inline volatile
+struct smlt_ump_message *smlt_ump_queue_get_next(struct smlt_ump_queue *c)
 {
     SMLT_ASSERT(c->direction == SMLT_UMP_DIRECTION_SEND);
     return c->buf + c->pos;
@@ -281,11 +284,15 @@ static inline volatile bool smlt_ump_queue_can_recv(struct smlt_ump_queue *c)
 {
     SMLT_ASSERT(c);
     SMLT_ASSERT(c->buf);
+    SMLT_ASSERT(c->direction == SMLT_UMP_DIRECTION_RECV);
+
 
     /* check the direction */
+    /*
     if (c->direction != SMLT_UMP_DIRECTION_RECV) {
         return false;
     }
+    */
 
     volatile struct smlt_ump_message *m = c->buf + c->pos;
 
@@ -306,7 +313,7 @@ static inline errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
                                                struct smlt_ump_message **msg)
 {
     union smlt_ump_ctrl ctrl;
-    struct smlt_ump_message *m;
+    volatile struct smlt_ump_message *m;
 
     SMLT_ASSERT(q);
     SMLT_ASSERT(q->direction != SMLT_UMP_DIRECTION_RECV);
@@ -325,7 +332,7 @@ static inline errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
     }
 
     if (msg) {
-        *msg = m;
+        *msg = (struct smlt_ump_message *)m;
     }
 
     return SMLT_SUCCESS;
