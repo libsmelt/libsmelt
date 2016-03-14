@@ -111,6 +111,8 @@ all: $(TARGET) \
 		 bench/ab-bench-new \
 		 bench/pairwise \
 		 bench/pairwise_raw \
+		 bench/pingpong \
+		 bench/polloverhead
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -161,7 +163,13 @@ bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.c -o $@
 
 bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise_raw.c -o $@
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/pairwise_raw.c -o $@ -lsmltrt
+
+bench/pingpong: $(DEPS) $(EXTERNAL_OBJS) bench/pingpong.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pingpong.c -lm -o $@
+
+bench/polloverhead: $(DEPS) $(EXTERNAL_OBJS) bench/polloverhead.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/polloverhead.c -lm -o $@
 
 # Build shared library
 # --------------------------------------------------
