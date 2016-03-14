@@ -30,8 +30,6 @@ errval_t smlt_ump_queuepair_init(smlt_ump_idx_t num_slots, uint8_t node_src,
 {
     errval_t err;
 
-    printf("creating UMP queuepair\n");
-
     /* make sure the number of slots is even */
     if (num_slots < 2) {
         printf("INVAL\n");
