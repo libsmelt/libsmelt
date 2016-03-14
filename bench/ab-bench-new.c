@@ -20,7 +20,7 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 32
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
@@ -296,12 +296,12 @@ int main(int argc, char **argv)
 
     char *topo_names[NUM_TOPOS] = {
         "adaptivetree",
+        "mst",
+        "bintree",
         "cluster",
         "badtree",
-        "sequential",
         "fibonacci",
-        "bintree",
-        "mst",
+        "sequential",
     };
 
     pthread_barrier_init(&bar, NULL, NUM_THREADS);
