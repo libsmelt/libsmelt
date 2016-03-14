@@ -56,10 +56,10 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             }
 
             // set function pointers
-            (*qp1)->f.send.do_send = smlt_ump_queuepair_send;
+            (*qp1)->f.send.try_send = smlt_ump_queuepair_try_send;
             (*qp1)->f.send.notify = smlt_ump_queuepair_notify;
             (*qp1)->f.send.can_send = smlt_ump_queuepair_can_send;
-            (*qp1)->f.recv.do_recv = smlt_ump_queuepair_recv;
+            (*qp1)->f.recv.try_recv = smlt_ump_queuepair_try_recv;
             (*qp1)->f.recv.can_recv = smlt_ump_queuepair_can_recv;
             (*qp1)->f.recv.notify = smlt_ump_queuepair_recv_notify;
             (*qp2)->f = (*qp1)->f;
@@ -74,10 +74,10 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             (*qp2)->queue_rx.ffq = (*qp1)->queue_tx.ffq;
 
             // set function pointers
-            (*qp1)->f.send.do_send = smlt_ffq_send;
+            (*qp1)->f.send.try_send = smlt_ffq_send;
             (*qp1)->f.send.notify = smlt_ffq_send0;
             (*qp1)->f.send.can_send = smlt_ffq_can_send;
-            (*qp1)->f.recv.do_recv = smlt_ffq_recv;
+            (*qp1)->f.recv.try_recv = smlt_ffq_recv;
             (*qp1)->f.recv.can_recv = smlt_ffq_can_recv;
             (*qp1)->f.recv.notify = smlt_ffq_recv0;
 
@@ -92,10 +92,10 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             (*qp2)->queue_tx.shm = (*qp1)->queue_rx.shm;
 
             // set function pointers
-            (*qp1)->f.send.do_send = smlt_shm_send;
+            (*qp1)->f.send.try_send = smlt_shm_send;
             (*qp1)->f.send.notify = smlt_shm_send0;
             (*qp1)->f.send.can_send = smlt_shm_can_send;
-            (*qp1)->f.recv.do_recv = smlt_shm_recv;
+            (*qp1)->f.recv.try_recv = smlt_shm_recv;
             (*qp1)->f.recv.can_recv = smlt_shm_can_recv;
             (*qp1)->f.recv.notify = smlt_shm_recv0;
 
@@ -138,106 +138,4 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp)
     }
 
     return SMLT_SUCCESS;
-}
-
-/*
- * ===========================================================================
- * sending functions
- * ===========================================================================
- */
-
-
-/**
- * @brief sends a message on the to the queuepair
- *
- * @param ep    the Smelt queuepair to call the operation on
- * @param msg   Smelt message argument
- *
- * @returns error value
- *
- * This function is BLOCKING if the queuepair cannot take new messages
- */
-errval_t smlt_queuepair_send(struct smlt_qp *qp,
-                             struct smlt_msg *msg)
-{
-    return qp->f.send.do_send(qp, msg);
-}
-/**
- * @brief sends a notification (zero payload message)
- *
- * @param ep    the Smelt queuepair to call the operation on
- * @param msg   Smelt message argument
- *
- * @returns error value
- */
-errval_t smlt_queuepair_notify(struct smlt_qp *qp)
-{
-    return qp->f.send.notify(qp);
-}
-/**
- * @brief checks if the a message can be sent on the queuepair
- *
- * @param ep    the Smelt queuepair to call the check function on
- *
- * @returns TRUE if the operation can be executed
- *          FALSE otherwise
- */
-bool smlt_queuepair_can_send(struct smlt_qp *qp)
-{
-    return qp->f.send.can_send(qp);
-}
-
-/* TODO: include also non blocking variants ? */
-
-/*
- * ===========================================================================
- * receiving functions
- * ===========================================================================
- */
-
-
-/**
- * @brief receives a message from the queuepair
- *
- * @param ep    the Smelt queuepair to call the operation on
- * @param msg   Smelt message argument
- *
- * @returns error value
- *
- * this function is BLOCKING if there is no message on the queuepair
- */
-errval_t smlt_queuepair_recv(struct smlt_qp *qp,
-                             struct smlt_msg *msg)
-{
-    return qp->f.recv.do_recv(qp, msg);
-}
-
-
-/**
- * @brief receives a notification from the queuepair
- *
- * @param ep    the Smelt queuepair to call the operation on
- *
- * @returns error value
- *
- * this function is BLOCKING if there is no message on the queuepair
- */
-errval_t smlt_queuepair_recv0(struct smlt_qp *qp)
-{
-    return qp->f.recv.notify(qp);
-}
-
-/**
- * @brief checks if there is a message to be received
- *
- * @param ep    the Smelt queuepair to call the check function on
- *
- * @returns TRUE if the operation can be executed
- *          FALSE otherwise
- *
- * this invokes either the can_send or can_receive function
- */
-bool smlt_queuepair_can_recv(struct smlt_qp *qp)
-{
-    return qp->f.recv.can_recv(qp);
 }

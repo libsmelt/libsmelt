@@ -113,8 +113,8 @@ errval_t smlt_ump_queuepair_destroy(struct smlt_ump_queuepair *qp)
  *
  * @returns SMELT_SUCCESS of the messessage could be sent.
  */
-errval_t smlt_ump_queuepair_send(struct smlt_qp *qp,
-                                 struct smlt_msg *msg)
+errval_t smlt_ump_queuepair_try_send(struct smlt_qp *qp,
+                                     struct smlt_msg *msg)
 {
     errval_t err;
     struct smlt_ump_message *m;
@@ -123,9 +123,10 @@ errval_t smlt_ump_queuepair_send(struct smlt_qp *qp,
 
     struct smlt_ump_queuepair *ump = &qp->q.ump;
 
-    do {
-        err = smlt_ump_queuepair_prepare_send(ump, &m);
-    } while(err != SMLT_SUCCESS);
+    err = smlt_ump_queuepair_prepare_send(ump, &m);
+    if (smlt_err_is_fail(err)) {
+        return SMLT_ERR_QUEUE_FULL;
+    }
 
     for (uint32_t i = 0; i < msg->words; ++i) {
         m->data[i] = msg->data[i];
@@ -171,8 +172,8 @@ bool smlt_ump_queuepair_can_send(struct smlt_qp *qp)
  *
  * @returns SMELT_SUCCESS of the messessage could be received.
  */
-errval_t smlt_ump_queuepair_recv(struct smlt_qp *qp,
-                                 struct smlt_msg *msg)
+errval_t smlt_ump_queuepair_try_recv(struct smlt_qp *qp,
+                                     struct smlt_msg *msg)
 {
     errval_t err;
     struct smlt_ump_message *m;
@@ -181,9 +182,10 @@ errval_t smlt_ump_queuepair_recv(struct smlt_qp *qp,
 
     struct smlt_ump_queuepair *ump = &qp->q.ump;
 
-    do {
-        err =  smlt_ump_queuepair_recv_raw(ump, &m);
-    } while(err != SMLT_SUCCESS);
+    err =  smlt_ump_queuepair_recv_raw(ump, &m);
+    if (smlt_err_is_fail(err)) {
+        return err;
+    }
 
     for (uint32_t i = 0; i < msg->words; ++i) {
         msg->data[i] = m->data[i];

@@ -95,12 +95,12 @@ struct smlt_qp
 
     struct {
         struct {
-            smlt_qp_op_fn_t do_send;           ///< send operation
+            smlt_qp_op_fn_t try_send;           ///< send operation
             smlt_qp_notify_fn_t notify;
             smlt_qp_check_fn_t can_send;    ///< checks if can be send
         } send;
         struct {
-            smlt_qp_op_fn_t do_recv;           ///< recv operation
+            smlt_qp_op_fn_t try_recv;           ///< recv operation
             smlt_qp_notify_fn_t notify; // TODO change name
             smlt_qp_check_fn_t can_recv;    ///< checksi if can be received
         } recv;
@@ -153,10 +153,37 @@ errval_t smlt_queuepair_destroy(struct smlt_qp *qp);
  *
  * @returns error value
  *
+ */
+static inline errval_t smlt_queuepair_try_send(struct smlt_qp *qp,
+                                               struct smlt_msg *msg)
+{
+    return qp->f.send.try_send(qp, msg);
+}
+
+/**
+ * @brief sends a message on the to the queuepair
+ *
+ * @param ep    the Smelt queuepair to call the operation on
+ * @param msg   Smelt message argument
+ *
+ * @returns error value
+ *
  * This function is BLOCKING if the queuepair cannot take new messages
  */
-errval_t smlt_queuepair_send(struct smlt_qp *qp,
-                             struct smlt_msg *msg);
+static inline errval_t smlt_queuepair_send(struct smlt_qp *qp,
+                                           struct smlt_msg *msg)
+{
+    errval_t err;
+
+    do {
+        err = smlt_queuepair_try_send(qp, msg);
+    } while(err == SMLT_ERR_QUEUE_FULL);
+
+    return err;
+}
+
+
+
 /**
  * @brief sends a notification (zero payload message)
  *
@@ -165,7 +192,10 @@ errval_t smlt_queuepair_send(struct smlt_qp *qp,
  *
  * @returns error value
  */
-errval_t smlt_queuepair_notify(struct smlt_qp *qp);
+static inline errval_t smlt_queuepair_notify(struct smlt_qp *qp)
+{
+    return qp->f.send.notify(qp);
+}
 
 /**
  * @brief checks if the a message can be sent on the queuepair
@@ -175,7 +205,10 @@ errval_t smlt_queuepair_notify(struct smlt_qp *qp);
  * @returns TRUE if the operation can be executed
  *          FALSE otherwise
  */
-bool smlt_queuepair_can_send(struct smlt_qp *qp);
+static inline bool smlt_queuepair_can_send(struct smlt_qp *qp)
+{
+    return qp->f.send.can_send(qp);
+}
 
 /* TODO: include also non blocking variants ? */
 
@@ -185,6 +218,21 @@ bool smlt_queuepair_can_send(struct smlt_qp *qp);
  * ===========================================================================
  */
 
+ /**
+  * @brief receives a message from the queuepair
+  *
+  * @param qp    the Smelt queuepair to call the operation on
+  * @param msg   Smelt message argument
+  *
+  * @returns error value
+  *
+  * this function is BLOCKING if there is no message on the queuepair
+  */
+ static inline errval_t smlt_queuepair_try_recv(struct smlt_qp *qp,
+                                                struct smlt_msg *msg)
+ {
+     return qp->f.recv.try_recv(qp, msg);
+ }
 
 /**
  * @brief receives a message from the queuepair
@@ -196,8 +244,16 @@ bool smlt_queuepair_can_send(struct smlt_qp *qp);
  *
  * this function is BLOCKING if there is no message on the queuepair
  */
-errval_t smlt_queuepair_recv(struct smlt_qp *qp,
-                             struct smlt_msg *msg);
+static inline errval_t smlt_queuepair_recv(struct smlt_qp *qp,
+                                           struct smlt_msg *msg)
+{
+    errval_t err;
+    do {
+        err = smlt_queuepair_try_recv(qp, msg);
+    } while(err == SMLT_ERR_QUEUE_EMPTY);
+
+    return err;
+}
 
 /**
  * @brief receives a notification from the queuepair
@@ -208,7 +264,11 @@ errval_t smlt_queuepair_recv(struct smlt_qp *qp,
  *
  * this function is BLOCKING if there is no message on the queuepair
  */
-errval_t smlt_queuepair_recv0(struct smlt_qp *qp);
+static inline errval_t smlt_queuepair_recv0(struct smlt_qp *qp)
+{
+    return qp->f.recv.notify(qp);
+}
+
 /**
  * @brief checks if there is a message to be received
  *
@@ -219,7 +279,10 @@ errval_t smlt_queuepair_recv0(struct smlt_qp *qp);
  *
  * this invokes either the can_send or can_receive function
  */
-bool smlt_queuepair_can_recv(struct smlt_qp *qp);
+static inline bool smlt_queuepair_can_recv(struct smlt_qp *qp)
+{
+    return qp->f.recv.can_recv(qp);
+}
 
 
 /*

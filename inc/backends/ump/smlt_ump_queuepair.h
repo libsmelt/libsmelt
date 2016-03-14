@@ -131,8 +131,27 @@ static inline errval_t smlt_ump_queuepair_send_raw(struct smlt_ump_queuepair *qp
  *
  * @returns SMELT_SUCCESS of the messessage could be sent.
  */
-errval_t smlt_ump_queuepair_send(struct smlt_qp *qp,
-                                 struct smlt_msg *msg);
+errval_t smlt_ump_queuepair_try_send(struct smlt_qp *qp,
+                                     struct smlt_msg *msg);
+
+/**
+ * @brief sends a message on the queuepair
+ *
+ * @param qp     The smelt queuepair to send on
+ * @param msg    the Smelt message to send
+ *
+ * @returns SMELT_SUCCESS of the messessage could be sent.
+ */
+static inline errval_t smlt_ump_queuepair_send(struct smlt_qp *qp,
+                                               struct smlt_msg *msg)
+{
+    errval_t err;
+    do {
+        err = smlt_ump_queuepair_try_send(qp, msg);
+    } while(err == SMLT_ERR_QUEUE_FULL);
+
+    return err;
+}
 
 /**
 * @brief sends a notification on the queuepair
@@ -208,8 +227,27 @@ bool smlt_ump_queuepair_can_send(struct smlt_qp *qp);
  *
  * @returns SMELT_SUCCESS of the messessage could be received.
  */
-errval_t smlt_ump_queuepair_recv(struct smlt_qp *qp,
-                                 struct smlt_msg *msg);
+errval_t smlt_ump_queuepair_try_recv(struct smlt_qp *qp,
+                                     struct smlt_msg *msg);
+
+/**
+ * @brief receives a message on the queuepair
+ *
+ * @param qp     The smelt queuepair to send on
+ * @param msg    the Smelt message to receive in
+ *
+ * @returns SMELT_SUCCESS of the messessage could be received.
+ */
+static inline errval_t smlt_ump_queuepair_recv(struct smlt_qp *qp,
+                                               struct smlt_msg *msg)
+{
+    errval_t err;
+    do {
+        err =  smlt_ump_queuepair_try_recv(qp, msg);
+    } while(err == SMLT_ERR_QUEUE_EMPTY);
+
+    return err;
+}
 
 /**
 * @brief receives a notification on the queuepair
