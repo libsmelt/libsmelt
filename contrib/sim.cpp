@@ -42,7 +42,7 @@ int smlt_tree_parse_wrapper(char* json_string,
     Json::CharReaderBuilder rbuilder;
     Json::CharReader* reader = rbuilder.newCharReader();
 
-    reader->parse(json_string, json_string+strlen(json_string)-1, 
+    reader->parse(json_string, json_string+strlen(json_string)-1,
                   &root, &errs);
     // Extract last node
     Json::Value ln = root.get("last_node", "");
@@ -57,7 +57,7 @@ int smlt_tree_parse_wrapper(char* json_string,
     for (unsigned i=0; i<leafs_j.size(); i++) {
         (*leafs)[i] = leafs_j.get(i, Json::Value()).asInt();
     }
-    
+
     Json::Value elem = root.get("model", "");
     assert(*model != NULL);
     int x = 0;
@@ -73,11 +73,11 @@ int smlt_tree_parse_wrapper(char* json_string,
         }
         x++;
     }
-    
+
     return 0;
 }
 
-static int smlt_tree_config_request(const char *hostname, 
+static int smlt_tree_config_request(const char *hostname,
                                     const char* msg,
                                     unsigned ncores,
                                     uint16_t** model,
@@ -125,7 +125,7 @@ static int smlt_tree_config_request(const char *hostname,
 
     int len = strlen(msg);
     int bytes_sent;
-    
+
     bytes_sent = send(socketfd, msg, len, 0);
     assert (bytes_sent==len);
 
@@ -133,10 +133,10 @@ static int smlt_tree_config_request(const char *hostname,
     char incomming_data_buffer[1000];
 
     std::string rec;
-    
+
     do {
         bytes_recieved = recv(socketfd, incomming_data_buffer,1000, 0);
-        
+
         // If no data arrives, the program will just wait here until some data arrives.
         if (bytes_recieved > 0) {
             incomming_data_buffer[bytes_recieved] = '\0' ;
@@ -151,21 +151,21 @@ static int smlt_tree_config_request(const char *hostname,
                return 1;
             }
         }
-        
+
     } while(bytes_recieved>0);
 
 
     freeaddrinfo(host_info_list);
     shutdown(socketfd, SHUT_RDWR);
     assert(model != NULL);
-    char* inp = (char*) rec.c_str();    
+    char* inp = (char*) rec.c_str();
 
     return smlt_tree_parse_wrapper(inp, ncores, model, leafs, last_node);
 }
 
 #define NAMELEN 1000U
 
-int smlt_tree_generate_wrapper(unsigned ncores, 
+int smlt_tree_generate_wrapper(unsigned ncores,
                                uint32_t* cores,
                                char* tree_name,
                                uint16_t** model,
@@ -186,10 +186,10 @@ int smlt_tree_generate_wrapper(unsigned ncores,
         printf("No hostname give, not contacting generator \n");
         return 1;
     }
-    
+
     Json::StreamWriterBuilder wbuilder;
     wbuilder["indentatin"] = "\t";
-    
+
     Json::Value root;   // 'root' will contain the root value after parsing.
  //   root["machine"] = thishost;
     root["machine"] = machine;
@@ -200,14 +200,19 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     }
 
     Json::Value coreids;
-    for (unsigned i=0; i<ncores; i++)
-    coreids.append(cores[i]);
-    
+
+    if (cores != NULL) {
+        for (unsigned i=0; i<ncores; i++)
+            coreids.append(cores[i]);
+    } else {
+        for (unsigned i=0; i<ncores; i++)
+            coreids.append(i);
+    }
+
     root["cores"] = coreids;
 
     std::string doc = Json::writeString(wbuilder, root);
- 
+
     return smlt_tree_config_request(host, doc.c_str(), ncores,
                                     model, leafs, last_node);
 }
-
