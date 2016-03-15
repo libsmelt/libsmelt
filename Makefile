@@ -60,7 +60,7 @@ CFLAGS += -std=gnu99 $(COMMONFLAGS) -D_GNU_SOURCE
 
 # libraries
 # --------------------------------------------------
-LIBS += -lnuma
+LIBS += -lnuma -lm
 LIBS += -L./ -L./contrib/ -lsmltcontrib
 
 
@@ -180,7 +180,7 @@ bench/bar-bench: $(DEPS) $(EXTERNAL_OBJS) bench/bar-bench.c
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
-	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -o $(TARGET)
+	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -lm -o $(TARGET)
 	ar rcs $(patsubst %.so,%.a,$(TARGET)) $(OBJS) $(EXTERNAL_OBJS)
 
 contrib/libsmltcontrib.so:

@@ -60,7 +60,6 @@ static inline void smlt_bench_clt_add_value(struct smlt_bench_ctl *ctl,
                                             cycles_t value)
 {
     ctl->count++;
-
     ctl->data[ctl->idx] = value;
 
     if (++ctl->idx == ctl->max) {
@@ -92,7 +91,19 @@ static inline void smlt_bench_ctl_add_measurement(struct smlt_bench_ctl *ctl)
 void smlt_bench_ctl_prepare_analysis(struct smlt_bench_ctl *ctl,
                                      double ignore);
 
+void smlt_bench_ctl_get_avg();
+
+void smlt_bench_ctl_get_stdev();
 
 
+/*
+ * ===========================================================================
+ * Display
+ * ===========================================================================
+ */
+
+void smlt_bench_ctl_print_analysis(struct smlt_bench_ctl *ctl);
+
+void smlt_bench_clt_print_data(struct smlt_bench_ctl *ctl);
 
 #endif /* SMLT_BENCH_H_ */
