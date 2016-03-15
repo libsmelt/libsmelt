@@ -139,6 +139,10 @@ void smlt_platfrom_lock_release(smlt_platform_lock_t *lock);
  */
 errval_t smlt_platform_pin_thread(coreid_t core);
 
+/**
+ * @brief returns the current core ID this thread is running on.
+ */
+coreid_t smlt_platform_get_core_id(void);
 
 /*
  * ===========================================================================

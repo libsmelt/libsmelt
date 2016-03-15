@@ -56,10 +56,6 @@ static inline uint64_t rdtscp(void)
     return ((uint64_t)edx << 32) | eax;
 }
 
-inline coreid_t disp_get_core_id(void)
-{
-    return sched_getcpu();
-}
 
 inline void bench_init(void)
 {

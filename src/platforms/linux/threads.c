@@ -11,6 +11,7 @@
 #include <smlt_node.h>
 #include "../../internal.h"
 
+#include <stdlib.h>
 #include <sched.h>
 #include <stdarg.h>
 
@@ -47,6 +48,14 @@ errval_t smlt_platform_pin_thread(coreid_t core)
     }
 
     return SMLT_SUCCESS;
+}
+
+/**
+ * @brief returns the current core ID this thread is running on.
+ */
+coreid_t smlt_platform_get_core_id(void)
+{
+    return sched_getcpu();
 }
 
 /**

@@ -148,7 +148,7 @@ inline static void sk_m_sum(struct sk_measurement *m)
         sum += m->buffer[i];
     }
     printf("sk_m_sum(%d,%s) sum= %" PRIu64 "\n",
-           disp_get_core_id(), m->label, sum);
+           smlt_platform_get_core_id(), m->label, sum);
 }
 
 /*
@@ -164,7 +164,7 @@ inline static void sk_m_print_const(struct sk_measurement *m, uint64_t c)
     for (uint32_t i=0; i<max; i++) {
 
         printf("sk_m_print(%d,%s) idx= %" PRIu32 " tscdiff= %" PRIu64 "\n",
-               disp_get_core_id(), m->label, i,
+               smlt_platform_get_core_id(), m->label, i,
                (m->buffer[i]+c));
     }
 }
