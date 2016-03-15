@@ -9,6 +9,8 @@
 #ifndef SMLT_SMLT_H_
 #define SMLT_SMLT_H_ 1
 
+#include <stddef.h>
+
 #include <smlt_config.h>
 #include <smlt_platform.h>
 #include <smlt_error.h>
