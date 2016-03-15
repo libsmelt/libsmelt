@@ -109,6 +109,7 @@ all: $(TARGET) \
 		 test/context-test \
 		 test/smlt-mp-test \
 		 test/channel-test \
+		 bench/bar-bench \
 		 bench/ab-bench-new \
 		 bench/pairwise \
 		 bench/pairwise_raw \
@@ -174,6 +175,8 @@ bench/pingpong: $(DEPS) $(EXTERNAL_OBJS) bench/pingpong.c
 bench/polloverhead: $(DEPS) $(EXTERNAL_OBJS) bench/polloverhead.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/polloverhead.c -lm -o $@
 
+bench/bar-bench: $(DEPS) $(EXTERNAL_OBJS) bench/bar-bench.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/bar-bench.c -lm -o $@
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
@@ -198,7 +201,7 @@ clean:
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
 	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
-	rm -f test/smlt-mp-test
+	rm -f test/smlt-mp-test bench/bar-bench
 debug:
 	echo $(HEADERS)
 

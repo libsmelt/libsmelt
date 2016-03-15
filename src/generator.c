@@ -41,7 +41,7 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
                                                     true);
     (*model)->ncores = len;
     int err = smlt_tree_generate(len, cores, name, &((*model)->model),
-                                 &((*model)->leafs), &((*model)->last_node));
+                                 &((*model)->leafs), &((*model)->root));
     
     printf("Model Generated \n");
     bool all_zeros = true;
@@ -110,7 +110,7 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
     fclose(file);
 
     int err = smlt_tree_parse(json_string, ncores, &((*model)->model), 
-                              &((*model)->leafs), &((*model)->last_node));
+                              &((*model)->leafs), &((*model)->root));
 
     if (err) {
         return SMLT_ERR_GENERATOR;

@@ -8,11 +8,11 @@ int smlt_tree_generate_wrapper(uint32_t ncores,
                                char* tree_name,
                                uint16_t** model,
                                uint32_t** leafs,
-                               uint32_t* last_node);
+                               uint32_t* t_root);
 int smlt_tree_parse_wrapper(char* json_string,
                             uint32_t ncores,
                             uint16_t** model,
                             uint32_t** leafs,
-                            uint32_t* last_node);
+                            uint32_t* t_root);
 
 #endif

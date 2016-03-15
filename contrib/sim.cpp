@@ -31,7 +31,7 @@ int smlt_tree_parse_wrapper(char* json_string,
                             unsigned ncores,
                             uint16_t** model,
                             uint32_t** leafs,
-                            uint32_t* last_node)
+                            uint32_t* t_root)
 {
     Json::Value root;
     // Json::CharReaderBuilder rbuilder;
@@ -45,9 +45,9 @@ int smlt_tree_parse_wrapper(char* json_string,
     reader->parse(json_string, json_string+strlen(json_string)-1,
                   &root, &errs);
     // Extract last node
-    Json::Value ln = root.get("last_node", "");
+    Json::Value ln = root.get("root", "");
     int lnval = ln.asInt();
-    *last_node = (uint32_t)lnval;
+    *t_root = (uint32_t)lnval;
 
     // Extract leaf node
 
@@ -82,7 +82,7 @@ static int smlt_tree_config_request(const char *hostname,
                                     unsigned ncores,
                                     uint16_t** model,
                                     uint32_t** leafs,
-                                    uint32_t* last_node)
+                                    uint32_t* t_root)
 {
 
     int status;
@@ -160,7 +160,7 @@ static int smlt_tree_config_request(const char *hostname,
     assert(model != NULL);
     char* inp = (char*) rec.c_str();
 
-    return smlt_tree_parse_wrapper(inp, ncores, model, leafs, last_node);
+    return smlt_tree_parse_wrapper(inp, ncores, model, leafs, t_root);
 }
 
 #define NAMELEN 1000U
@@ -170,7 +170,7 @@ int smlt_tree_generate_wrapper(unsigned ncores,
                                char* tree_name,
                                uint16_t** model,
                                uint32_t** leafs,
-                               uint32_t* last_node)
+                               uint32_t* t_root)
 {
     // Ask the Simulator to build a model
     const char *host = get_env_str("SMLT_HOSTNAME", "");
@@ -214,5 +214,5 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     std::string doc = Json::writeString(wbuilder, root);
 
     return smlt_tree_config_request(host, doc.c_str(), ncores,
-                                    model, leafs, last_node);
+                                    model, leafs, t_root);
 }
