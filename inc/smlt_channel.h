@@ -45,8 +45,10 @@ struct smlt_channel
             struct smlt_qp* recv; // pointer to recv qps
         } mp;
         struct shm {
-            struct swmr_queue send; // send swmr
+            struct swmr_queue send_owner; // send swmr
+            struct smlt_qp* recv_owner; // dst to src 
             struct smlt_qp* recv; // dst to src 
+            uint32_t* dst;
         } shm;
    } c;
 };
@@ -122,7 +124,7 @@ static inline errval_t smlt_channel_send(struct smlt_channel *chan,
 
     } else {
         if (chan->owner == smlt_node_self_id) {
-           smlt_swmr_send(&chan->c.shm.send, msg);
+           smlt_swmr_send(&chan->c.shm.send_owner, msg);
         } else {
             for (int i = 0; i < num_chan; i++) {
                 smlt_queuepair_send(&chan->c.shm.recv[i], msg);
@@ -210,7 +212,7 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
                                          struct smlt_msg *msg)
 {
     // 1:1
-    errval_t err;
+    errval_t err = SMLT_SUCCESS;
     if (chan->n == chan->m) {
         if (chan->owner == smlt_node_self_id){
             err = smlt_queuepair_recv(&chan->c.mp.send[0], msg);
@@ -219,7 +221,18 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
         }
         // TODO error checking
     } else {
-       assert(!"1:N recv NIY");
+        if (chan->owner == smlt_node_self_id){
+            // recv from all channels
+            for (int i = 0; i < chan->m; i++) {
+                err = smlt_queuepair_recv(&chan->c.shm.recv_owner[i], msg);
+            }
+        } else {
+            for (int i = 0; i < chan->m; i++) {
+                if (chan->c.shm.dst[i] == smlt_node_self_id) {
+                    smlt_swmr_recv(&chan->c.shm.send_owner.dst[i], msg);
+                }
+            }           
+        }
     }
     return err;
 }

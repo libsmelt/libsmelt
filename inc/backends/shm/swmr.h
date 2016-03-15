@@ -95,4 +95,5 @@ bool swmr_can_receive(struct swmr_context* context);
 
 
 errval_t smlt_swmr_send(struct swmr_queue *qp, struct smlt_msg *msg);
+errval_t smlt_swmr_recv(struct swmr_context *context, struct smlt_msg *msg);
 #endif /* SYNC_SHM_H */

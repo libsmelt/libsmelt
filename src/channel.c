@@ -54,42 +54,49 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
     (*chan)->owner = src[0];
 
     errval_t err;
-    for (int i= 0; i < num_chan; i++) {
-        if (count_dst == 1) {
+    if (count_dst == 1) {
+            // 1:1
             (*chan)->use_shm = false;
-            // 1_n
             ((*chan)->c.mp.recv) = (struct smlt_qp*) smlt_platform_alloc(
-                                sizeof(struct smlt_qp)*num_chan,
+                                sizeof(struct smlt_qp),
                                 SMLT_DEFAULT_ALIGNMENT, true);
             ((*chan)->c.mp.send) = (struct smlt_qp*) smlt_platform_alloc(
-                                sizeof(struct smlt_qp)*num_chan,
+                                sizeof(struct smlt_qp),
                                 SMLT_DEFAULT_ALIGNMENT, true);
 
-            struct smlt_qp* send = &((*chan)->c.mp.send[i]);
-            struct smlt_qp* recv = &((*chan)->c.mp.recv[i]);
+            struct smlt_qp* send = &((*chan)->c.mp.send[0]);
+            struct smlt_qp* recv = &((*chan)->c.mp.recv[0]);
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                    &send, &recv, src[0], dst[i]);
+                                    &send, &recv, src[0], dst[0]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
-            }
-        } else {
-            // 1:n
-            (*chan)->use_shm = true;
-            struct swmr_queue* send = &((*chan)->c.shm.send);
-            swmr_queue_create(&send, src[0], dst, num_chan);
+            }   
+    } else {
+        // 1:n
+        (*chan)->use_shm = true;
+        struct swmr_queue* send = &((*chan)->c.shm.send_owner);
+        swmr_queue_create(&send, src[0], dst, num_chan);
 
-            ((*chan)->c.shm.recv) = (struct smlt_qp*) smlt_platform_alloc(
-                                sizeof(struct smlt_qp)*num_chan,
-                                SMLT_DEFAULT_ALIGNMENT, true);
-           
-            struct smlt_qp* tmp = (struct smlt_qp*) smlt_platform_alloc(
-                                                    sizeof(struct smlt_qp),
-                                                    SMLT_DEFAULT_ALIGNMENT, true);
+        ((*chan)->c.shm.dst) = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*
+                                            count_dst, SMLT_DEFAULT_ALIGNMENT, true);
 
-            struct smlt_qp* recv = &((*chan)->c.shm.recv[i]);
+        for (int i = 0; i < count_dst; i++) {
+            (*chan)->c.shm.dst[i] = dst[i];
+        }
 
+        ((*chan)->c.shm.recv) = (struct smlt_qp*) smlt_platform_alloc(
+                            sizeof(struct smlt_qp)*num_chan,
+                            SMLT_DEFAULT_ALIGNMENT, true);
+       
+        ((*chan)->c.shm.recv_owner) = (struct smlt_qp*) smlt_platform_alloc(
+                                                sizeof(struct smlt_qp)*num_chan,
+                                                SMLT_DEFAULT_ALIGNMENT, true);
+
+        for (int i = 0; i < num_chan; i++) {
+            struct smlt_qp* send = &((*chan)->c.shm.recv[i]);
+            struct smlt_qp* recv = &((*chan)->c.shm.recv_owner[i]);
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                        &tmp, &recv, src[0], dst[i]);
+                                        &send, &recv, src[0], dst[i]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
             }

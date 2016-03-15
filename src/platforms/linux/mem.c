@@ -129,10 +129,13 @@ void *smlt_platform_alloc_on_node(uint64_t bytes, uintptr_t align, uint8_t node,
     numa_set_membind(current_mask);
     numa_set_bind_policy(0);
     numa_free_nodemask(new_nodes);
+
     // allso free current mask ?
     return buf;
 #else
+
     void *buf = numa_alloc_onnode(bytes + align + 2* sizeof(void *), node);
+
     if (!buf) {
         return NULL;
     }

@@ -25,7 +25,7 @@
 #include <smlt_channel.h>
 #include <smlt_message.h>
 
-#define NUM_RUNS 10
+#define NUM_RUNS 10000000
 
 struct smlt_channel chan;
 
@@ -40,12 +40,29 @@ void* worker1(void* arg)
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);    
 
     struct smlt_msg* msg = smlt_message_alloc(56);
-    if (id != 0) {
-        for (int i = 0; i < NUM_RUNS; i++) {
-            printf("Core %ld: send %d \n", id, i);
+    int num_wrong = 0;
+    if (id == 0) {
+        for (uint64_t i = 0; i < NUM_RUNS; i++) {
+            msg->data[0] = i;
             smlt_channel_send(&chan, msg);
+         //   smlt_channel_recv(&chan, msg);
         }
-    }   
+    } else {
+        for (int i = 0; i < NUM_RUNS; i++) {
+            smlt_channel_recv(&chan, msg);
+            if (msg->data[0] != i) {
+                num_wrong++;
+            }
+         //   smlt_channel_send(&chan, msg);
+        }
+    }
+
+    if (num_wrong) {
+        printf("Node %d: Test Failed \n", smlt_node_get_id());
+    } else {
+        printf("Node %d: Test Succeeded \n", smlt_node_get_id());
+    }
+    
 
     return 0;
 }

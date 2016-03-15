@@ -80,17 +80,18 @@ void swmr_queue_create(struct swmr_queue** queue,
                                         true);
     */
     void* shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
-                                            numa_node_of_cpu(dst[0]),
-                                            SMLT_ARCH_CACHELINE_SIZE, true);
+                                            SMLT_ARCH_CACHELINE_SIZE, 
+                                            numa_node_of_cpu(dst[0]), true);
+
+    assert(shm != NULL);
 
     swmr_init_context(shm, &(*queue)->src, count, 0);
 
     (*queue)->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
-                                          numa_node_of_cpu(dst[0]),
-                                          SMLT_DEFAULT_ALIGNMENT, true);
+                                                SMLT_DEFAULT_ALIGNMENT, 
+                                                numa_node_of_cpu(dst[0]), true);
 
     for (int i = 0; i < count ; i++) {
-        printf("SWMR %d context %p \n", i, (void*) &((*queue)->dst[i]));
         swmr_init_context(shm, &((*queue)->dst[i]), count, i);
     }
 }
@@ -269,5 +270,18 @@ void swmr_receive_raw(struct swmr_context* context,
     while(!swmr_receive_non_blocking(context, p1, p2, p3,
                                  p4, p5, p6, p7)){};
 
+}
+
+
+errval_t smlt_swmr_recv(struct swmr_context *context, struct smlt_msg *msg)
+{
+    if (msg->words <= 7) {
+        uintptr_t* data = (uintptr_t*) msg->data;
+        swmr_receive_raw(context, &data[0], &data[1], &data[2],
+                      &data[3], &data[4], &data[5], &data[6]);
+    } else {
+        // TODO Fragment ? Or Bulkload style?
+    }
+    return SMLT_SUCCESS;
 }
 
