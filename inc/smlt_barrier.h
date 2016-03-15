@@ -31,7 +31,7 @@ struct smlt_context;
 /**
  * the smelt barrier data structure
  */
-struct smlt_barrier 
+struct smlt_barrier
 {
     bool use_payload;
 
@@ -65,13 +65,11 @@ errval_t smlt_barrier_destroy(struct smlt_context *ctx);
 /**
  * @brief waits on the supplied barrier
  *
- * @param ctx the Smelt context to reduce
- * @param ctx the Smelt context to broadcast
+ * @param ctx the Smelt context
  *
  * @returns TODO:errval
  */
-errval_t smlt_barrier_wait(struct smlt_context *ctx_red,
-                           struct smlt_context *ctx_broad);
+errval_t smlt_barrier_wait(struct smlt_context *ctx);
 
 
 
