@@ -11,6 +11,7 @@
 
 #include <stdbool.h>
 
+
 /**
  * the architecture specific cache line size
  */
@@ -23,7 +24,7 @@
 
 #define SMLT_ARCH_ATTR_ALIGN __attribute__((aligned(SMLT_ARCH_CACHELINE_SIZE)))
 
-#define SMLT_ARCH_PREFETCH(addr) 
+#define SMLT_ARCH_PREFETCH(addr)
 
 /// Emit memory barrier needed between writing UMP payload and header
 static inline void smlt_arch_write_barrier(void)
@@ -60,5 +61,16 @@ static inline  bool smlt_arch_cas(int volatile *p, int old, int new_)
 # error implement CAS here
 #endif
 }
+
+
+static inline cycles_t smlt_arch_tsc(void)
+{
+    uint32_t eax, edx;
+    __asm volatile ("rdtscp" : "=a" (eax), "=d" (edx) :: "ecx");
+    return ((cycles_t)edx << 32) | eax;
+}
+
+
+
 
 #endif /* SMLT_ARCH_H_ */
