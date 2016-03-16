@@ -31,6 +31,7 @@ all: $(TARGET)
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) -shared $(CXXFLAGS) $(OBJS) $(EXTERNAL_OBJS) -o $(TARGET)
 	ar  rcs $(patsubst %.so,%.a,$(TARGET))  $(OBJS) $(EXTERNAL_OBJS)
+	cp libsmltcontrib.so ../
 
 # Compile object files
 # --------------------------------------------------

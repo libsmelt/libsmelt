@@ -20,7 +20,7 @@
 #include <numa.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 10000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 
 
@@ -127,13 +127,58 @@ int main(int argc, char **argv)
     num_threads = sysconf(_SC_NPROCESSORS_ONLN);
     errval_t err;
 
+    err = smlt_init(num_threads, true);
+    if (smlt_err_is_fail(err)) {
+	    printf("FAILED TO INITIALIZE !\n");
+	    return 1;
+    }
+
     for (int i = 4; i < num_threads+1; i++) {
 
-        err = smlt_init(i, true);
+        pthread_barrier_init(&bar, NULL, i);
+
+        active_threads = i;
+        uint32_t* cores = placement(i, false);
+        for (int j = 0; j < i; j++) {
+            printf("Cores[%d]=%d\n",j,cores[j]);
+        }
+
+        struct smlt_generated_model* model = NULL;
+        err = smlt_generate_model(cores, i, NULL, &model);
         if (smlt_err_is_fail(err)) {
-            printf("FAILED TO INITIALIZE !\n");
+            exit(0);
+        }
+
+        struct smlt_topology *topo = NULL;
+        smlt_topology_create(model, "adaptivetree_rr", &topo);
+        active_topo = topo;
+
+        err = smlt_context_create(topo, &context);
+        if (smlt_err_is_fail(err)) {
+            printf("FAILED TO INITIALIZE CONTEXT !\n");
             return 1;
         }
+       
+        printf("----------------------------------------\n");
+        printf("Executing Barrier with %d cores rr\n", i);
+        printf("----------------------------------------\n");
+        
+        struct smlt_node *node;
+        for (uint64_t j = 0; j < i; j++) {
+            node = smlt_get_node_by_id(cores[j]);
+            err = smlt_node_start(node, barrier, (void*) j);
+            if (smlt_err_is_fail(err)) {
+                printf("Staring node failed \n");
+            }   
+        }
+
+        for (int j=0; j < i; j++) {
+            node = smlt_get_node_by_id(cores[j]);
+            smlt_node_join(node);
+        }
+    }
+
+    for (int i = 4; i < num_threads+1; i++) {
 
         pthread_barrier_init(&bar, NULL, i);
 
@@ -150,7 +195,7 @@ int main(int argc, char **argv)
         }
 
         struct smlt_topology *topo = NULL;
-        smlt_topology_create(NULL, "adaptivetree_fill", &topo);
+        smlt_topology_create(model, "adaptivetree_fill", &topo);
         active_topo = topo;
 
         err = smlt_context_create(topo, &context);
@@ -165,7 +210,7 @@ int main(int argc, char **argv)
         
         struct smlt_node *node;
         for (uint64_t j = 0; j < i; j++) {
-            node = smlt_get_node_by_id(j);
+            node = smlt_get_node_by_id(cores[j]);
             err = smlt_node_start(node, barrier, (void*) j);
             if (smlt_err_is_fail(err)) {
                 printf("Staring node failed \n");
@@ -173,52 +218,9 @@ int main(int argc, char **argv)
         }
 
         for (int j=0; j < i; j++) {
-            node = smlt_get_node_by_id(j);
+            node = smlt_get_node_by_id(cores[j]);
             smlt_node_join(node);
         }
     }
 
-
-    for (int i = 4; i < num_threads+1; i++) {
-
-        active_threads = i;
-        uint32_t* cores = placement(i, true);
-        for (int j = 0; j < i; j++) {
-            printf("Cores[%d]=%d\n",j,cores[j]);
-        }
-
-        struct smlt_generated_model* model = NULL;
-        err = smlt_generate_model(cores, i, NULL, &model);
-        if (smlt_err_is_fail(err)) {
-            exit(0);
-        }
-
-        struct smlt_topology *topo = NULL;
-        smlt_topology_create(NULL, "adaptivetree_fill", &topo);
-        active_topo = topo;
-
-        err = smlt_context_create(topo, &context);
-        if (smlt_err_is_fail(err)) {
-            printf("FAILED TO INITIALIZE CONTEXT !\n");
-            return 1;
-        }
-       
-        printf("----------------------------------------\n");
-        printf("Executing Barrier with %d cores fill\n", i);
-        printf("----------------------------------------\n");
-        
-        struct smlt_node *node;
-        for (uint64_t j = 0; j < i; j++) {
-            node = smlt_get_node_by_id(j);
-            err = smlt_node_start(node, barrier, (void*) j);
-            if (smlt_err_is_fail(err)) {
-                printf("Staring node failed \n");
-            }   
-        }
-
-        for (int j=0; j < i; j++) {
-            node = smlt_get_node_by_id(j);
-            smlt_node_join(node);
-        }
-    }
 }

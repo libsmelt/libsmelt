@@ -32,31 +32,24 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
 
-    (*model)->leafs = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*len,
-                                                    SMLT_DEFAULT_ALIGNMENT,
-                                                    true);
-
-    (*model)->model = (uint16_t*) smlt_platform_alloc(sizeof(uint16_t)*len*len,
-                                                    SMLT_DEFAULT_ALIGNMENT,
-                                                    true);
-    (*model)->ncores = len;
+    uint32_t len_model;
     int err = smlt_tree_generate(len, cores, name, &((*model)->model),
-                                 &((*model)->leafs), &((*model)->root));
+                                 &((*model)->leafs), &((*model)->root), &len_model);
     
     printf("Model Generated \n");
     bool all_zeros = true;
-    for (int i = 0; i < len; i++) {
-        for (int j = 0; j < len; j++) {
-            printf("%d ", (*model)->model[i*len+j]);
-            if ((*model)->model[i*len+j] != 0) {
+    for (int i = 0; i < len_model; i++) {
+        for (int j = 0; j < len_model; j++) {
+            printf("%d ", (*model)->model[i*(len_model)+j]);
+            if ((*model)->model[i*(len_model)+j] != 0) {
                 all_zeros = false;
             }
         }
         printf("\n");
     }
-
-    
-
+    (*model)->ncores = len;
+    (*model)->len = len_model;
+   
     if (err) {
         return SMLT_ERR_GENERATOR;
     } else if (all_zeros) {
@@ -81,13 +74,6 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
                                                 sizeof(struct smlt_generated_model),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-    (*model)->leafs = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*ncores,
-                                                    SMLT_DEFAULT_ALIGNMENT,
-                                                    true);
-
-    (*model)->model = (uint16_t*) smlt_platform_alloc(sizeof(uint16_t)*ncores*ncores,
-                                                    SMLT_DEFAULT_ALIGNMENT,
-                                                    true);
 
     (*model)->ncores = ncores;
     char *json_string;
@@ -109,9 +95,11 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
 
     fclose(file);
 
+    uint32_t len_model;
     int err = smlt_tree_parse(json_string, ncores, &((*model)->model), 
-                              &((*model)->leafs), &((*model)->root));
-
+                              &((*model)->leafs), &((*model)->root), &len_model);
+    
+    (*model)->len = len_model;    
     if (err) {
         return SMLT_ERR_GENERATOR;
     } else {

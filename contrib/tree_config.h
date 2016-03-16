@@ -24,11 +24,13 @@ extern "C" {
  * @param model         returns the model
  * @param leafs         returns the leafs in the tree
  * @param last_node     returns the last node
+ * @param len_model     lenght of a colum in the model
  *
  * @return 0 if successful otherwise > 0
  */
 int smlt_tree_generate(uint32_t ncores, uint32_t *cores, char* tree_name,
-                       uint16_t** model, uint32_t** leafs, uint32_t* t_root);
+                       uint16_t** model, uint32_t** leafs, uint32_t* t_root,
+                       uint32_t* len_model);
 
 /**
  * @brief parses a JSON string into the model
@@ -38,11 +40,12 @@ int smlt_tree_generate(uint32_t ncores, uint32_t *cores, char* tree_name,
  * @param model         returns the model
  * @param leafs         returns the leafs in the tree
  * @param last_node     returns the last node
+ * @param len_model     lenght of a colum in the model
  *
  * @return 0 if successful otherwise > 0
  */
 int smlt_tree_parse(char* json_string, uint32_t ncores, uint16_t** model, 
-                    uint32_t** leafs, uint32_t* t_root);
+                    uint32_t** leafs, uint32_t* t_root, uint32_t* len_model);
 
 #ifdef __cplusplus
 }

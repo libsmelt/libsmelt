@@ -31,7 +31,8 @@ int smlt_tree_parse_wrapper(char* json_string,
                             unsigned ncores,
                             uint16_t** model,
                             uint32_t** leafs,
-                            uint32_t* t_root)
+                            uint32_t* t_root,
+                            uint32_t* len_model)
 {
     Json::Value root;
     // Json::CharReaderBuilder rbuilder;
@@ -52,6 +53,7 @@ int smlt_tree_parse_wrapper(char* json_string,
     // Extract leaf node
 
     Json::Value leafs_j = root.get("leaf_nodes", "");
+    *leafs = (uint32_t*) malloc(sizeof(uint32_t)*leafs_j.size());
     assert(*leafs != NULL);
 
     for (unsigned i=0; i<leafs_j.size(); i++) {
@@ -59,16 +61,18 @@ int smlt_tree_parse_wrapper(char* json_string,
     }
 
     Json::Value elem = root.get("model", "");
+    *model = (uint16_t*)  malloc(sizeof(uint16_t)*elem.size()*elem.size());
     assert(*model != NULL);
     int x = 0;
     int y = 0;
+    *len_model = elem.size();
     for (Json::ValueIterator i=elem.begin(); i != elem.end(); i++) {
         y = 0;
         Json::Value inner = (*i);
         for (Json::ValueIterator k=inner.begin(); k != inner.end(); k++) {
 
             Json::Value val = (*k);
-            (*model)[x*ncores+y] = (uint32_t) val.asInt();
+            (*model)[x*elem.size()+y] = (uint32_t) val.asInt();
             y++;
         }
         x++;
@@ -82,7 +86,8 @@ static int smlt_tree_config_request(const char *hostname,
                                     unsigned ncores,
                                     uint16_t** model,
                                     uint32_t** leafs,
-                                    uint32_t* t_root)
+                                    uint32_t* t_root,
+                                    uint32_t* len_model)
 {
 
     int status;
@@ -160,7 +165,7 @@ static int smlt_tree_config_request(const char *hostname,
     assert(model != NULL);
     char* inp = (char*) rec.c_str();
 
-    return smlt_tree_parse_wrapper(inp, ncores, model, leafs, t_root);
+    return smlt_tree_parse_wrapper(inp, ncores, model, leafs, t_root, len_model);
 }
 
 #define NAMELEN 1000U
@@ -170,7 +175,8 @@ int smlt_tree_generate_wrapper(unsigned ncores,
                                char* tree_name,
                                uint16_t** model,
                                uint32_t** leafs,
-                               uint32_t* t_root)
+                               uint32_t* t_root,
+                               uint32_t* len_model)
 {
     // Ask the Simulator to build a model
     const char *host = get_env_str("SMLT_HOSTNAME", "");
@@ -214,5 +220,5 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     std::string doc = Json::writeString(wbuilder, root);
 
     return smlt_tree_config_request(host, doc.c_str(), ncores,
-                                    model, leafs, t_root);
+                                    model, leafs, t_root, len_model);
 }

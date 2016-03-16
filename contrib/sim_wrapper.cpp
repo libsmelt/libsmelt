@@ -7,18 +7,20 @@ extern "C" {
                         uint32_t ncores,
                         uint16_t** model,
                         uint32_t** leafs,
-                        uint32_t* last_node)
+                        uint32_t* last_node,
+                        uint32_t* len_model)
 	{
         return smlt_tree_parse_wrapper(json_string, ncores,
-                                       model, leafs, last_node);
+                                       model, leafs, last_node, len_model);
 	}
 
 	int smlt_tree_generate(uint32_t ncores, uint32_t* cores, 
                            char* tree_name, uint16_t** model,
-                           uint32_t** leafs, uint32_t* last_node)
+                           uint32_t** leafs, uint32_t* last_node,
+                           uint32_t* len_model)
 	{
         return smlt_tree_generate_wrapper(ncores, cores, tree_name,
-                                          model, leafs, last_node);
+                                          model, leafs, last_node, len_model);
 	}
 }
 

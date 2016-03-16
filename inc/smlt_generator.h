@@ -12,7 +12,10 @@
 
 
 struct smlt_generated_model {
+    // number of cores participating
     uint32_t ncores;
+    // lenght of a colum of the model
+    uint32_t len;
     uint32_t root;
     uint16_t* model;
     uint32_t* leafs;
