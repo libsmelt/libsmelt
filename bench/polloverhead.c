@@ -21,22 +21,12 @@ struct smlt_qp *queue_pairs[2];
 size_t chan_per_core = 0;
 cycles_t tsc_overhead = 0;
 
-#define NUM_CHANNELS 1000
+#define NUM_CHANNELS 2048
 
-#define IGNORE_THRESHOLD 4000
-
-#define NUM_EXP 5000
-#define NUM_WARMUP 64
+#define NUM_EXP 10000
+#define NUM_WARMUP 2000
 
 #define STR(X) #X
-
-#define INIT_SKM(func, id, sender, receiver)                                \
-        char _str_buf_##func[1024];                                                \
-        cycles_t _buf_##func[NUM_EXP];                                             \
-        struct sk_measurement m_##func;                                            \
-        snprintf(_str_buf_##func, 1024, "%s%zu-%d-%d", STR(func), id, sender, receiver); \
-        sk_m_init(&m_##func, NUM_EXP, _str_buf_##func, _buf_##func);
-
 
 cycles_t tsc_measurements[NUM_EXP];
 
@@ -79,8 +69,6 @@ void* thr_poll(void* a)
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-    INIT_SKM(rtt, 1UL, arg->s, arg->r);
-
     cycles_t tsc_start, tsc_end;
 
     for (size_t i=0; i<NUM_WARMUP; i++) {
@@ -90,7 +78,7 @@ void* thr_poll(void* a)
             smlt_queuepair_can_recv(qp);
         }
         tsc_end = bench_tsc();
-        tsc_measurements[i] = tsc_end - tsc_start - 2 * tsc_overhead;
+        tsc_measurements[i] = tsc_end - tsc_start - tsc_overhead;
     }
 
     for (size_t i=0; i<NUM_EXP; i++) {
@@ -100,7 +88,7 @@ void* thr_poll(void* a)
             smlt_queuepair_can_recv(qp);
         }
         tsc_end = bench_tsc();
-        tsc_measurements[i] = tsc_end - tsc_start - 2 * tsc_overhead;
+        tsc_measurements[i] = tsc_end - tsc_start - tsc_overhead;
     }
 
     cycles_t sum = 0;
@@ -120,7 +108,7 @@ void* thr_poll(void* a)
             max = tsc_measurements[i];
         }
     }
-    cycles_t avg = sum / NUM_EXP;
+    cycles_t avg = sum / count;
 
     sum = 0;
     for (size_t i=0; i<count; i++) {
@@ -133,8 +121,8 @@ void* thr_poll(void* a)
 
     sum /= count;
 
-    printf("POLL %lu, src=0, dst=%02u is avg=%5lu, stdev=%5lu, med=%5lu, min=%5lu, max=%5lu cycles, count=%lu, ignored=%lu\n",
-            arg->num_channels, arg->r, avg, (cycles_t)sqrt(sum),sorted[NUM_EXP/2], min, max, count, NUM_EXP - count);
+    printf("IDLE-POLL %3lu, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
+            arg->num_channels, avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
 
 
     return NULL;
@@ -147,17 +135,15 @@ void* thr_poll_recv(void* a)
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-    INIT_SKM(rtt, 1UL, arg->s, arg->r);
-
     cycles_t tsc_start, tsc_end;
 
-    size_t num_chan = arg->num_channels * arg->num_cores;
+    size_t num_chan = arg->num_channels;
 
     for (size_t i=0; i<NUM_WARMUP; i++) {
         tsc_start = bench_tsc();
         for (size_t n = 0; n < num_chan; ++n) {
             struct smlt_qp *qp = &queue_pairs[0][n];
-        //    printf("POLL warmup recv: %lu/%lu, qp[%lu]\n", n, num_chan, n);
+            //printf("POLL warmup recv: %lu/%lu, qp[%lu]\n", n, num_chan, n);
             smlt_queuepair_recv(qp, msg);
         }
         tsc_end = bench_tsc();
@@ -165,7 +151,7 @@ void* thr_poll_recv(void* a)
 
         for (size_t n = 0; n < num_chan; ++n) {
             struct smlt_qp *qp = &queue_pairs[0][n];
-        //    printf("POLL warmup send: %lu/%lu\n", n, num_chan);
+            //printf("POLL warmup send: %lu/%lu\n", n, num_chan);
             smlt_queuepair_send(qp, msg);
         }
     }
@@ -173,16 +159,15 @@ void* thr_poll_recv(void* a)
     for (size_t i=0; i<NUM_EXP; i++) {
         errval_t err;
         struct smlt_qp *qp = &queue_pairs[0][0];
-    //    printf("POLL try recv: %u/%lu, qp[0]\n", 0, num_chan);
+        //printf("POLL try recv: %u/%lu, qp[0]\n", 0, num_chan);
         do {
             tsc_start = bench_tsc();
-
             err = smlt_queuepair_try_recv(qp, msg);
         } while(err != SMLT_SUCCESS);
 
         for (size_t n = 1; n < num_chan; ++n) {
             qp = &queue_pairs[0][n];
-        //    printf("POLL recv: %lu/%lu qp[%lu]\n", n, num_chan, n);
+            //printf("POLL recv: %lu/%lu qp[%lu]\n", n, num_chan, n);
             smlt_queuepair_recv(qp, msg);
         }
         tsc_end = bench_tsc();
@@ -190,7 +175,7 @@ void* thr_poll_recv(void* a)
 
         for (size_t n = 0; n < num_chan; ++n) {
             struct smlt_qp *qp = &queue_pairs[0][n];
-        //    printf("POLL send: %lu/%lu qp[%lu]\n", n, num_chan, n);
+            //printf("POLL send: %lu/%lu qp[%lu]\n", n, num_chan, n);
             smlt_queuepair_send(qp, msg);
         }
     }
@@ -212,7 +197,7 @@ void* thr_poll_recv(void* a)
             max = tsc_measurements[i];
         }
     }
-    cycles_t avg = sum / NUM_EXP;
+    cycles_t avg = sum / count;
 
     sum = 0;
     for (size_t i=0; i<count; i++) {
@@ -225,8 +210,10 @@ void* thr_poll_recv(void* a)
 
     sum /= count;
 
-    printf("POLL %lu, src=0, dst=%02u is avg=%5lu, stdev=%5lu, med=%5lu, min=%5lu, max=%5lu cycles, count=%lu, ignored=%lu\n",
-            num_chan, arg->r, avg, (cycles_t)sqrt(sum),sorted[NUM_EXP/2], min, max, count, NUM_EXP - count);
+    printf("POLL %3lu, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
+            arg->num_channels, avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
+//    printf("POLL %lu, src=0, dst=%02u is avg=%5lu, stdev=%5lu, med=%5lu, min=%5lu, max=%5lu cycles, count=%lu, ignored=%lu\n",
+//                    num_chan, arg->r, avg/num_chan, (cycles_t)sqrt(sum)/num_chan,sorted[NUM_EXP/2]/num_chan, min/num_chan, max/num_chan, count, NUM_EXP - count);
 
 
     return NULL;
@@ -266,7 +253,7 @@ void* thr_receiver(void* a)
         }
 
         for (size_t i = 0; i < arg->num_channels; ++i) {
-    //        printf("recv: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
+        //    printf("recv: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
             struct smlt_qp *qp = &queue_pairs[1][arg->r + i * arg->num_cores];
             smlt_queuepair_recv(qp, msg);
         }
@@ -329,8 +316,6 @@ int main(int argc, char **argv)
         struct smlt_qp* src = &(queue_pairs[0][s]);
         struct smlt_qp* dst = &(queue_pairs[1][s]);
 
-
-
         err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
                                     &src, &dst, 0, core);
         if (smlt_err_is_fail(err)) {
@@ -345,8 +330,17 @@ int main(int argc, char **argv)
 
     smlt_platform_pin_thread(0);
 
-#if 0
-    for (size_t i = 0; i < chan_max; i += 2*(num_cores - 1)) {
+#if 1
+    for (size_t i = 1; i < num_cores; ++i) {
+        struct thr_args arg = {
+            .s = 0,
+            .r = 0,
+            .num_channels = i
+        };
+        thr_poll(&arg);
+    }
+
+    for (size_t i = num_cores; i < chan_max; i += num_cores) {
         struct thr_args arg = {
             .s = 0,
             .r = 0,
@@ -358,6 +352,33 @@ int main(int argc, char **argv)
 #endif
 
     struct thr_args args[num_cores];
+
+    for (coreid_t core = 1; core < num_cores; ++core) {
+        for (coreid_t i = 1; i <= core; ++i) {
+            struct smlt_node *dst = smlt_get_node_by_id(i);
+            args[core].s = 0;
+            args[core].r = i-1;
+            args[core].num_channels = 1;
+            args[core].num_cores = core;
+
+            err = smlt_node_start(dst, thr_receiver, args + i);
+            if (smlt_err_is_fail(err)) {
+                printf("Staring node failed \n");
+            }
+        }
+
+        args[0].s = 0;
+        args[0].r = 0;
+        args[0].num_channels = core;
+        args[0].num_cores = core;
+
+        thr_poll_recv(args);
+
+        for (coreid_t i = 0; i < core; ++i) {
+            struct smlt_node *dst = smlt_get_node_by_id(i);
+            smlt_node_join(dst);
+        }
+    }
 
     for (size_t r=1; r<chan_per_core;  ++r) {
         for (coreid_t core = 1; core < (num_cores); ++core) {
@@ -377,14 +398,12 @@ int main(int argc, char **argv)
             }
         }
 
-        struct thr_args arg = {
-            .s = 0,
-            .r = core,
-            .num_channels = r,
-            .num_cores = num_cores -1
-        };
+        args[0].s = 0;
+        args[0].r = 0;
+        args[0].num_channels = (num_cores -1) * r;
+        args[0].num_cores = num_cores -1;
 
-        thr_poll_recv(&arg);
+        thr_poll_recv(args);
 
         // Wait for sender to complete
         for (coreid_t core = 1; core < (num_cores); ++core) {
