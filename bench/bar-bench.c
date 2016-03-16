@@ -27,6 +27,8 @@
 uint32_t num_topos = 7;
 uint32_t num_threads;
 uint32_t active_threads;
+uint32_t* active_cores;
+
 
 struct smlt_context *context = NULL;
 static struct smlt_topology *active_topo;
@@ -109,13 +111,13 @@ static void* barrier(void* a)
         sk_m_restart_tsc(&m);
         smlt_barrier_wait(context);
 
-        if (smlt_node_get_id() == (active_threads-1)) {
+        if (smlt_node_get_id() == (active_cores[active_threads-1])) {
             sk_m_add(&m);
         }
     }
 
     if (smlt_node_get_id() == 0 || 
-        smlt_node_get_id() == (active_threads-1)) {
+        smlt_node_get_id() == (active_cores[active_threads-1])) {
         sk_m_print(&m);
     }
 
@@ -124,6 +126,7 @@ static void* barrier(void* a)
 
 int main(int argc, char **argv)
 {
+    char name[100];
     num_threads = sysconf(_SC_NPROCESSORS_ONLN);
     errval_t err;
 
@@ -143,6 +146,8 @@ int main(int argc, char **argv)
             printf("Cores[%d]=%d\n",j,cores[j]);
         }
 
+        active_cores = cores;
+
         struct smlt_generated_model* model = NULL;
         err = smlt_generate_model(cores, i, NULL, &model);
         if (smlt_err_is_fail(err)) {
@@ -150,7 +155,8 @@ int main(int argc, char **argv)
         }
 
         struct smlt_topology *topo = NULL;
-        smlt_topology_create(model, "adaptivetree_rr", &topo);
+        sprintf(name, "adaptivetree_rr%d",i);
+        smlt_topology_create(model, name, &topo);
         active_topo = topo;
 
         err = smlt_context_create(topo, &context);
@@ -188,6 +194,8 @@ int main(int argc, char **argv)
             printf("Cores[%d]=%d\n",j,cores[j]);
         }
 
+        active_cores = cores;
+
         struct smlt_generated_model* model = NULL;
         err = smlt_generate_model(cores, i, NULL, &model);
         if (smlt_err_is_fail(err)) {
@@ -195,7 +203,8 @@ int main(int argc, char **argv)
         }
 
         struct smlt_topology *topo = NULL;
-        smlt_topology_create(model, "adaptivetree_fill", &topo);
+        sprintf(name, "adaptivetree_fill%d",i);
+        smlt_topology_create(model, name, &topo);
         active_topo = topo;
 
         err = smlt_context_create(topo, &context);
