@@ -69,26 +69,26 @@ static coreid_t* placement(uint32_t n, bool do_fill)
                 }
            }
         } else {
-            uint8_t ith_of_node = 1;
-            uint8_t num_hits = 0;
+            uint8_t ith_of_node = 0;
             // go through numa nodes
-            while (num_taken != n) {
-                for (int i = 0; i < numa_nodes; i++) {
-                    // go through cores and see if part of numa node
-                    for (int j = 0; j < num_cores; j++) {
-                        // take the ith core of the node
-                        if (numa_bitmask_isbitset(nodes[i], j)){
-                            num_hits++;
-                            if (num_hits == ith_of_node) {
-                               result[num_taken] = j;
-                               num_taken++;
-                            }
+            for (int i = 0; i < numa_nodes; i++) {
+                // go through cores and see if part of numa node
+                for (int j = 0; j < num_cores; j++) {
+                    // take the ith core of the node
+                    if (numa_bitmask_isbitset(nodes[i], j)){
+                        int index = i+ith_of_node*numa_nodes;
+                        if (index < n) {
+                            result[i+ith_of_node*numa_nodes] = j;
+                            num_taken++;
+                            ith_of_node++;
                         }
                     }
+                    if (num_taken == n) {
+                        return result;
+                    }
                 }
-                ith_of_node++;
+                ith_of_node = 0;
             }
-            return result;
         }
     } else {
         printf("Libnuma not available \n");
