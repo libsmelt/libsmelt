@@ -61,19 +61,6 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
     SMLT_WARNING("Compiler optimizations are off\n");
 #endif
 
-    SMLT_DEBUG(SMLT_DBG__INIT, "Allocating %" PRIu64 " bytes for %" PRIu32 " nodes "
-               "smlt_node=%" PRIu64 ", smlt_qp=%" PRIu64 "\n",
-               SMLT_NODE_SIZE(smlt_gbl_num_proc), smlt_gbl_num_proc,
-               sizeof(struct smlt_node), sizeof(struct smlt_qp));
-
-    smlt_gbl_all_nodes = smlt_platform_alloc(smlt_gbl_num_proc * sizeof(void *),
-                                             SMLT_ARCH_CACHELINE_SIZE, true);
-    if (smlt_gbl_all_nodes == NULL) {
-        /* TODO: cleanup master share */
-        SMLT_ERROR("failed to allocate the node\n");
-        return SMLT_ERR_MALLOC_FAIL;
-    }
-
     // Master share allows simple barriers; needed for boot-strapping
     SMLT_DEBUG(SMLT_DBG__INIT, "Initializing master share .. \n");
 
@@ -86,6 +73,23 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
     // Initialize barrier
     smlt_platform_barrier_init(&smlt_shm_get_master_share()->data.sync_barrier,
                                NULL, smlt_gbl_num_proc);
+
+    if (!eagerly) {
+        return SMLT_SUCCESS;
+    }
+
+    SMLT_DEBUG(SMLT_DBG__INIT, "Allocating %" PRIu64 " bytes for %" PRIu32 " nodes "
+               "smlt_node=%" PRIu64 ", smlt_qp=%" PRIu64 "\n",
+               SMLT_NODE_SIZE(smlt_gbl_num_proc), smlt_gbl_num_proc,
+               sizeof(struct smlt_node), sizeof(struct smlt_qp));
+
+    smlt_gbl_all_nodes = smlt_platform_alloc(smlt_gbl_num_proc * sizeof(void *),
+                                             SMLT_ARCH_CACHELINE_SIZE, true);
+    if (smlt_gbl_all_nodes == NULL) {
+        /* TODO: cleanup master share */
+        SMLT_ERROR("failed to allocate the node\n");
+        return SMLT_ERR_MALLOC_FAIL;
+    }
 
     /* creating the nodes */
 
@@ -113,7 +117,6 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
             smlt_gbl_all_nodes[j]->chan[i] = smlt_gbl_all_nodes[i]->chan[j];
         }
     }
-
 
     /* initialize the topology subsystem */
     err = smlt_topology_init();

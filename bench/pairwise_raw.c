@@ -19,16 +19,17 @@
 struct smlt_qp **queue_pairs;
 
 #define NUM_EXP 10000
+#define NUM_DATA 2000
 #define NUM_MESSAGES 8
 
 #define STR(X) #X
 
 #define INIT_SKM(func, id, sender, receiver)                                \
         char _str_buf_##func[1024];                                                \
-        cycles_t _buf_##func[NUM_EXP];                                             \
+        cycles_t _buf_##func[NUM_DATA];                                             \
         struct sk_measurement m_##func;                                            \
         snprintf(_str_buf_##func, 1024, "%s-%zu-%d-%d", STR(func), id, sender, receiver); \
-        sk_m_init(&m_##func, NUM_EXP, _str_buf_##func, _buf_##func);
+        sk_m_init(&m_##func, NUM_DATA, _str_buf_##func, _buf_##func);
 
 
 struct thr_args {
@@ -42,7 +43,7 @@ void* thr_sender(void* a)
     struct thr_args* arg = (struct thr_args*) a;
 
     struct smlt_msg* msg = smlt_message_alloc(8);
-    msg->words = 1;
+    msg->words = 0;
 
     struct smlt_qp *qp = &queue_pairs[arg->s][arg->r];
 
@@ -53,14 +54,12 @@ void* thr_sender(void* a)
         sk_m_restart_tsc(&m_rtt);
         sk_m_restart_tsc(&m_send);
         for (size_t j = 0; j < arg->num_messages; j++) {
-            msg->data[0] = i;
             smlt_queuepair_send(qp, msg);
         }
         sk_m_add(&m_send);
 
         for (size_t j = 0; j < arg->num_messages; j++) {
             smlt_queuepair_recv(qp, msg);
-            assert(msg->data[0] == i);
         }
         sk_m_add(&m_rtt);
     }
@@ -77,7 +76,7 @@ void* thr_receiver(void* a)
     errval_t err;
     struct thr_args* arg = (struct thr_args*) a;
     struct smlt_msg* msg = smlt_message_alloc(8);
-    msg->words = 1;
+    msg->words = 0;
 
     struct smlt_qp *qp = &queue_pairs[arg->r][arg->s];
 
@@ -88,14 +87,11 @@ void* thr_receiver(void* a)
             sk_m_restart_tsc(&m_receive);
             err = smlt_queuepair_try_recv(qp, msg);
         } while (err != SMLT_SUCCESS) ;
-        assert(msg->data[0] == i);
         for (size_t j = 1; j < arg->num_messages; j++) {
             err = smlt_queuepair_recv(qp, msg);
-            assert(msg->data[0] == i);
         }
         sk_m_add(&m_receive);
         for (size_t j = 0; j < arg->num_messages; j++) {
-            msg->data[0] = i;
             smlt_queuepair_send(qp, msg);
         }
     }
@@ -112,11 +108,11 @@ int main(int argc, char **argv)
     coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF);
     printf("Running with %d cores\n", num_cores);
 
-    //err = smlt_init(num_cores, true);
-    //if (smlt_err_is_fail(err)) {
-    //    printf("FAILED TO INITIALIZE !\n");
-    //    return 1;
-    //}
+    err = smlt_init(num_cores, false);
+    if (smlt_err_is_fail(err)) {
+        printf("FAILED TO INITIALIZE !\n");
+        return 1;
+    }
 
     struct smlt_node **nodes = calloc(num_cores, sizeof(void *));
     if (!nodes) {
