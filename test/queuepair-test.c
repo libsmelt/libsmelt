@@ -147,8 +147,8 @@ int main(int argc, char **argv)
 
     if (argc > 1) {
        if (!strcmp(argv[1], "ump")) {
-          smlt_queuepair_create(SMLT_QP_TYPE_UMP, &qp1,
-                          &qp2, 0, 1);
+          smlt_queuepair_create(SMLT_QP_TYPE_UMP, qp1,
+                          qp2, 0, 1);
           run(qp1, qp2, tids);
 
           smlt_queuepair_destroy(qp1);
@@ -156,8 +156,8 @@ int main(int argc, char **argv)
        }
 
        if (!strcmp(argv[1], "ffq")) {
-          smlt_queuepair_create(SMLT_QP_TYPE_FFQ, &qp1,
-                          &qp2, 0, 1);
+          smlt_queuepair_create(SMLT_QP_TYPE_FFQ, qp1,
+                          qp2, 0, 1);
           run(qp1, qp2, tids);
 
           smlt_queuepair_destroy(qp1);
@@ -165,16 +165,16 @@ int main(int argc, char **argv)
        }
 
        if (!strcmp(argv[1], "shm")) {
-          smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
-                          &qp2, 0, 1);
+          smlt_queuepair_create(SMLT_QP_TYPE_SHM, qp1,
+                          qp2, 0, 1);
           run(qp1, qp2, tids);
 
           smlt_queuepair_destroy(qp1);
           smlt_queuepair_destroy(qp2);
        }
     } else {
-        smlt_queuepair_create(SMLT_QP_TYPE_UMP, &qp1,
-                      &qp2, 0, 1);
+        smlt_queuepair_create(SMLT_QP_TYPE_UMP, qp1,
+                      qp2, 0, 1);
         run(qp1, qp2, tids);
 
         smlt_queuepair_destroy(qp1);
@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 
         sleep(1);
 
-        smlt_queuepair_create(SMLT_QP_TYPE_FFQ, &qp1,
-                      &qp2, 0, 1);
+        smlt_queuepair_create(SMLT_QP_TYPE_FFQ, qp1,
+                      qp2, 0, 1);
         run(qp1, qp2, tids);
 
         smlt_queuepair_destroy(qp1);
@@ -191,8 +191,8 @@ int main(int argc, char **argv)
 
         sleep(1);
 
-        smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
-                      &qp2, 0, 1);
+        smlt_queuepair_create(SMLT_QP_TYPE_SHM, qp1,
+                      qp2, 0, 1);
         run(qp1, qp2, tids);
 
         smlt_queuepair_destroy(qp1);

@@ -25,8 +25,8 @@
   * @returns 0
   */
 errval_t smlt_queuepair_create(smlt_qp_type_t type,
-                               struct smlt_qp **qp1,
-                               struct smlt_qp **qp2,
+                               struct smlt_qp *qp1,
+                               struct smlt_qp *qp2,
                                coreid_t src,
                                coreid_t dst)
 {
@@ -35,17 +35,17 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
     SMLT_DEBUG(SMLT_DBG__GENERAL, "creating qp src=%" PRIu32 " dst =% " PRIu32 " \n",
                src, dst);
     // TODO what is really a queuepair ?
-    assert(*qp1);
-    assert(*qp2);
+    assert(qp1);
+    assert(qp2);
 
-    (*qp1)->type = type;
-    (*qp2)->type = type;
+    (qp1)->type = type;
+    (qp2)->type = type;
     switch(type) {
         case SMLT_QP_TYPE_UMP :
             ;
 
-            struct smlt_ump_queuepair *umpq_src = &(*qp1)->q.ump;
-            struct smlt_ump_queuepair *umpq_dst = &(*qp2)->q.ump;
+            struct smlt_ump_queuepair *umpq_src = &(qp1)->q.ump;
+            struct smlt_ump_queuepair *umpq_dst = &(qp2)->q.ump;
 
             err = smlt_ump_queuepair_init(SMLT_UMP_DEFAULT_SLOTS,
                                           smlt_platform_cluster_of_core(src),
@@ -56,50 +56,50 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             }
 
             // set function pointers
-            (*qp1)->f.send.try_send = smlt_ump_queuepair_try_send;
-            (*qp1)->f.send.notify = smlt_ump_queuepair_notify;
-            (*qp1)->f.send.can_send = smlt_ump_queuepair_can_send;
-            (*qp1)->f.recv.try_recv = smlt_ump_queuepair_try_recv;
-            (*qp1)->f.recv.can_recv = smlt_ump_queuepair_can_recv;
-            (*qp1)->f.recv.notify = smlt_ump_queuepair_recv_notify;
-            (*qp2)->f = (*qp1)->f;
+            (qp1)->f.send.try_send = smlt_ump_queuepair_try_send;
+            (qp1)->f.send.notify = smlt_ump_queuepair_notify;
+            (qp1)->f.send.can_send = smlt_ump_queuepair_can_send;
+            (qp1)->f.recv.try_recv = smlt_ump_queuepair_try_recv;
+            (qp1)->f.recv.can_recv = smlt_ump_queuepair_can_recv;
+            (qp1)->f.recv.notify = smlt_ump_queuepair_recv_notify;
+            (qp2)->f = (qp1)->f;
 
             break;
         case SMLT_QP_TYPE_FFQ :
             // create two queues
-            (*qp1)->queue_tx.ffq = *ff_queuepair_create(dst);
-            (*qp1)->queue_rx.ffq = *ff_queuepair_create(src);
+            (qp1)->queue_tx.ffq = *ff_queuepair_create(dst);
+            (qp1)->queue_rx.ffq = *ff_queuepair_create(src);
 
-            (*qp2)->queue_tx.ffq = (*qp1)->queue_rx.ffq;
-            (*qp2)->queue_rx.ffq = (*qp1)->queue_tx.ffq;
+            (qp2)->queue_tx.ffq = (qp1)->queue_rx.ffq;
+            (qp2)->queue_rx.ffq = (qp1)->queue_tx.ffq;
 
             // set function pointers
-            (*qp1)->f.send.try_send = smlt_ffq_send;
-            (*qp1)->f.send.notify = smlt_ffq_send0;
-            (*qp1)->f.send.can_send = smlt_ffq_can_send;
-            (*qp1)->f.recv.try_recv = smlt_ffq_recv;
-            (*qp1)->f.recv.can_recv = smlt_ffq_can_recv;
-            (*qp1)->f.recv.notify = smlt_ffq_recv0;
+            (qp1)->f.send.try_send = smlt_ffq_send;
+            (qp1)->f.send.notify = smlt_ffq_send0;
+            (qp1)->f.send.can_send = smlt_ffq_can_send;
+            (qp1)->f.recv.try_recv = smlt_ffq_recv;
+            (qp1)->f.recv.can_recv = smlt_ffq_can_recv;
+            (qp1)->f.recv.notify = smlt_ffq_recv0;
 
-            (*qp2)->f = (*qp1)->f;
+            (qp2)->f = (qp1)->f;
             break;
         case SMLT_QP_TYPE_SHM :
             // create two queues
-            (*qp1)->queue_tx.shm = *shm_queuepair_create(src, dst);
-            (*qp1)->queue_rx.shm = *shm_queuepair_create(dst, src);
+            (qp1)->queue_tx.shm = *shm_queuepair_create(src, dst);
+            (qp1)->queue_rx.shm = *shm_queuepair_create(dst, src);
 
-            (*qp2)->queue_rx.shm = (*qp1)->queue_tx.shm;
-            (*qp2)->queue_tx.shm = (*qp1)->queue_rx.shm;
+            (qp2)->queue_rx.shm = (qp1)->queue_tx.shm;
+            (qp2)->queue_tx.shm = (qp1)->queue_rx.shm;
 
             // set function pointers
-            (*qp1)->f.send.try_send = smlt_shm_send;
-            (*qp1)->f.send.notify = smlt_shm_send0;
-            (*qp1)->f.send.can_send = smlt_shm_can_send;
-            (*qp1)->f.recv.try_recv = smlt_shm_recv;
-            (*qp1)->f.recv.can_recv = smlt_shm_can_recv;
-            (*qp1)->f.recv.notify = smlt_shm_recv0;
+            (qp1)->f.send.try_send = smlt_shm_send;
+            (qp1)->f.send.notify = smlt_shm_send0;
+            (qp1)->f.send.can_send = smlt_shm_can_send;
+            (qp1)->f.recv.try_recv = smlt_shm_recv;
+            (qp1)->f.recv.can_recv = smlt_shm_can_recv;
+            (qp1)->f.recv.notify = smlt_shm_recv0;
 
-            (*qp2)->f = (*qp1)->f;
+            (qp2)->f = (qp1)->f;
             break;
         default:
             break;

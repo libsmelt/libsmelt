@@ -153,7 +153,7 @@ int main(int argc, char **argv)
             struct smlt_qp* dst = &(queue_pairs[r][s]);
 
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                        &src, &dst, s, r);
+                                        src, dst, s, r);
             if (smlt_err_is_fail(err)) {
                 printf("FAILED TO INITIALIZE !\n");
                 return -1;

@@ -317,7 +317,7 @@ int main(int argc, char **argv)
         struct smlt_qp* dst = &(queue_pairs[1][s]);
 
         err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                    &src, &dst, 0, core);
+                                    src, dst, 0, core);
         if (smlt_err_is_fail(err)) {
             printf("FAILED TO INITIALIZE queuepair! for core %u\n", core);
             return -1;
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
     smlt_platform_pin_thread(0);
 
 #if 1
-    for (size_t i = 1; i < num_cores; ++i) {
+    for (size_t i = 1; i < num_cores - 1; ++i) {
         struct thr_args arg = {
             .s = 0,
             .r = 0,
@@ -340,7 +340,7 @@ int main(int argc, char **argv)
         thr_poll(&arg);
     }
 
-    for (size_t i = num_cores; i < chan_max; i += num_cores) {
+    for (size_t i = num_cores - 1; i < chan_max; i += num_cores) {
         struct thr_args arg = {
             .s = 0,
             .r = 0,
