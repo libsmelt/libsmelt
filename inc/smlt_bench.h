@@ -10,6 +10,20 @@
 #ifndef SMLT_BENCH_H_
 #define SMLT_BENCH_H_ 1
 
+#define SMLT_BENCH_IGNORE_DEFAULT 0.05
+
+struct smlt_bench_analyzed
+{
+    cycles_t min;           ///< minimum of the samples
+    cycles_t max;           ///< maximum value of the samples
+    cycles_t median;        ///< median of the samples
+    cycles_t avg;           ///< average over the samples
+    cycles_t stderr;        ///< standard errors
+    uint32_t count;         ///< number of values considered
+    uint32_t ignored;       ///< number of ignored values
+    bool valid;             ///< flag indicating that this data is valid
+};
+
 struct smlt_bench_ctl
 {
     cycles_t *data;         ///< the array of measured values
@@ -19,14 +33,7 @@ struct smlt_bench_ctl
     uint32_t max_data;      ///< maximum number of measturements
     char *label;            ///< label for the measurement
 
-
-    cycles_t min;
-    cycles_t max;
-    cycles_t median;
-    cycles_t avg;
-    cycles_t stderr;
-    uint32_t num;
-    uint32_t ignored;
+    struct smlt_bench_analyzed a;
 };
 
 extern cycles_t smlt_bench_tsc_overhead;
@@ -62,7 +69,7 @@ static inline void smlt_bench_clt_add_value(struct smlt_bench_ctl *ctl,
     ctl->count++;
     ctl->data[ctl->idx] = value;
 
-    if (++ctl->idx == ctl->max) {
+    if (++ctl->idx == ctl->max_data) {
         ctl->idx = 0;
     }
 }
@@ -91,9 +98,8 @@ static inline void smlt_bench_ctl_add_measurement(struct smlt_bench_ctl *ctl)
 void smlt_bench_ctl_prepare_analysis(struct smlt_bench_ctl *ctl,
                                      double ignore);
 
-void smlt_bench_ctl_get_avg();
-
-void smlt_bench_ctl_get_stdev();
+void smlt_bench_ctl_get_analysis(struct smlt_bench_ctl *ctl,
+                                 struct smlt_bench_analyzed *a);
 
 
 /*

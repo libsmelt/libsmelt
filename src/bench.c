@@ -7,6 +7,7 @@
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 
@@ -30,14 +31,10 @@ cycles_t smlt_bench_tsc_overhead = 0;
 
 void smlt_bench_ctl_reset(struct smlt_bench_ctl *ctl)
 {
-
-    ctl->min = 0;
-    ctl->max = 0;
-    ctl->median = 0;
-    ctl->avg = 0;
-    ctl->stderr = 0;
-    ctl->num = 0;
-    ctl->ignored = 0;
+    memset(&ctl->a, 0, sizeof(ctl->a));
+    ctl->idx = 0;
+    ctl->count = 0;
+    ctl->last_tsc = smlt_arch_tsc();
 }
 
  /*
@@ -75,11 +72,11 @@ static void smlt_bench_sort(cycles_t *data, uint32_t len)
 
 static void smlt_bench_avg(struct smlt_bench_ctl *ctl)
 {
-    ctl->avg = 0;
-    for (uint32_t i = 0; i < ctl->num; ++i) {
-        ctl->avg += ctl->data[i];
+    ctl->a.avg = 0;
+    for (uint32_t i = 0; i < ctl->a.count; ++i) {
+        ctl->a.avg += ctl->data[i];
     }
-    ctl->avg /= ctl->num;
+    ctl->a.avg /= ctl->a.count;
 }
 
 static void smlt_bench_stderr(struct smlt_bench_ctl *ctl)
@@ -87,13 +84,13 @@ static void smlt_bench_stderr(struct smlt_bench_ctl *ctl)
     smlt_bench_avg(ctl);
 
     cycles_t s = 0;
-    for (uint32_t i = 0; i < ctl->num; ++i) {
-        cycles_t tmp = (ctl->data[i] - ctl->avg);
+    for (uint32_t i = 0; i < ctl->a.count; ++i) {
+        cycles_t tmp = (ctl->data[i] - ctl->a.avg);
         s += (tmp * tmp);
     }
 
-    s /= ctl->num;
-    ctl->stderr = sqrt(s);
+    s /= ctl->a.count;
+    ctl->a.stderr = (cycles_t)sqrt(s);
 }
 
  /**
@@ -105,18 +102,20 @@ static void smlt_bench_stderr(struct smlt_bench_ctl *ctl)
 void smlt_bench_ctl_prepare_analysis(struct smlt_bench_ctl *ctl,
                                      double ignore)
 {
+    ctl->a.count = ctl->count;
     if (ctl->count > ctl->max_data) {
-        ctl->count = ctl->max_data;
+        ctl->a.count = ctl->max_data;
     }
 
-    smlt_bench_sort(ctl->data, ctl->count);
+    smlt_bench_sort(ctl->data, ctl->a.count);
 
-    ctl->ignored = (uint32_t)(ctl->count * ignore);
-    ctl->num = ctl->count - ctl->ignored;
-    ctl->median = ctl->data[ctl->num/2];
-    ctl->min = ctl->data[0];
-    ctl->max = ctl->data[ctl->num -1];
+    ctl->a.ignored = (uint32_t)(ctl->a.count * ignore);
+    ctl->a.count = ctl->a.count - ctl->a.ignored;
+    ctl->a.median = ctl->data[ctl->a.count/2];
+    ctl->a.min = ctl->data[0];
+    ctl->a.max = ctl->data[ctl->a.count -1];
     smlt_bench_stderr(ctl);
+    ctl->a.valid = 1;
 }
 
 
@@ -132,9 +131,12 @@ void smlt_bench_ctl_prepare_analysis(struct smlt_bench_ctl *ctl,
 
 void smlt_bench_ctl_print_analysis(struct smlt_bench_ctl *ctl)
 {
+    if (!ctl->a.valid) {
+        smlt_bench_ctl_prepare_analysis(ctl, SMLT_BENCH_IGNORE_DEFAULT);
+    }
     printf("%s, count=%" PRIu32 ", avg=%" PRIu64 ", med=%" PRIu64 ", stderr=%"
-           PRIu64 ", min=%" PRIu64 ", max=%" PRIu64 "\n", ctl->label, ctl->num,
-           ctl->avg, ctl->median, ctl->stderr, ctl->min, ctl->max);
+           PRIu64 ", min=%" PRIu64 ", max=%" PRIu64 "\n", ctl->label, ctl->a.count,
+           ctl->a.avg, ctl->a.median, ctl->a.stderr, ctl->a.min, ctl->a.max);
 
 }
 
