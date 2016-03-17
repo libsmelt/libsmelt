@@ -53,7 +53,7 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 # --------------------------------------------------
 
 COMMONFLAGS += -Wpedantic -Werror -Wall -Wfatal-errors \
-			   -pthread -fPIC -DVERSION=\"$(GIT_VERSION)\"
+			   -pthread -fPIC -DSMLT_VERSION=\"$(GIT_VERSION)\"
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
 CFLAGS += -std=gnu99 $(COMMONFLAGS) -D_GNU_SOURCE
 

@@ -28,6 +28,13 @@
 
 
 /*
+ * ensure the SMLT_VERSION is set all the time. 
+ */
+#ifndef SMLT_VERSION
+#define SMLT_VERSION "unknown"
+#endif
+
+/*
  * ===========================================================================
  * type declarations
  * ===========================================================================

@@ -37,8 +37,8 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
 {
     errval_t err;
 
-    SMLT_DEBUG(SMLT_DBG__INIT, "Initializing Smelt runtime, eager_setup=%" PRIu32
-               "\n", eagerly);
+    SMLT_NOTICE("Initializing Smelt RT version=%s, num_proc=%" PRIu32 "\n",
+                 SMLT_VERSION, num_proc);
 
     /* platform specific initializiation */
     smlt_gbl_num_proc = smlt_platform_init(num_proc);
@@ -110,7 +110,7 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
         for (uint32_t j = i+1; j < smlt_gbl_num_proc; j++) {
             struct smlt_channel* chan = &(smlt_gbl_all_nodes[i]->chan[j]);
             err = smlt_channel_create(&chan , &i, &j, 1, 1);
-            smlt_gbl_all_nodes[j]->chan[i] = smlt_gbl_all_nodes[i]->chan[j];  
+            smlt_gbl_all_nodes[j]->chan[i] = smlt_gbl_all_nodes[i]->chan[j];
         }
     }
 
