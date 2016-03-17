@@ -111,7 +111,6 @@ all: $(TARGET) \
 		 test/channel-test \
 		 bench/bar-bench \
 		 bench/ab-bench-new \
-		 bench/pairwise \
 		 bench/pairwise_raw \
 		 bench/pingpong \
 		 bench/polloverhead

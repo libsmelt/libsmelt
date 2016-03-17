@@ -138,17 +138,15 @@ void run(struct smlt_qp* qp1, struct smlt_qp* qp2,
 int main(int argc, char **argv)
 {
 
-    struct smlt_qp* qp1 = (struct smlt_qp*) malloc(sizeof(struct smlt_qp));
-    struct smlt_qp* qp2 = (struct smlt_qp*) malloc(sizeof(struct smlt_qp));
-
-    printf("qp1=%p, qp2=%p\n", (void *)qp1, (void *)qp2);
+    struct smlt_qp* qp1;
+    struct smlt_qp* qp2;
 
     pthread_t *tids = (pthread_t*) malloc(sizeof(pthread_t));
 
     if (argc > 1) {
        if (!strcmp(argv[1], "ump")) {
-          smlt_queuepair_create(SMLT_QP_TYPE_UMP, qp1,
-                          qp2, 0, 1);
+          smlt_queuepair_create(SMLT_QP_TYPE_UMP, &qp1,
+                          &qp2, 0, 1);
           run(qp1, qp2, tids);
 
           smlt_queuepair_destroy(qp1);
@@ -156,8 +154,8 @@ int main(int argc, char **argv)
        }
 
        if (!strcmp(argv[1], "ffq")) {
-          smlt_queuepair_create(SMLT_QP_TYPE_FFQ, qp1,
-                          qp2, 0, 1);
+          smlt_queuepair_create(SMLT_QP_TYPE_FFQ, &qp1,
+                          &qp2, 0, 1);
           run(qp1, qp2, tids);
 
           smlt_queuepair_destroy(qp1);
@@ -165,16 +163,16 @@ int main(int argc, char **argv)
        }
 
        if (!strcmp(argv[1], "shm")) {
-          smlt_queuepair_create(SMLT_QP_TYPE_SHM, qp1,
-                          qp2, 0, 1);
+          smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
+                          &qp2, 0, 1);
           run(qp1, qp2, tids);
 
           smlt_queuepair_destroy(qp1);
           smlt_queuepair_destroy(qp2);
        }
     } else {
-        smlt_queuepair_create(SMLT_QP_TYPE_UMP, qp1,
-                      qp2, 0, 1);
+        smlt_queuepair_create(SMLT_QP_TYPE_UMP, &qp1,
+                      &qp2, 0, 1);
         run(qp1, qp2, tids);
 
         smlt_queuepair_destroy(qp1);
@@ -182,8 +180,8 @@ int main(int argc, char **argv)
 
         sleep(1);
 
-        smlt_queuepair_create(SMLT_QP_TYPE_FFQ, qp1,
-                      qp2, 0, 1);
+        smlt_queuepair_create(SMLT_QP_TYPE_FFQ, &qp1,
+                      &qp2, 0, 1);
         run(qp1, qp2, tids);
 
         smlt_queuepair_destroy(qp1);
@@ -191,8 +189,8 @@ int main(int argc, char **argv)
 
         sleep(1);
 
-        smlt_queuepair_create(SMLT_QP_TYPE_SHM, qp1,
-                      qp2, 0, 1);
+        smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
+                      &qp2, 0, 1);
         run(qp1, qp2, tids);
 
         smlt_queuepair_destroy(qp1);

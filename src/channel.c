@@ -57,20 +57,22 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
     if (count_dst == 1) {
             // 1:1
             (*chan)->use_shm = false;
+            #if 0
             ((*chan)->c.mp.recv) = (struct smlt_qp*) smlt_platform_alloc(
                                 sizeof(struct smlt_qp),
                                 SMLT_DEFAULT_ALIGNMENT, true);
             ((*chan)->c.mp.send) = (struct smlt_qp*) smlt_platform_alloc(
                                 sizeof(struct smlt_qp),
                                 SMLT_DEFAULT_ALIGNMENT, true);
+                                struct smlt_qp* send = &((*chan)->c.mp.send[0]);
+                                struct smlt_qp* recv = &((*chan)->c.mp.recv[0]);
+            #endif
 
-            struct smlt_qp* send = &((*chan)->c.mp.send[0]);
-            struct smlt_qp* recv = &((*chan)->c.mp.recv[0]);
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                    send, recv, src[0], dst[0]);
+                                    &(*chan)->c.mp.send, &(*chan)->c.mp.recv, src[0], dst[0]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
-            }   
+            }
     } else {
         // 1:n
         (*chan)->use_shm = true;
@@ -84,17 +86,17 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
             (*chan)->c.shm.dst[i] = dst[i];
         }
 
-        ((*chan)->c.shm.recv) = (struct smlt_qp*) smlt_platform_alloc(
+        ((*chan)->c.shm.recv) = (struct smlt_qp**) smlt_platform_alloc(
                             sizeof(struct smlt_qp)*num_chan,
                             SMLT_DEFAULT_ALIGNMENT, true);
-       
-        ((*chan)->c.shm.recv_owner) = (struct smlt_qp*) smlt_platform_alloc(
+
+        ((*chan)->c.shm.recv_owner) = (struct smlt_qp**) smlt_platform_alloc(
                                                 sizeof(struct smlt_qp)*num_chan,
                                                 SMLT_DEFAULT_ALIGNMENT, true);
 
         for (int i = 0; i < num_chan; i++) {
-            struct smlt_qp* send = &((*chan)->c.shm.recv[i]);
-            struct smlt_qp* recv = &((*chan)->c.shm.recv_owner[i]);
+            struct smlt_qp **send = &((*chan)->c.shm.recv[i]);
+            struct smlt_qp **recv = &((*chan)->c.shm.recv_owner[i]);
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
                                         send, recv, src[0], dst[i]);
             if (smlt_err_is_fail(err)) {

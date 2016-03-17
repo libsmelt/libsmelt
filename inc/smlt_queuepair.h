@@ -123,8 +123,8 @@ struct smlt_qp
   * @returns 0
   */
 errval_t smlt_queuepair_create(smlt_qp_type_t type,
-                               struct smlt_qp *qp_src,
-                               struct smlt_qp *qp_dst,
+                               struct smlt_qp **qp_src,
+                               struct smlt_qp **qp_dst,
                                coreid_t src,
                                coreid_t dst);
 

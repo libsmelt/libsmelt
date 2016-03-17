@@ -16,7 +16,7 @@
 
 #include <platforms/measurement_framework.h>
 
-struct smlt_qp **queue_pairs;
+struct smlt_qp ***queue_pairs;
 
 #define NUM_EXP 10000
 #define NUM_DATA 2000
@@ -45,7 +45,7 @@ void* thr_sender(void* a)
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-    struct smlt_qp *qp = &queue_pairs[arg->s][arg->r];
+    struct smlt_qp *qp = queue_pairs[arg->s][arg->r];
 
     INIT_SKM(send, arg->num_messages, arg->s, arg->r);
     INIT_SKM(rtt, arg->num_messages, arg->s, arg->r);
@@ -78,7 +78,7 @@ void* thr_receiver(void* a)
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-    struct smlt_qp *qp = &queue_pairs[arg->r][arg->s];
+    struct smlt_qp *qp = queue_pairs[arg->r][arg->s];
 
     INIT_SKM(receive, arg->num_messages, arg->s, arg->r);
 
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
     }
 
     for (coreid_t s=0; s<num_cores; s++) {
-        queue_pairs[s] = calloc(num_cores, sizeof(**queue_pairs));
+        queue_pairs[s] = calloc(num_cores, sizeof(void *));
         if (queue_pairs[s] == NULL) {
             printf("FAILED TO INITIALIZE !\n");
             return -1;
@@ -149,8 +149,8 @@ int main(int argc, char **argv)
 
     for (coreid_t s=0; s<num_cores; s++) {
         for (coreid_t r=s+1; r<num_cores; r++) {
-            struct smlt_qp* src = &(queue_pairs[s][r]);
-            struct smlt_qp* dst = &(queue_pairs[r][s]);
+            struct smlt_qp **src = &(queue_pairs[s][r]);
+            struct smlt_qp **dst = &(queue_pairs[r][s]);
 
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
                                         src, dst, s, r);

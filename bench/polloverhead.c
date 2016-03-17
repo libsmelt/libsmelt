@@ -17,7 +17,7 @@
 
 #include <platforms/measurement_framework.h>
 
-struct smlt_qp *queue_pairs[2];
+struct smlt_qp **queue_pairs[2];
 size_t chan_per_core = 0;
 cycles_t tsc_overhead = 0;
 
@@ -74,7 +74,7 @@ void* thr_poll(void* a)
     for (size_t i=0; i<NUM_WARMUP; i++) {
         tsc_start = bench_tsc();
         for (size_t n = 0; n < arg->num_channels; ++n) {
-            struct smlt_qp *qp = &queue_pairs[0][n];
+            struct smlt_qp *qp = queue_pairs[0][n];
             smlt_queuepair_can_recv(qp);
         }
         tsc_end = bench_tsc();
@@ -84,7 +84,7 @@ void* thr_poll(void* a)
     for (size_t i=0; i<NUM_EXP; i++) {
         tsc_start = bench_tsc();
         for (size_t n = 0; n < arg->num_channels; ++n) {
-            struct smlt_qp *qp = &queue_pairs[0][n];
+            struct smlt_qp *qp = queue_pairs[0][n];
             smlt_queuepair_can_recv(qp);
         }
         tsc_end = bench_tsc();
@@ -142,7 +142,7 @@ void* thr_poll_recv(void* a)
     for (size_t i=0; i<NUM_WARMUP; i++) {
         tsc_start = bench_tsc();
         for (size_t n = 0; n < num_chan; ++n) {
-            struct smlt_qp *qp = &queue_pairs[0][n];
+            struct smlt_qp *qp = queue_pairs[0][n];
             //printf("POLL warmup recv: %lu/%lu, qp[%lu]\n", n, num_chan, n);
             smlt_queuepair_recv(qp, msg);
         }
@@ -150,7 +150,7 @@ void* thr_poll_recv(void* a)
         tsc_measurements[i] = tsc_end - tsc_start -  tsc_overhead;
 
         for (size_t n = 0; n < num_chan; ++n) {
-            struct smlt_qp *qp = &queue_pairs[0][n];
+            struct smlt_qp *qp = queue_pairs[0][n];
             //printf("POLL warmup send: %lu/%lu\n", n, num_chan);
             smlt_queuepair_send(qp, msg);
         }
@@ -158,7 +158,7 @@ void* thr_poll_recv(void* a)
 
     for (size_t i=0; i<NUM_EXP; i++) {
         errval_t err;
-        struct smlt_qp *qp = &queue_pairs[0][0];
+        struct smlt_qp *qp = queue_pairs[0][0];
         //printf("POLL try recv: %u/%lu, qp[0]\n", 0, num_chan);
         do {
             tsc_start = bench_tsc();
@@ -166,7 +166,7 @@ void* thr_poll_recv(void* a)
         } while(err != SMLT_SUCCESS);
 
         for (size_t n = 1; n < num_chan; ++n) {
-            qp = &queue_pairs[0][n];
+            qp = queue_pairs[0][n];
             //printf("POLL recv: %lu/%lu qp[%lu]\n", n, num_chan, n);
             smlt_queuepair_recv(qp, msg);
         }
@@ -174,7 +174,7 @@ void* thr_poll_recv(void* a)
         tsc_measurements[i] = tsc_end - tsc_start - tsc_overhead;
 
         for (size_t n = 0; n < num_chan; ++n) {
-            struct smlt_qp *qp = &queue_pairs[0][n];
+            struct smlt_qp *qp = queue_pairs[0][n];
             //printf("POLL send: %lu/%lu qp[%lu]\n", n, num_chan, n);
             smlt_queuepair_send(qp, msg);
         }
@@ -231,14 +231,14 @@ void* thr_receiver(void* a)
 
     for (size_t j=0; j<NUM_WARMUP; j++) {
         for (size_t i = 0; i < arg->num_channels; ++i) {
-            struct smlt_qp *qp = &queue_pairs[1][arg->r + i * arg->num_cores];
+            struct smlt_qp *qp = queue_pairs[1][arg->r + i * arg->num_cores];
         //    printf("warmup send: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
             smlt_queuepair_send(qp, msg);
         }
 
         for (size_t i = 0; i < arg->num_channels; ++i) {
         //    printf("warmup recv: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
-            struct smlt_qp *qp = &queue_pairs[1][arg->r + i * arg->num_cores];
+            struct smlt_qp *qp = queue_pairs[1][arg->r + i * arg->num_cores];
             smlt_queuepair_recv(qp, msg);
         }
     }
@@ -248,13 +248,13 @@ void* thr_receiver(void* a)
     for (size_t j=0; j<NUM_EXP; j++) {
         for (size_t i = 0; i < arg->num_channels; ++i) {
         //    printf("send: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
-            struct smlt_qp *qp = &queue_pairs[1][arg->r + i * arg->num_cores];
+            struct smlt_qp *qp = queue_pairs[1][arg->r + i * arg->num_cores];
             smlt_queuepair_send(qp, msg);
         }
 
         for (size_t i = 0; i < arg->num_channels; ++i) {
         //    printf("recv: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
-            struct smlt_qp *qp = &queue_pairs[1][arg->r + i * arg->num_cores];
+            struct smlt_qp *qp = queue_pairs[1][arg->r + i * arg->num_cores];
             smlt_queuepair_recv(qp, msg);
         }
     }
@@ -301,8 +301,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    queue_pairs[0] = calloc(NUM_CHANNELS, sizeof(*queue_pairs[0]));
-    queue_pairs[1] = calloc(NUM_CHANNELS, sizeof(*queue_pairs[1]));
+    queue_pairs[0] = calloc(NUM_CHANNELS, sizeof(void *));
+    queue_pairs[1] = calloc(NUM_CHANNELS, sizeof(void *));
     if (queue_pairs[0] == NULL || queue_pairs[1] == NULL) {
         printf("FAILED TO INITIALIZE calloc!\n");
         return -1;
@@ -313,8 +313,8 @@ int main(int argc, char **argv)
     chan_per_core = (NUM_CHANNELS / (num_cores - 1));
     size_t chan_max = chan_per_core * (num_cores - 1);
     for (size_t s=0; s<chan_max; s++) {
-        struct smlt_qp* src = &(queue_pairs[0][s]);
-        struct smlt_qp* dst = &(queue_pairs[1][s]);
+        struct smlt_qp **src = &(queue_pairs[0][s]);
+        struct smlt_qp **dst = &(queue_pairs[1][s]);
 
         err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
                                     src, dst, 0, core);
