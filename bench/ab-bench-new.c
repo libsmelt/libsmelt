@@ -24,18 +24,6 @@
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
-#define NUM_MACHINES 8
-
-static char *machine_names[NUM_MACHINES] = {
-        "gottardo",
-        "ziger1",
-        "ziger2",
-        "appenzeller",
-        "sgs-r820-01",
-        "sgs-r815-03",
-        "sgs-r815-01",
-        "pluton",
-};
 
 uint32_t num_topos = 7;
 uint32_t num_threads;
@@ -50,34 +38,6 @@ __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
 #define TOPO_NAME(x,y) sprintf(x, "%s_%s", y, smlt_topology_get_name(active_topo));
-
-
-/**
- * \brief Read from environment variable as string
- */
-static char* get_env_str(const char *envname, const char *defaultvalue)
-{
-    char *env;
-    env = getenv (envname);
-
-    if (env==NULL) {
-
-        return (char*) defaultvalue;
-    }
-
-    return env;
-}
-
-static bool do_generate_model(void) {
-    char* name = get_env_str("SMLT_MACHINE", "");
-
-    for (int i = 0; i < NUM_MACHINES; i++) {
-        if (strcmp(name, machine_names[i]) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
 
 
 errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
@@ -381,18 +341,12 @@ int main(int argc, char **argv)
 
     for (int j = 0; j < num_topos; j++) {
         struct smlt_generated_model* model = NULL;
-        if (do_generate_model()) {
-            err = smlt_generate_model(cores, num_threads, topo_names[j],
-                                      &model);
-            if (smlt_err_is_fail(err)) {
-                model = NULL;
-                num_topos = 1;
-                topo_names[0] = "bintree";
-            }
-        } else {
-            model = NULL;
-            num_topos = 1;
-            topo_names[0] = "bintree";
+        
+        err = smlt_generate_model(cores, num_threads, topo_names[j], &model);
+        
+        if (smlt_err_is_fail(err)) {
+            printf("Failed to generated model, aborting\n");
+            return 1;
         }
 
         struct smlt_topology *topo = NULL;
