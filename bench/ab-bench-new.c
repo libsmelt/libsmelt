@@ -24,7 +24,7 @@
 #define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
 #define NUM_EXP 5
-#define NUM_MACHINES 7
+#define NUM_MACHINES 8
 
 static char *machine_names[NUM_MACHINES] = {
         "gottardo",
@@ -34,6 +34,7 @@ static char *machine_names[NUM_MACHINES] = {
         "sgs-r820-01",
         "sgs-r815-03",
         "sgs-r815-01",
+        "pluton",
 };
 
 uint32_t num_topos = 7;
