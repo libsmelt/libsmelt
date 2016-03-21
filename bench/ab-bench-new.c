@@ -149,7 +149,7 @@ static void* ab(void* a)
                 smlt_channel_send(&chan[last_node][0], msg);
             }
 
-            if (smlt_node_get_id() == 0) {
+            if (smlt_context_is_root(context)) {
                 smlt_channel_recv(&chan[last_node][0], msg);
                 smlt_broadcast(context, msg);
             } else {
@@ -188,7 +188,7 @@ static void* reduction(void* a)
             smlt_reduce(context, msg, msg, operation);
 
 
-            if (smlt_node_get_id() == 0) {
+            if (smlt_context_is_root(context)) {
                 smlt_channel_send(&chan[last_node][0], msg);
             } else if (smlt_node_get_id() == last_node) {
                 smlt_channel_recv(&chan[last_node][0], msg);
@@ -224,7 +224,7 @@ static void* barrier(void* a)
         }
     }
 
-    if (smlt_node_get_id() == 0 ||
+    if (smlt_context_is_root(context) ||
         smlt_node_get_id() == (num_threads-1)) {
         sk_m_print(&m);
     }
@@ -246,6 +246,8 @@ static void* agreement(void* a)
 
     struct smlt_msg* msg = smlt_message_alloc(56);
 
+    smlt_nid_t root = smlt_topology_get_root_id(active_topo);
+
     pthread_barrier_wait(&bar);
 
     for (int i = 0; i < count; i++) {
@@ -256,11 +258,11 @@ static void* agreement(void* a)
             sk_m_restart_tsc(&m);
 
             if (smlt_node_get_id() == last_node) {
-                smlt_channel_send(&chan[last_node][0], msg);
+                smlt_channel_send(&chan[last_node][root], msg);
             }
 
-            if (smlt_node_get_id() == 0) {
-                smlt_channel_recv(&chan[last_node][0], msg);
+            if (smlt_context_is_root(context)) {
+                smlt_channel_recv(&chan[last_node][root], msg);
                 smlt_broadcast(context, msg);
             } else {
                 smlt_broadcast(context, msg);

@@ -117,6 +117,18 @@ errval_t smlt_topology_destroy(struct smlt_topology *topology)
     return SMLT_SUCCESS;
 }
 
+
+/**
+ * @brief returns the node id of the root
+ * 
+ * @param topology the topology
+ *
+ * @return the node id of the root
+ */
+smlt_nid_t smlt_topology_get_root_id(struct smlt_topology* topology)
+{
+    return topology->root->node_id;
+}
 /**
  * \brief Build a binary tree model for the current machine.
  *

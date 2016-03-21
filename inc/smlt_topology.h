@@ -64,6 +64,15 @@ errval_t smlt_topology_create(struct smlt_generated_model* model,
  */
 errval_t smlt_topology_destroy(struct smlt_topology *topology);
 
+/**
+ * @brief smlt_topology_get_root_id
+ *
+ * @param topology  the Smelt topology 
+ *
+ * @return the nid of the root
+ */
+smlt_nid_t smlt_topology_get_root_id(struct smlt_topology *topology);
+
 
 /*
  * ===========================================================================
