@@ -45,7 +45,10 @@ void* worker1(void* arg)
         for (uint64_t i = 0; i < NUM_RUNS; i++) {
             msg->data[0] = i;
             smlt_channel_send(&chan, msg);
-         //   smlt_channel_recv(&chan, msg);
+            smlt_channel_recv(&chan, msg);
+            if (msg->data[0] != i) {
+                num_wrong++;
+            }
         }
     } else {
         for (int i = 0; i < NUM_RUNS; i++) {
@@ -53,7 +56,7 @@ void* worker1(void* arg)
             if (msg->data[0] != i) {
                 num_wrong++;
             }
-         //   smlt_channel_send(&chan, msg);
+            smlt_channel_send(&chan, msg);
         }
     }
 

@@ -126,8 +126,10 @@ static inline errval_t smlt_channel_send(struct smlt_channel *chan,
         if (chan->owner == smlt_node_self_id) {
            smlt_swmr_send(&chan->c.shm.send_owner, msg);
         } else {
-            for (int i = 0; i < num_chan; i++) {
-                smlt_queuepair_send(chan->c.shm.recv[i], msg);
+            for (int i = 0; i < chan->m; i++) {
+                if (chan->c.shm.dst[i] == smlt_node_self_id) {
+                    smlt_queuepair_send(chan->c.shm.recv[i], msg);
+                }
             }
         }
     }

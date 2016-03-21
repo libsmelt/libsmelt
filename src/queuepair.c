@@ -33,7 +33,7 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
     errval_t err;
 
     SMLT_DEBUG(SMLT_DBG__GENERAL, "creating qp src=%" PRIu32 " dst =% " PRIu32 " \n",
-               src, dst);
+               core_src, core_dst);
     // TODO what is really a queuepair ?
     assert(qp1);
     assert(qp2);

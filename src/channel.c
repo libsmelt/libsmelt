@@ -95,10 +95,10 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
                                                 SMLT_DEFAULT_ALIGNMENT, true);
 
         for (int i = 0; i < num_chan; i++) {
-            struct smlt_qp **send = &((*chan)->c.shm.recv[i]);
-            struct smlt_qp **recv = &((*chan)->c.shm.recv_owner[i]);
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                        send, recv, src[0], dst[i]);
+                                        &((*chan)->c.shm.recv[i]), 
+                                        &((*chan)->c.shm.recv_owner[i]), 
+                                        src[0], dst[i]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
             }
