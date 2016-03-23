@@ -74,7 +74,9 @@ def parse_log(s=sys.stdin, output=True):
 
         # Output
         for (topo, data) in res.items():
-            data = sorted(data, key=lambda x: x[1], reverse=True)
+            
+            # select max. measurements from all cores
+            data = sorted(data, key=lambda x: x[1], reverse=True) 
             (c, m, e) =  data[0]
 
             # Simulator prediction
