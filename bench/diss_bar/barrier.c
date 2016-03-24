@@ -345,7 +345,7 @@ void run_smlt(bool fill) {
 
 int main(int argc, char** argv){
 
-    //run_diss(true);
+    run_diss(true);
     run_diss(false);
 
     int total_threads = sysconf(_SC_NPROCESSORS_ONLN);
@@ -357,7 +357,7 @@ int main(int argc, char** argv){
         exit(1);
     }
     
-    //run_smlt(true);
+    run_smlt(true);
     run_smlt(false);
 }
 
