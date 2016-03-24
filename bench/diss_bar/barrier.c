@@ -311,7 +311,7 @@ void run_smlt(bool fill) {
         struct smlt_node *node;
         for (uint64_t t = 0; t < n_thr; t++) {
             node = smlt_get_node_by_id(cores[t]);
-            err = smlt_node_start(node, function_thread, (void*) (&(threaddata[t])));
+            err = smlt_node_start(node, function_thread_smlt, (void*) (&(threaddata[t])));
             if (smlt_err_is_fail(err)) {
                 printf("Failed setting up nodes \n");
             }
