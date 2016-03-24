@@ -107,6 +107,7 @@ void* function_thread (void * arg_threaddata){
 	int index_rdtsc=0;
 	for (n=0; n<NITERS; n++){
 		//TSC syncrho
+/*
 		HRT_GET_TIMESTAMP(actual);
 		ticks = (((( UINT64_T ) actual.h) << 32) | actual.l);
 		ell =  HRT_GET_USEC(threaddata->rdtsc_synchro[index_rdtsc]-ticks, threaddata->g_timerfreq);
@@ -116,17 +117,21 @@ void* function_thread (void * arg_threaddata){
 		}
 
 		HRT_GET_TIMESTAMP (timer.t1);
+*/
+		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                thread_id,&(threaddata->tag));
+
  	    sk_m_restart_tsc(&mes);
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
                 thread_id,&(threaddata->tag));
         sk_m_add(&mes);
-
+/*
 		HRT_GET_TIMESTAMP (timer.t2);
 		HRT_GET_ELAPSED_TICKS(timer.t1,timer.t2, &(timer.elapsed_ticks));
 		timer.elapsed_ticks -= threaddata->rdtsc_latency;
 		tmp_usecs = HRT_GET_USEC(timer.elapsed_ticks, threaddata->g_timerfreq);
 		index_rdtsc++;
-		
+*/		
 	}
     sk_m_print(&mes);
 }
@@ -168,6 +173,7 @@ void* function_thread_smlt(void * arg_threaddata){
 	int index_rdtsc=0;
 	for (n=0; n<NITERS; n++){
 		//TSC syncrho
+/*
 		HRT_GET_TIMESTAMP(actual);
 		ticks = (((( UINT64_T ) actual.h) << 32) | actual.l);
 		ell =  HRT_GET_USEC(threaddata->rdtsc_synchro[index_rdtsc]-ticks, 
@@ -176,12 +182,15 @@ void* function_thread_smlt(void * arg_threaddata){
 			HRT_GET_TIMESTAMP(actual);
 			ticks = (((( UINT64_T ) actual.h) << 32) | actual.l);
 		}
+*/
+		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                thread_id,&(threaddata->tag));
 
  	    sk_m_restart_tsc(&mes);
         smlt_barrier_wait(context);
         sk_m_add(&mes);
 
-		index_rdtsc++;
+//		index_rdtsc++;
 		
 	}
     sk_m_print(&mes);

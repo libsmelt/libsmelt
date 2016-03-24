@@ -46,6 +46,39 @@ static uint32_t* placement(uint32_t n, bool do_fill)
                 }
            }
         } else {
+            int cores_per_node = n/numa_nodes;
+            int rest = n - (cores_per_node*numa_nodes);
+            int taken_per_node = 0;        
+
+            fprintf(stderr, "Cores per node %d \n", cores_per_node);
+            fprintf(stderr, "rest %d \n", rest);
+            for (int i = 0; i < numa_nodes; i++) {
+                for (int j = 0; j < num_cores; j++) {
+                    if (numa_bitmask_isbitset(nodes[i], j)) {
+                        if (taken_per_node == cores_per_node) {
+                            if (rest > 0) {
+                                result[num_taken] = j;
+                                num_taken++;
+                                rest--;
+                                if (num_taken == n) {
+                                    return result;
+                                }
+                            }
+                            break;
+                        }
+                        result[num_taken] = j;
+                        num_taken++;
+                        taken_per_node++;
+
+                        if (num_taken == n) {
+                            return result;
+                        }
+                    }
+                }
+                taken_per_node = 0;
+            }            
+
+            /*
             uint8_t ith_of_node = 0;
             // go through numa nodes
             for (int i = 0; i < numa_nodes; i++) {
@@ -66,6 +99,7 @@ static uint32_t* placement(uint32_t n, bool do_fill)
                 }
                 ith_of_node = 0;
             }
+            */
         }
     } else {
         printf("Libnuma not available \n");
@@ -311,7 +345,7 @@ void run_smlt(bool fill) {
 
 int main(int argc, char** argv){
 
-    run_diss(true);
+    //run_diss(true);
     run_diss(false);
 
     int total_threads = sysconf(_SC_NPROCESSORS_ONLN);
@@ -323,7 +357,7 @@ int main(int argc, char** argv){
         exit(1);
     }
     
-    run_smlt(true);
+    //run_smlt(true);
     run_smlt(false);
 }
 
