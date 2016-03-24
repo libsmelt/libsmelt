@@ -207,7 +207,7 @@ debug:
 	echo $(HEADERS)
 
 .PHONY: install
-install $(TARGET) bench/bar-bench bench/ab-bench-new bench/pairwise_raw bench/pingpong bench/polloverhead :
+install : $(TARGET) bench/bar-bench bench/ab-bench-new bench/pairwise_raw bench/pingpong bench/polloverhead
 	cp *.so $(INSTALL_DIR)
 	cp bench/bar-bench $(INSTALL_DIR)
 	cp bench/ab-bench-new $(INSTALL_DIR)
