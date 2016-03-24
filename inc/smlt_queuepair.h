@@ -10,7 +10,7 @@
 #define SMLT_QUEUEPAIR_H_ 1
 
 #include <ump/smlt_ump_queuepair.h>
-#include <ffq/ff_queuepair.h>
+#include <ffq/smlt_ffq_queuepair.h>
 #include <shm/shm_qp.h>
 /*
  * ===========================================================================
@@ -28,7 +28,7 @@
 struct smlt_qp;
 struct smlt_msg;
 struct smlt_ump_queuepair;
-struct ff_queuepair;
+struct smlt_ffq_queuepair;
 struct shm_qp;
 struct swmr_queue;
 /**
@@ -78,18 +78,15 @@ struct smlt_qp
 
     union {
         struct smlt_ump_queuepair ump;
+        struct smlt_ffq_queuepair ffq;
+        struct shm_qp shm;
     } q;
 
-
     union {
-        struct smlt_ump_queuepair ump;
-        struct ff_queuepair ffq;
         struct shm_qp shm;
     } queue_tx;
 
     union {
-        struct smlt_ump_queuepair ump;
-        struct ff_queuepair ffq;
         struct shm_qp shm;
     } queue_rx;
 

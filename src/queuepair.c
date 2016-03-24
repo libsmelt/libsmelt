@@ -11,7 +11,7 @@
 #include <smlt_platform.h>
 
 /* backends */
-#include <backends/ffq/ff_queuepair.h>
+#include <backends/ffq/smlt_ffq_queuepair.h>
 #include <backends/ump/smlt_ump_queuepair.h>
 #include <backends/shm/shm_qp.h>
 #include "qp_func_wrapper.h"
@@ -74,19 +74,20 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
             break;
         case SMLT_QP_TYPE_FFQ :
             // create two queues
-            (qp_src)->queue_tx.ffq = *ff_queuepair_create(core_dst);
-            (qp_src)->queue_rx.ffq = *ff_queuepair_create(core_src);
-
-            (qp_dst)->queue_tx.ffq = (qp_src)->queue_rx.ffq;
-            (qp_dst)->queue_rx.ffq = (qp_src)->queue_tx.ffq;
+            err = smlt_ffq_queuepair_init(SMLT_FFQ_DEFAULT_SLOTS,
+                                          src_affinity, dst_affinity,
+                                          &(qp_src)->q.ffq, &(qp_dst)->q.ffq);
+            if (smlt_err_is_fail(err)) {
+                return err;
+            }
 
             // set function pointers
-            (qp_src)->f.send.try_send = smlt_ffq_send;
-            (qp_src)->f.send.notify = smlt_ffq_send0;
-            (qp_src)->f.send.can_send = smlt_ffq_can_send;
-            (qp_src)->f.recv.try_recv = smlt_ffq_recv;
-            (qp_src)->f.recv.can_recv = smlt_ffq_can_recv;
-            (qp_src)->f.recv.notify = smlt_ffq_recv0;
+            (qp_src)->f.send.try_send = smlt_ffq_queuepair_send;
+            (qp_src)->f.send.notify = smlt_ffq_queuepair_notify;
+            (qp_src)->f.send.can_send = smlt_ffq_queuepair_can_send;
+            (qp_src)->f.recv.try_recv = smlt_ffq_queuepair_recv;
+            (qp_src)->f.recv.can_recv = smlt_ffq_queuepair_can_recv;
+            (qp_src)->f.recv.notify = smlt_ffq_queuepair_recv_notify;
 
             (qp_dst)->f = (qp_src)->f;
             break;

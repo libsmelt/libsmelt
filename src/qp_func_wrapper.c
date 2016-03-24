@@ -8,10 +8,6 @@
  */
 #include <smlt.h>
 #include <smlt_queuepair.h>
-#include <backends/ump/smlt_ump_queuepair.h>
-#include <backends/ump/smlt_ump_queue.h>
-#include <backends/ffq/ff_queuepair.h>
-#include <backends/ffq/ff_queue.h>
 #include <backends/shm/shm_qp.h>
 #include "qp_func_wrapper.h"
 #include "debug.h"
@@ -21,7 +17,7 @@
  * FFQ wrapper functions
  * ===========================================================
  */
-
+#if 0
 errval_t smlt_ffq_send(struct smlt_qp *qp, struct smlt_msg *msg)
 {
     if (msg->words <= 7) {
@@ -68,6 +64,7 @@ bool smlt_ffq_can_send(struct smlt_qp *qp)
 {
     return ffq_can_enqueue(&qp->queue_tx.ffq.src);
 }
+#endif
 
 /* ===========================================================
  * SHM wrapper functions
