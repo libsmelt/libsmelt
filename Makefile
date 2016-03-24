@@ -105,7 +105,6 @@ all: $(TARGET) \
 		 test/contrib-lib-test \
 		 test/shm-queue-test \
 		 test/queuepair-test \
-		 test/ffq-test \
 		 test/context-test \
 		 test/smlt-mp-test \
 		 test/channel-test \
@@ -119,8 +118,8 @@ test: test/nodes-test \
 			test/topo-create-test \
 			test/contrib-lib-test
 			test/shm-queue-test \
-			test/queuepair-test \
-			test/ffq-test
+			test/queuepair-test 
+
 
 # Tests
 # --------------------------------------------------
