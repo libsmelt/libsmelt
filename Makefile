@@ -3,6 +3,8 @@
 CC=gcc
 
 TARGET=libsmltrt.so
+INSTALL_DIR=/mnt/scratch/smelt-runtime-system/bench/
+
 
 # Source files
 # --------------------------------------------------
@@ -118,7 +120,7 @@ test: test/nodes-test \
 			test/topo-create-test \
 			test/contrib-lib-test
 			test/shm-queue-test \
-			test/queuepair-test 
+			test/queuepair-test
 
 
 # Tests
@@ -204,13 +206,18 @@ clean:
 debug:
 	echo $(HEADERS)
 
+.PHONY: install
+install $(TARGET) bench/bar-bench bench/ab-bench-new bench/pairwise_raw bench/pingpong bench/polloverhead :
+	cp *.so $(INSTALL_DIR)
+	cp bench/bar-bench $(INSTALL_DIR)
+	cp bench/ab-bench-new $(INSTALL_DIR)
+	cp bench/pairwise_raw $(INSTALL_DIR)
+	cp bench/pingpong $(INSTALL_DIR)
+	cp bench/polloverhead $(INSTALL_DIR)
+
 .PHONY: cscope.files
 cscope.files:
 	find . -name '*.[ch]' -or -name '*.cpp' -or -name '*.hpp' > $@
 
 doc: $(HEADERS) $(CFILES)
 	doxygen
-
-.PHONY: install
-install: bench/ab-bench
-	#rsync -av bench/ab-bench gottardo:
