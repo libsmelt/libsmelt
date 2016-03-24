@@ -158,9 +158,9 @@ void* function_thread_smlt(void * arg_threaddata){
 	pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
 
     if (threaddata->fill) {
-        sprintf(outname, "barriers_smlt_fill%d", threaddata->num_threads);
+        sprintf(outname, "barriers_adaptivetree_fill%d", threaddata->num_threads);
     } else {
-        sprintf(outname, "barriers_smlt_rr%d", threaddata->num_threads);
+        sprintf(outname, "barriers_adaptivetree_rr%d", threaddata->num_threads);
     }
 
     uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*NITERS);
