@@ -174,8 +174,9 @@ bench/pingpong: $(DEPS) $(EXTERNAL_OBJS) bench/pingpong.c
 bench/polloverhead: $(DEPS) $(EXTERNAL_OBJS) bench/polloverhead.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/polloverhead.c -lm -o $@
 
-bench/bar-bench: $(DEPS) $(EXTERNAL_OBJS) bench/bar-bench.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/bar-bench.c -lm -o $@
+bench/bar-bench: bench/diss_bar/barrier.c
+	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c $(LIBS) -lpthread -lsmltrt -lm -o $@
+
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
