@@ -28,7 +28,7 @@ extern "C" {
  *
  * @return 0 if successful otherwise > 0
  */
-int smlt_tree_generate(uint32_t ncores, uint32_t *cores, char* tree_name,
+int smlt_tree_generate(uint32_t ncores, uint32_t *cores, const char* tree_name,
                        uint16_t** model, uint32_t** leafs, uint32_t* t_root,
                        uint32_t* len_model);
 
@@ -44,7 +44,7 @@ int smlt_tree_generate(uint32_t ncores, uint32_t *cores, char* tree_name,
  *
  * @return 0 if successful otherwise > 0
  */
-int smlt_tree_parse(char* json_string, uint32_t ncores, uint16_t** model, 
+int smlt_tree_parse(const char* json_string, uint32_t ncores, uint16_t** model,
                     uint32_t** leafs, uint32_t* t_root, uint32_t* len_model);
 
 #ifdef __cplusplus

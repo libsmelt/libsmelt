@@ -50,7 +50,7 @@
  *
  * \param sep_header use a seperate cachline for the header
  */
-void swmr_init_context(void* shm, struct swmr_context* queue, 
+void swmr_init_context(void* shm, struct swmr_context* queue,
                        uint8_t num_readers, uint8_t id, bool sep_header)
 {
     assert (queue!=NULL);
@@ -80,15 +80,15 @@ void swmr_queue_create(struct swmr_queue** queue,
                        uint32_t* dst,
                        uint16_t count,
                        bool sep_header)
-{   
+{
     void* shm;
     if (sep_header) {
-        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE*2, 
-                                          SMLT_ARCH_CACHELINE_SIZE, 
+        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE*2,
+                                          SMLT_ARCH_CACHELINE_SIZE,
                                           numa_node_of_cpu(dst[0]), true);
     } else {
-        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
-                                          SMLT_ARCH_CACHELINE_SIZE, 
+        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE,
+                                          SMLT_ARCH_CACHELINE_SIZE,
                                           numa_node_of_cpu(dst[0]), true);
     }
 
@@ -96,8 +96,8 @@ void swmr_queue_create(struct swmr_queue** queue,
 
     swmr_init_context(shm, &(*queue)->src, count, 0, sep_header);
 
-    (*queue)->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
-                                                SMLT_ARCH_CACHELINE_SIZE, 
+    (*queue)->dst = (swmr_context*) smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
+                                                SMLT_ARCH_CACHELINE_SIZE,
                                                 numa_node_of_cpu(dst[0]), true);
 
     for (int i = 0; i < count ; i++) {
@@ -126,7 +126,7 @@ errval_t smlt_swmr_send0(struct swmr_queue *qp)
 }
 
 // get the minimum of the readers pointer
-void swmr_get_next_sync(struct swmr_context* context, 
+void swmr_get_next_sync(struct swmr_context* context,
                    uint64_t* next)
 {
     uint64_t min = 0xFFFFFFFF;
@@ -150,7 +150,7 @@ bool swmr_can_send(struct swmr_context* context)
             return true;
         }
         return false;
-    } else {    
+    } else {
         return true;
     }
 }
@@ -187,16 +187,16 @@ void swmr_send_raw(struct swmr_context* context,
     uintptr_t* data = (uintptr_t*) context->data + offset;
     uintptr_t* header = (uintptr_t*) context->header + offset;
 
-    data[1] = p1; 
-    data[2] = p2; 
+    data[1] = p1;
+    data[2] = p2;
     data[3] = p3;
-    data[4] = p4; 
+    data[4] = p4;
     data[5] = p5;
-    data[6] = p6; 
-    data[7] = p7; 
+    data[6] = p6;
+    data[7] = p7;
 #ifdef DEBUG_SHM
-        printf("Shm writer %d: write pos %d val %lu \n", 
-                sched_getcpu(), context->l_pos, 
+        printf("Shm writer %d: write pos %d val %lu \n",
+                sched_getcpu(), context->l_pos,
                 context->next_seq);
 #endif
     header[0] = context->next_seq;
@@ -205,7 +205,7 @@ void swmr_send_raw(struct swmr_context* context,
     // increse write pointer..
     context->l_pos++;
 /*
-    printf("Core %d: DATA %p %ld HEADER %p %ld  offset %ld \n", sched_getcpu(), 
+    printf("Core %d: DATA %p %ld HEADER %p %ld  offset %ld \n", sched_getcpu(),
            (void*) data, data[0], (void*) header, header[0], offset);
 */
 }
@@ -266,23 +266,23 @@ bool swmr_receive_non_blocking(struct swmr_context* context,
     uintptr_t* start = (uintptr_t*) context->data + offset;
     uintptr_t* header = (uintptr_t*) context->header + offset;
 /*
-    printf("Core %d: DATA %p %ld HEADER %p %ld offset %ld lpos %d \n", sched_getcpu(), 
+    printf("Core %d: DATA %p %ld HEADER %p %ld offset %ld lpos %d \n", sched_getcpu(),
            (void*) start, start[0], (void*) header, header[0], offset, context->l_pos);
     sleep(1);
 */
     if (context->next_seq == header[0]) {
         *p1 = start[1];
         *p2 = start[2];
-        *p3 = start[3]; 
-        *p4 = start[4]; 
-        *p5 = start[5]; 
-        *p6 = start[6]; 
-        *p7 = start[7]; 
+        *p3 = start[3];
+        *p4 = start[4];
+        *p5 = start[5];
+        *p6 = start[6];
+        *p7 = start[7];
 #ifdef DEBUG_SHM
         printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu \n",
                sched_getcpu(), (sched_getcpu() % 4), context->l_pos,
-                *((uintptr_t *) start)); 
-    
+                *((uintptr_t *) start));
+
 #endif
         context->l_pos++;
         context->next_seq++;
@@ -356,11 +356,8 @@ errval_t smlt_swmr_recv(struct swmr_context *context, struct smlt_msg *msg)
     }
     return SMLT_SUCCESS;
 }
-
-
 errval_t smlt_swmr_recv0(struct swmr_context *context)
 {
     swmr_receive_raw0(context);
     return SMLT_SUCCESS;
 }
-

@@ -53,7 +53,7 @@ void* thr_worker(void* arg)
 
         smlt_broadcast(context, msg);
         r = msg->data[0];
-        if (r != (i+1)) {
+        if (r != (unsigned) (i+1)) {
            printf("Node %ld: Test failed %ld should be %d \n",
                   id, r, i+1);
         }

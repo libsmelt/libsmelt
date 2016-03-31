@@ -94,10 +94,10 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
                                                 sizeof(struct smlt_qp)*num_chan,
                                                 SMLT_DEFAULT_ALIGNMENT, true);
 
-        for (int i = 0; i < num_chan; i++) {
+        for (unsigned int i = 0; i < num_chan; i++) {
             err = smlt_queuepair_create(SMLT_QP_TYPE_UMP,
-                                        &((*chan)->c.shm.recv[i]), 
-                                        &((*chan)->c.shm.recv_owner[i]), 
+                                        &((*chan)->c.shm.recv[i]),
+                                        &((*chan)->c.shm.recv_owner[i]),
                                         src[0], dst[i]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_CREATE);
@@ -120,7 +120,7 @@ errval_t smlt_channel_destroy(struct smlt_channel *chan)
 
     errval_t err;
     // TODO adapt to SWMR
-    for (int i = 0; i < num_chan; i++) {
+    for (unsigned int i = 0; i < num_chan; i++) {
             err = smlt_queuepair_destroy(&chan->c.mp.send[i]);
             if (smlt_err_is_fail(err)) {
                 return smlt_err_push(err, SMLT_ERR_CHAN_DESTROY);

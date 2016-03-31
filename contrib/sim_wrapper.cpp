@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 extern "C" {
-	int smlt_tree_parse(char* json_string,
+	int smlt_tree_parse(const char* json_string,
                         uint32_t ncores,
                         uint16_t** model,
                         uint32_t** leafs,
@@ -14,8 +14,8 @@ extern "C" {
                                        model, leafs, last_node, len_model);
 	}
 
-	int smlt_tree_generate(uint32_t ncores, uint32_t* cores, 
-                           char* tree_name, uint16_t** model,
+	int smlt_tree_generate(uint32_t ncores, uint32_t* cores,
+                           const char* tree_name, uint16_t** model,
                            uint32_t** leafs, uint32_t* last_node,
                            uint32_t* len_model)
 	{
@@ -23,4 +23,3 @@ extern "C" {
                                           model, leafs, last_node, len_model);
 	}
 }
-

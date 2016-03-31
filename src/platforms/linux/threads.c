@@ -115,7 +115,7 @@ errval_t smlt_platform_node_create(struct smlt_node *node)
 
 static void *smlt_platform_node_start_wrapper(void *arg)
 {
-    struct smlt_node *node = arg;
+    struct smlt_node *node = (struct smlt_node*) arg;
 
     SMLT_DEBUG(SMLT_DBG__PLATFORM, "platform: thread started execution id=%" PRIu32 "\n",
                smlt_node_get_id_of_node(node));

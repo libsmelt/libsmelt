@@ -25,7 +25,7 @@
  *
  */
 errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
-                         char* name, struct smlt_generated_model** model)
+                         const char* name, struct smlt_generated_model** model)
 {
     *model = (struct smlt_generated_model*) smlt_platform_alloc(
                                                 sizeof(struct smlt_generated_model),
@@ -35,11 +35,11 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
     uint32_t len_model;
     int err = smlt_tree_generate(len, cores, name, &((*model)->model),
                                  &((*model)->leafs), &((*model)->root), &len_model);
-    
+
     printf("Model Generated \n");
     bool all_zeros = true;
-    for (int i = 0; i < len_model; i++) {
-        for (int j = 0; j < len_model; j++) {
+    for (unsigned int i = 0; i < len_model; i++) {
+        for (unsigned int j = 0; j < len_model; j++) {
             printf("%d ", (*model)->model[i*(len_model)+j]);
             if ((*model)->model[i*(len_model)+j] != 0) {
                 all_zeros = false;
@@ -49,7 +49,7 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
     }
     (*model)->ncores = len;
     (*model)->len = len_model;
-   
+
     if (err) {
         return SMLT_ERR_GENERATOR;
     } else if (all_zeros) {
@@ -79,14 +79,14 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
     char *json_string;
     uint64_t file_size;
     FILE *file = fopen(filepath, "rb");
-    
+
     // seek end
     fseek(file, 0, SEEK_END);
     file_size = ftell(file);
     rewind(file);
-    
+
     // read contents
-    json_string = smlt_platform_alloc(file_size * (sizeof(char)),
+    json_string = (char*) smlt_platform_alloc(file_size * (sizeof(char)),
                                        SMLT_DEFAULT_ALIGNMENT, true);
     uint64_t read = fread(json_string, sizeof(char), file_size, file);
     if (read <= 0) {
@@ -96,10 +96,10 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
     fclose(file);
 
     uint32_t len_model;
-    int err = smlt_tree_parse(json_string, ncores, &((*model)->model), 
+    int err = smlt_tree_parse(json_string, ncores, &((*model)->model),
                               &((*model)->leafs), &((*model)->root), &len_model);
-    
-    (*model)->len = len_model;    
+
+    (*model)->len = len_model;
     if (err) {
         return SMLT_ERR_GENERATOR;
     } else {
@@ -109,7 +109,7 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
 
 /**
  * @brief update measurements on the generator
- *        i.e. make new measurements and send them to 
+ *        i.e. make new measurements and send them to
  *        generator service
  *
  * @return SMLT_SUCCESS or SMLT_ERR_GENERATOR if communication
@@ -120,5 +120,3 @@ errval_t smlt_generator_update_measurments(void)
     assert(!"NYI");
     return SMLT_SUCCESS;
 }
-
-

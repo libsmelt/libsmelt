@@ -62,7 +62,7 @@ void* worker1(void* arg)
             sk_m_restart_tsc(&m);
             smlt_channel_recv(&chan, msg);
             sk_m_add(&m);
-            if (msg->data[0] != i) {
+            if (msg->data[0] != (unsigned) i) {
                 num_wrong++;
             }
             smlt_channel_send(&chan, msg);
@@ -74,7 +74,7 @@ void* worker1(void* arg)
     } else {
         printf("Node %d: Test Succeeded \n", smlt_node_get_id());
     }
-    sk_m_print_analysis(&m);   
+    sk_m_print_analysis(&m);
 
     return 0;
 }
@@ -86,7 +86,7 @@ int main(int argc, char ** argv)
     err = smlt_init(sysconf(_SC_NPROCESSORS_ONLN), true);
     if (smlt_err_is_fail(err)) {
         printf("SMLT init failed \n");
-    }        
+    }
 
 
     struct smlt_channel* c = &chan;
@@ -99,7 +99,7 @@ int main(int argc, char ** argv)
     //uint32_t dst[NUM_READERS] = {4, 8, 12, 16, 20, 24, 28};
     //uint32_t dst[NUM_READERS] = {4,8,12};
     uint32_t dst[NUM_READERS] = {1,2,3};
-    smlt_channel_create(&c, &src, dst, 1, NUM_READERS);   
+    smlt_channel_create(&c, &src, dst, 1, NUM_READERS);
 
     struct smlt_node* node;
     // writer
@@ -132,4 +132,3 @@ int main(int argc, char ** argv)
        }
     }
 }
-

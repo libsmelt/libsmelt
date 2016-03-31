@@ -78,7 +78,7 @@ errval_t smlt_shm_init_master_share(void)
     assert (SHM_SIZE % BASE_PAGE_SIZE==0);
     assert (sizeof(union quorum_share)<=SHM_SIZE);
 
-    master_share = smlt_platform_alloc(SHM_SIZE, SMLT_DEFAULT_ALIGNMENT, true);
+    master_share = (quorum_share*) smlt_platform_alloc(SHM_SIZE, SMLT_DEFAULT_ALIGNMENT, true);
 
     if (master_share == NULL) {
         return SMLT_ERR_MALLOC_FAIL;
@@ -684,4 +684,3 @@ errval_t smlt_shm_reduce_notify(void)
 #endif
     return SMLT_SUCCESS;
 }
-

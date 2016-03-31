@@ -74,7 +74,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
     uint32_t num_nodes = smlt_topology_get_num_nodes(topo);
 
-    ctx = smlt_platform_alloc(sizeof(*ctx) + num_nodes * sizeof(struct smlt_context_node),
+    ctx = (smlt_context*) smlt_platform_alloc(sizeof(*ctx) + num_nodes * sizeof(struct smlt_context_node),
                               SMLT_ARCH_CACHELINE_SIZE, true);
 
     if (ctx == NULL) {
@@ -93,23 +93,24 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         n->node_id = current_nid;
         n->num_children = num_children;
         if (num_children) {
+
             // if we use shared memory need to allocate additional channel
             if (smlt_topology_node_use_shm(tn)) {
-                n->children = smlt_platform_alloc((num_children+1)* sizeof(*(n->children)),
+                n->children = (smlt_channel*) smlt_platform_alloc((num_children+1)* sizeof(*(n->children)),
                                         SMLT_ARCH_CACHELINE_SIZE, true);
             } else {
-                n->children = smlt_platform_alloc(num_children * sizeof(*(n->children)),
+                n->children = (smlt_channel*) smlt_platform_alloc(num_children * sizeof(*(n->children)),
                                         SMLT_ARCH_CACHELINE_SIZE, true);
             }
             if (!n->children) {
-                /* PANIC !*/
+                assert (n->children);
             }
 
             /* setup channels */
             struct smlt_topology_node **children;
             children = smlt_topology_node_children(tn, &num_children);
 
-            for (int i = 0; i < num_children; i++) {
+            for (unsigned int i = 0; i < num_children; i++) {
                 uint32_t dst = smlt_topology_node_get_id(children[i]);
                 uint32_t src = smlt_topology_node_get_id(tn);
                 struct smlt_channel * chan = &(n->children[i]);
@@ -139,7 +140,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
                 for (int i = 0; i < num_children_shm; i++) {
                     dst[i] = smlt_topology_node_get_id(children[i]);
                 }
-                
+
                 smlt_channel_create(&chan, &src,
                                     dst, 1, num_children_shm);
                 n->num_children++;
@@ -154,7 +155,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         tn = smlt_topology_node_next(tn);
     }
 
-    ctx->nid_to_node = smlt_platform_alloc((ctx->max_nid+1)  * sizeof(void *),
+    ctx->nid_to_node = (smlt_context_node**) smlt_platform_alloc((ctx->max_nid+1)  * sizeof(void *),
                                            SMLT_ARCH_CACHELINE_SIZE, true);
     if (!ctx->nid_to_node) {
 
@@ -192,7 +193,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
                     child_use_shm = true;
                 }
             }
-            
+
             if (child_use_shm) {
                 n->parent = &parent->children[parent->num_children-1];
                 n->index = smlt_topology_node_get_child_idx_shm(tn);

@@ -1,6 +1,6 @@
 # Makefile for libsync
 
-CC=gcc
+CC=g++
 
 TARGET=libsmltrt.so
 INSTALL_DIR=/mnt/scratch/smelt-runtime-system/bench/
@@ -54,10 +54,10 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 # flags
 # --------------------------------------------------
 
-COMMONFLAGS += -Wpedantic -Werror -Wall -Wfatal-errors \
+COMMONFLAGS += -Werror -Wall -Wfatal-errors \
 			   -pthread -fPIC -DSMLT_VERSION=\"$(GIT_VERSION)\"
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
-CFLAGS += -std=gnu99 $(COMMONFLAGS) -D_GNU_SOURCE
+CFLAGS += -std=c++11 $(COMMONFLAGS) -D_GNU_SOURCE
 
 
 # libraries
@@ -100,6 +100,11 @@ CFLAGS += $(OPT)
 #	CXXFLAGS += -DSHL
 #endif
 
+# Should a custom libnuma be used?
+
+LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
+INC += -I$(LIBNUMABASE)
+LIBS += -L$(LIBNUMABASE)
 
 all: $(TARGET) \
 	   test/nodes-test \
@@ -203,7 +208,7 @@ bench/shm-mp-bench: $(DEPS) $(EXTERNAL_OBJS) bench/shm-mp-bench.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/shm-mp-bench.c -lm -o $@
 
 bench/bar-bench: bench/diss_bar/barrier.c
-	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c $(LIBS) -lpthread -lsmltrt -lm -o $@
+	$(CC) -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c $(LIBS) -lpthread -lsmltrt -lm -o $@
 
 # Build shared library
 # --------------------------------------------------

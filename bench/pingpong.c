@@ -198,7 +198,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    queue_pairs = calloc(2 * num_cores, sizeof(void *));
+    queue_pairs = (smlt_qp**) calloc(2 * num_cores, sizeof(void *));
     if (queue_pairs == NULL) {
         printf("FAILED TO INITIALIZE !\n");
         return -1;

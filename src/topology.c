@@ -21,7 +21,7 @@ struct smlt_topology_node
     struct smlt_topology *topology;         ///< backpointer to the topology
     struct smlt_topology_node *parent;      ///< pointer to the parent node
     struct smlt_topology_node **children;   ///< array of children
-    smlt_nid_t node_id;                     ///< 
+    smlt_nid_t node_id;                     ///<
     uint32_t array_index;                   ///< Invalid if root
     uint32_t num_children;                  ///<
     bool is_leaf;
@@ -126,7 +126,7 @@ errval_t smlt_topology_destroy(struct smlt_topology *topology)
 
 /**
  * @brief returns the node id of the root
- * 
+ *
  * @param topology the topology
  *
  * @return the node id of the root
@@ -151,7 +151,7 @@ static void smlt_topology_create_binary_tree(struct smlt_topology **topology,
     // Fill model
     (*topology)->root = &((*topology)->all_nodes[0]);
 
-    for (int i = 0; i < num_threads;i++) {
+    for (unsigned int i = 0; i < num_threads;i++) {
 
         struct smlt_topology_node* node = &(*topology)->all_nodes[i];
         node->topology = *topology;
@@ -188,7 +188,7 @@ static void smlt_topology_create_binary_tree(struct smlt_topology **topology,
             node->is_leaf = true;
         }
     }
-    for (int i = 0; i < num_threads; i++) {
+    for (unsigned int i = 0; i < num_threads; i++) {
         SMLT_DEBUG(SMLT_DBG__INIT, "Parent of node %d %p \n",
         i, (*topology)->all_nodes[i].parent);
     }
@@ -210,12 +210,12 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
     (*topo)->root = &((*topo)->all_nodes[model->root]);
     (*topo)->root->parent = NULL;
     // TODO use node ids instead of cores ids
-    for (int x = 0; x < model->len;x++){
+    for (unsigned int x = 0; x < model->len;x++){
         struct smlt_topology_node* node = &((*topo)->all_nodes[x]);
 
         // find number of children (for MP) and allocate accordingly
         int max_child = 0;
-        for(int y = 0; y < model->len; y++){
+        for(unsigned int y = 0; y < model->len; y++){
             int tmp = model->model[x*model->len+y];
             if ((tmp > max_child) && (tmp < 50)){
                 max_child = model->model[x*model->len+y];
@@ -245,8 +245,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                                                  true);
         node->num_children_shm = shm_children;
         // set model
-        int shm_child_index = 0;
-        for(int y = 0; y < model->len; y++){
+        for(unsigned int y = 0; y < model->len; y++){
             int val = model->model[x*(model->len)+y];
             if (val > 0) {
                 if (val == 99) {
@@ -284,8 +283,8 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
         node->num_children = max_child;
     }
 
-    for (int i = 0; i < model->len; i++) {
-        for (int j = 0; j < model->len; j++) {
+    for (unsigned i = 0; i < model->len; i++) {
+        for (unsigned j = 0; j < model->len; j++) {
             if ((model->leafs[j] == i) && (i != 0)) {
                 SMLT_DEBUG(SMLT_DBG__INIT,"%d is a leaf \n", i)
                 (*topo)->all_nodes[i].is_leaf = true;
