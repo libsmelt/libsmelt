@@ -64,9 +64,13 @@ void* thr_sender(void* a)
         sk_m_add(&m_rtt);
     }
 
+#ifdef PRINT_SUMMARY
+    sk_m_print_analysis(&m_send);
+    sk_m_print_analysis(&m_rtt);
+#else
     sk_m_print(&m_send);
     sk_m_print(&m_rtt);
-
+#endif
     return NULL;
 }
 
@@ -96,8 +100,11 @@ void* thr_receiver(void* a)
         }
     }
 
+#ifdef PRINT_SUMMARY
+    sk_m_print_analysis(&m_receive);
+#else
     sk_m_print(&m_receive);
-
+#endif
     return NULL;
 }
 

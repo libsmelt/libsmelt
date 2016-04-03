@@ -113,6 +113,7 @@ all: $(TARGET) \
 		 bench/bar-bench \
 		 bench/ab-bench-new \
 		 bench/pairwise_raw \
+		 bench/pairwise_raw_s \
 		 bench/pingpong \
 		 bench/polloverhead
 
@@ -168,6 +169,9 @@ bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.c
 
 bench/pairwise_raw: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.c
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/pairwise_raw.c -o $@ -lsmltrt
+
+bench/pairwise_raw_s: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.c
+	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/pairwise_raw.c -o $@ -lsmltrt
 
 bench/pingpong: $(DEPS) $(EXTERNAL_OBJS) bench/pingpong.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pingpong.c -lm -o $@
