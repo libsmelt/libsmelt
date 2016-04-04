@@ -72,13 +72,6 @@ void swmr_queue_create(struct swmr_queue** queue,
                        uint32_t* dst,
                        uint16_t count)
 {
-    /*
-    *queue = (struct swmr_queue*) smlt_platform_alloc_on_node(
-                                        sizeof(struct swmr_queue),
-                                        numa_node_of_cpu(src),
-                                        SMLT_ARCH_CACHELINE_SIZE,
-                                        true);
-    */
     void* shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
                                             SMLT_ARCH_CACHELINE_SIZE, 
                                             numa_node_of_cpu(dst[0]), true);
@@ -148,7 +141,6 @@ void swmr_send_raw(struct swmr_context* context,
                   uintptr_t p6,
                   uintptr_t p7)
 {
-
     uint64_t next_sync;
     //assert (context!=NULL);
     // if we reached the end reset local queue buffer pointer
@@ -179,9 +171,6 @@ void swmr_send_raw(struct swmr_context* context,
     slot_start[6] = p6; 
     slot_start[7] = p7; 
 #ifdef DEBUG_SHM
-       /* printf("Shm writer %d epoch %d: write pos %" PRIu64 " addr %p value1 %lu \n",
-            sched_getcpu(), context->epoch, context->write_pos[0].pos[context->epoch],
-            slot_start, slot_start[0]); */
         printf("Shm writer %d: write pos %d val %lu \n", 
                 sched_getcpu(), context->l_pos, 
                 context->next_seq);
@@ -229,11 +218,6 @@ bool swmr_receive_non_blocking(struct swmr_context* context,
         *p5 = start[5]; 
         *p6 = start[6]; 
         *p7 = start[7]; 
-/*
-        printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu slot_start %p \n",
-               sched_getcpu(), (sched_getcpu() % 4), context->l_pos,
-                *((uintptr_t *) start) , start); 
-*/
 #ifdef DEBUG_SHM
         printf("Shm %d w %d: read pos %" PRIu16 " val1 %lu \n",
                sched_getcpu(), (sched_getcpu() % 4), context->l_pos,

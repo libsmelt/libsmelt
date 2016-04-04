@@ -25,7 +25,6 @@ struct smlt_generated_model;
 ///< refer to the current smelt topology
 #define SMLT_TOPOLOGY_CURRENT NULL;
 
-
 /*
  * ===========================================================================
  * creating / destroying Smelt topologies
@@ -118,6 +117,16 @@ struct smlt_topology_node *smlt_topology_node_parent(struct smlt_topology_node *
  */
 struct smlt_topology_node **smlt_topology_node_children(struct smlt_topology_node *node,
                                                         uint32_t* children);
+
+/**
+ * @brief gets the shared memory children of a topology node
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+struct smlt_topology_node **smlt_topology_node_children_shm(struct smlt_topology_node *node,
+                                                            uint32_t* children);
 /**
  * @brief checks if the topology node is the last
  *
@@ -156,6 +165,16 @@ uint32_t smlt_topology_node_get_child_idx(struct smlt_topology_node *node);
 
 
 /**
+ * @brief obtains the shm child index (the order of the children) from the node
+ *
+ * @param node  the topology ndoe
+ *
+ * @return child index
+ */
+uint32_t smlt_topology_node_get_child_idx_shm(struct smlt_topology_node *node);
+
+
+/**
  * @brief gets the number of nodes with the the given idx
  *
  * @param node  the topology node
@@ -163,6 +182,16 @@ uint32_t smlt_topology_node_get_child_idx(struct smlt_topology_node *node);
  * @return numebr of children
  */
 uint32_t smlt_topology_node_get_num_children(struct smlt_topology_node *node);
+
+
+/**
+ * @brief gets the number of nodes with the the given idx
+ *
+ * @param node  the topology node
+ *
+ * @return numebr of children
+ */
+uint32_t smlt_topology_node_get_num_children_shm(struct smlt_topology_node *node);
 
 /**
  * @brief obtainst he associated node id of the topology node
@@ -173,6 +202,15 @@ uint32_t smlt_topology_node_get_num_children(struct smlt_topology_node *node);
  */
 smlt_nid_t smlt_topology_node_get_id(struct smlt_topology_node *node);
 
+
+/**
+ * @brief returns if shared memory is used to improve performance
+ *
+ * @param node  the topology node
+ *
+ * @return is shared memory used?
+ */
+bool smlt_topology_node_use_shm(struct smlt_topology_node *node);
 
 /*
  * ===========================================================================

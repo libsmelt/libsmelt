@@ -18,14 +18,21 @@
 #include <smlt_generator.h>
 #include <pthread.h>
 
-#define NUM_THREADS 32
-#define NUM_RUNS 10000000
+#define NUM_THREADS 4
+#define NUM_RUNS 10
 
 struct smlt_context *context = NULL;
 
 static const char *name = "binary_tree";
 static pthread_barrier_t bar;
 
+
+static uint16_t model[16] = { 0, 70, 70, 1,
+                              50, 0, 0, 1,
+                              50, 0, 0, 0,
+                              99, 0, 0, 0 };
+
+static uint32_t leafs[4] = {1,2,3,0};
 
 errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
 {
@@ -43,6 +50,7 @@ void* thr_worker(void* arg)
             r++;
             msg->data[0] = r;
         }
+
         smlt_broadcast(context, msg);
         r = msg->data[0];
         if (r != (i+1)) {
@@ -100,4 +108,36 @@ int main(int argc, char **argv)
         node = smlt_get_node_by_id(i);
         smlt_node_join(node);
     }
+
+    printf("Creating hybrid tree \n");
+
+    struct smlt_generated_model *m = NULL;
+    m = (struct smlt_generated_model*) malloc(sizeof(struct smlt_generated_model));
+    m->model = model;
+    m->leafs = leafs;
+    m->root = 0;
+    m->ncores = 4;
+    m->len = 4;
+    smlt_topology_create(m, name, &topo);
+
+    err = smlt_context_create(topo, &context);
+    if (smlt_err_is_fail(err)) {
+        printf("FAILED TO INITIALIZE CONTEXT !\n");
+        return 1;
+    }
+
+    for (uint64_t i = 0; i < NUM_THREADS; i++) {
+        node = smlt_get_node_by_id(i);
+        err = smlt_node_start(node, thr_worker, (void*) i);
+        if (smlt_err_is_fail(err)) {
+            printf("Staring node failed \n");
+        }
+    }
+
+    for (int i=0; i < NUM_THREADS; i++) {
+        node = smlt_get_node_by_id(i);
+        smlt_node_join(node);
+    }
+
+
 }

@@ -16,7 +16,7 @@
  * Smelt configuration
  * ===========================================================================
  */
-#define SMELT_MESSAGE_MIN_SIZE 64
+#define SMELT_MESSAGE_MIN_SIZE 56
 
 typedef uint64_t smlt_msg_payload_t;
 

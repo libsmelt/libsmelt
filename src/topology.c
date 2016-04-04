@@ -9,6 +9,7 @@
 #include <smlt.h>
 #include <smlt_topology.h>
 #include <smlt_generator.h>
+#include <smlt_queuepair.h>
 #include "debug.h"
 #include <stdio.h>
 
@@ -20,11 +21,16 @@ struct smlt_topology_node
     struct smlt_topology *topology;         ///< backpointer to the topology
     struct smlt_topology_node *parent;      ///< pointer to the parent node
     struct smlt_topology_node **children;   ///< array of children
-    uint32_t chanel_type;                   ///< queuepairs
-    smlt_nid_t node_id;                     ///< qp[0]->parent qp[1..n] child
+    smlt_nid_t node_id;                     ///< 
     uint32_t array_index;                   ///< Invalid if root
     uint32_t num_children;                  ///<
     bool is_leaf;
+
+    // shared memory related info
+    bool use_shm;                           ///< use shared memory?
+    uint32_t array_index_shm;                   ///< Invalid if root
+    uint32_t num_children_shm;                  ///<
+    struct smlt_topology_node **children_shm; ///< array of children for shared memory
 };
 
 
@@ -149,6 +155,7 @@ static void smlt_topology_create_binary_tree(struct smlt_topology **topology,
 
         struct smlt_topology_node* node = &(*topology)->all_nodes[i];
         node->topology = *topology;
+        node->use_shm = false;
         if (i == 0) {
             node->parent = NULL;
             node->node_id = 0;
@@ -168,7 +175,7 @@ static void smlt_topology_create_binary_tree(struct smlt_topology **topology,
                                                  SMLT_DEFAULT_ALIGNMENT, true);
             node->children[0] = &(*topology)->all_nodes[i*2+1];
             node->node_id = i;
-            node->num_children =1;
+            node->num_children = 1;
             if (i*2+2 < num_threads) {
                 node->children[1] = &(*topology)->all_nodes[i*2+2];
                 node->num_children = 2;
@@ -206,29 +213,63 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
     for (int x = 0; x < model->len;x++){
         struct smlt_topology_node* node = &((*topo)->all_nodes[x]);
 
-        // find number of children and allocate accordingly
+        // find number of children (for MP) and allocate accordingly
         int max_child = 0;
         for(int y = 0; y < model->len; y++){
             int tmp = model->model[x*model->len+y];
-            if ((tmp > max_child) && (tmp != 99)){
-               max_child = model->model[x*model->len+y];
+            if ((tmp > max_child) && (tmp < 50)){
+                max_child = model->model[x*model->len+y];
             }
         }
+
+
         node->node_id = x;
         node->children = (struct smlt_topology_node**)
                              smlt_platform_alloc(sizeof(struct smlt_topology_node*)*
                                                  max_child, SMLT_DEFAULT_ALIGNMENT,
                                                  true);
+        node->num_children = max_child;
+
+        // find number of children (for SHM) and allocate accordingly
+        int shm_children = 0;
+        for (int z = 0; z < model->len; z++) {
+            int val = model->model[x*(model->len)+z];
+            if ((val > 69) && (val < 99)) {
+                shm_children++;
+            }
+        }
+
+        node->children_shm = (struct smlt_topology_node**)
+                             smlt_platform_alloc(sizeof(struct smlt_topology_node*)*
+                                                 shm_children, SMLT_DEFAULT_ALIGNMENT,
+                                                 true);
+        node->num_children_shm = shm_children;
         // set model
+        int shm_child_index = 0;
         for(int y = 0; y < model->len; y++){
             int val = model->model[x*(model->len)+y];
-
             if (val > 0) {
                 if (val == 99) {
+                    // MP parent
                     SMLT_DEBUG(SMLT_DBG__INIT,"Parent of %d is %d \n", x, y);
                     node->parent = &((*topo)->all_nodes[y]);
-                } else {
-                    // TODO add channel type
+                } else if ((val > 69) && (val != 99)) {
+                    // master of shared memory channel
+                    node->use_shm = true;
+                    SMLT_DEBUG(SMLT_DBG__GENERAL,"Child (SHM) of %d is %d at pos %d \n",
+                               x, y, shm_child_index);
+                    node->topology = *topo;
+                    node->children_shm[shm_child_index] = &((*topo)->all_nodes[y]);
+                    node->node_id = x; // TODO change to real node ID
+                    (*topo)->all_nodes[y].array_index_shm = shm_child_index-1;
+                    shm_child_index++;
+                } else if ((val > 49) && (val < 70)) {
+                    // slave of shared memory channel
+                    SMLT_DEBUG(SMLT_DBG__INIT,"Parent (SHM) of %d is %d \n",
+                               x,y);
+                    node->parent = &((*topo)->all_nodes[y]);
+                }else {
+                    // MP child
                     SMLT_DEBUG(SMLT_DBG__INIT,"Child of %d is %d at pos %d \n",
                                x, y, val-1);
                     node->topology = *topo;
@@ -242,7 +283,6 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
 
         node->num_children = max_child;
     }
-
 
     for (int i = 0; i < model->len; i++) {
         for (int j = 0; j < model->len; j++) {
@@ -311,6 +351,22 @@ struct smlt_topology_node **smlt_topology_node_children(struct smlt_topology_nod
     return node->children;
 }
 
+
+/**
+ * @brief gets the parent topology ndoe
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+struct smlt_topology_node **smlt_topology_node_children_shm(struct smlt_topology_node *node,
+                                                        uint32_t* children)
+{
+    *children = node->num_children_shm;
+    return node->children_shm;
+}
+
+
 /**
  * @brief checks if the topology node is the last
  *
@@ -360,6 +416,18 @@ uint32_t smlt_topology_node_get_child_idx(struct smlt_topology_node *node)
 }
 
 /**
+ * @brief obtains the child index (the order of the children) from the node
+ *
+ * @param node  the topology ndoe
+ *
+ * @return child index
+ */
+uint32_t smlt_topology_node_get_child_idx_shm(struct smlt_topology_node *node)
+{
+    return node->array_index_shm;
+}
+
+/**
  * @brief gets the number of nodes with the the given idx
  *
  * @param node  the topology node
@@ -369,6 +437,19 @@ uint32_t smlt_topology_node_get_child_idx(struct smlt_topology_node *node)
 uint32_t smlt_topology_node_get_num_children(struct smlt_topology_node *node)
 {
     return node->num_children;
+}
+
+
+/**
+ * @brief gets the number of nodes with the the given idx
+ *
+ * @param node  the topology node
+ *
+ * @return numebr of children
+ */
+uint32_t smlt_topology_node_get_num_children_shm(struct smlt_topology_node *node)
+{
+    return node->num_children_shm;
 }
 
 /**
@@ -383,6 +464,17 @@ smlt_nid_t smlt_topology_node_get_id(struct smlt_topology_node *node)
     return node->node_id;
 }
 
+/**
+ * @brief returns if shared memory is used to improve performance
+ *
+ * @param node  the topology node
+ *
+ * @return is shared memory used?
+ */
+bool smlt_topology_node_use_shm(struct smlt_topology_node *node)
+{
+    return node->use_shm;
+}
 
 /*
  * ===========================================================================

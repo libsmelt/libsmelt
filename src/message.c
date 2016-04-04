@@ -10,6 +10,7 @@
 #include <string.h>
 #include <smlt_platform.h>
 #include <smlt_message.h>
+#include <stdio.h>
 
 
 /**
@@ -28,7 +29,7 @@ struct smlt_msg *smlt_message_alloc(uint32_t size)
     msg = (struct smlt_msg*) smlt_platform_alloc(sizeof(struct smlt_msg),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
-    msg->words = 0;
+    msg->words = size/sizeof(uintptr_t);
     msg->bufsize = size;
     msg->data = smlt_platform_alloc(size, SMLT_DEFAULT_ALIGNMENT,
                                     true);
