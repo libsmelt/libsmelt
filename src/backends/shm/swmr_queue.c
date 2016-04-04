@@ -64,7 +64,6 @@ void swmr_init_context(void* shm, struct swmr_context* queue,
     queue->data = (uint8_t*) shm+((num_readers+2)*sizeof(union pos_point));
     queue->next_sync = queue->num_slots-1;
     queue->next_seq = 1;
-    queue->r_mask = 0xF;
 }
 
 void swmr_queue_create(struct swmr_queue** queue,
@@ -99,6 +98,13 @@ errval_t smlt_swmr_send(struct swmr_queue *qp, struct smlt_msg *msg)
     } else {
         // TODO Fragment ? Or Bulkload style?
     }
+    return SMLT_SUCCESS;
+}
+
+
+errval_t smlt_swmr_send0(struct swmr_queue *qp)
+{
+    swmr_send_raw0(&qp->src);
     return SMLT_SUCCESS;
 }
 
@@ -182,6 +188,38 @@ void swmr_send_raw(struct swmr_context* context,
     context->l_pos = context->l_pos+1;
 }
 
+void swmr_send_raw0(struct swmr_context* context)
+{
+    uint64_t next_sync;
+    //assert (context!=NULL);
+    // if we reached the end reset local queue buffer pointer
+    if ((context->l_pos) == context->num_slots) {
+        context->l_pos = 0;
+    }
+
+    // get next sync at the sync point
+    if (context->next_seq == context->next_sync) {
+       swmr_get_next_sync(context, &next_sync);
+       // block if there is no empty slot
+       while(context->next_seq == next_sync) {
+            swmr_get_next_sync(context, &next_sync);
+       }
+       context->next_sync = next_sync;
+    }
+
+    uintptr_t offset =  (context->l_pos*(CACHELINE_SIZE/sizeof(uintptr_t)));
+    //assert (offset<SHMQ_SIZE*CACHELINE_SIZE);
+
+    uintptr_t* slot_start = (uintptr_t*) context->data + offset;
+
+    slot_start[0] = context->next_seq;
+    context->next_seq++;
+
+    // increse write pointer..
+    context->l_pos = context->l_pos+1;
+}
+
+
 bool swmr_can_receive(struct swmr_context* context)
 {
     uintptr_t* start;
@@ -240,6 +278,30 @@ bool swmr_receive_non_blocking(struct swmr_context* context,
 }
 
 
+// returns NULL if reader reached writers pos
+bool swmr_receive_non_blocking0(struct swmr_context* context)
+{
+    //assert (context!=NULL);
+    uintptr_t* start;
+    start = (uintptr_t*) context->data + ((context->l_pos)*
+                 CACHELINE_SIZE/(sizeof(uintptr_t)));
+
+    if (context->next_seq == start[0]) {
+        context->l_pos = (context->l_pos+1);
+        context->next_seq++;
+        if (context->l_pos == context->num_slots) {
+            context->l_pos = 0;
+        }
+
+	// only update read pointer every 16th read
+        if ((context->next_seq & 0xF) == 0) {
+            context->readers_pos[context->id].pos = (context->next_seq -1);
+        }
+        return true;
+    }
+    return false;
+}
+
 // blocks
 // TODO make this smarter?
 void swmr_receive_raw(struct swmr_context* context,
@@ -256,6 +318,11 @@ void swmr_receive_raw(struct swmr_context* context,
 
 }
 
+void swmr_receive_raw0(struct swmr_context* context)
+{
+    while(!swmr_receive_non_blocking0(context)){};
+}
+
 
 errval_t smlt_swmr_recv(struct swmr_context *context, struct smlt_msg *msg)
 {
@@ -266,6 +333,13 @@ errval_t smlt_swmr_recv(struct swmr_context *context, struct smlt_msg *msg)
     } else {
         // TODO Fragment ? Or Bulkload style?
     }
+    return SMLT_SUCCESS;
+}
+
+
+errval_t smlt_swmr_recv0(struct swmr_context *context)
+{
+    swmr_receive_raw0(context);
     return SMLT_SUCCESS;
 }
 

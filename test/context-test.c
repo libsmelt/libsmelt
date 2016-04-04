@@ -28,7 +28,7 @@ static pthread_barrier_t bar;
 
 
 static uint16_t model[16] = { 0, 70, 70, 1,
-                              50, 0, 0, 1,
+                              50, 0, 0, 0,
                               50, 0, 0, 0,
                               99, 0, 0, 0 };
 

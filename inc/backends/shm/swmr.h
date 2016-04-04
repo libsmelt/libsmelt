@@ -48,12 +48,6 @@ struct swmr_context {
      * when the end of the queue is reached
      */
     uint16_t l_pos;
-
-    // avoid bug
-    uint8_t epoch;
-    uint64_t r_mask;
-    uint64_t w_mask;
-
     // shm4 impl
     uint64_t next_sync;
     uint64_t next_seq;
@@ -81,6 +75,8 @@ void swmr_send_raw(struct swmr_context* context,
                   uintptr_t p6,
                   uintptr_t p7);
 
+void swmr_send_raw0(struct swmr_context* context);
+
 void swmr_receive_raw(struct swmr_context* context,
               uintptr_t *p1,
               uintptr_t *p2,
@@ -90,10 +86,14 @@ void swmr_receive_raw(struct swmr_context* context,
               uintptr_t *p6,
               uintptr_t *p7);
 
+void swmr_receive_raw0(struct swmr_context* context);
+
 bool swmr_can_send(struct swmr_context* context);
 bool swmr_can_receive(struct swmr_context* context);
 
 
 errval_t smlt_swmr_send(struct swmr_queue *qp, struct smlt_msg *msg);
+errval_t smlt_swmr_send0(struct swmr_queue *qp);
 errval_t smlt_swmr_recv(struct swmr_context *context, struct smlt_msg *msg);
+errval_t smlt_swmr_recv0(struct swmr_context *context);
 #endif /* SYNC_SHM_H */

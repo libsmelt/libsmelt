@@ -106,7 +106,6 @@ errval_t smlt_broadcast(struct smlt_context *ctx,
         SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from parent chan %p \n",
                    smlt_node_get_id(), (void*) &parent);
 
-
         err = smlt_channel_recv(parent, msg);
         if (smlt_err_is_fail(err)) {
             // TODO: error handling

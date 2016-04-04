@@ -121,7 +121,6 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         // shared memory children (TODO adds the shm channel at the end)
         if (smlt_topology_node_use_shm(tn)) {
             uint32_t num_children_shm = smlt_topology_node_get_num_children_shm(tn);
-
             if (num_children_shm) {
                 /* setup channel */
                 struct smlt_topology_node **children;
@@ -131,13 +130,13 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
                 uint32_t src = smlt_topology_node_get_id(tn);
                 // num_children is of the MP children
-                struct smlt_channel * chan = &(n->children[num_children]);
+                struct smlt_channel * chan = &(n->children[n->num_children]);
                 for (int i = 0; i < num_children_shm; i++) {
                     dst[i] = smlt_topology_node_get_id(children[i]);
                 }
-    
                 smlt_channel_create(&chan, &src,
                                     dst, 1, num_children_shm);
+                n->num_children++;
             }
         }
 
@@ -177,8 +176,22 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         struct smlt_context_node *parent = ctx->nid_to_node[parent_nid];
         struct smlt_context_node *n = ctx->nid_to_node[current_nid];
 
-        if (smlt_topology_node_use_shm(tn)) {
-            n->parent = &parent->children[smlt_topology_node_get_child_idx_shm(tn)];
+        if (smlt_topology_node_use_shm(tp)) {
+            bool child_use_shm = false;
+            struct smlt_topology_node **children;
+            uint32_t num_children;
+            children = smlt_topology_node_children_shm(tp, &num_children);
+            for (int j = 0; j < num_children; j++) {
+                if (smlt_topology_node_get_id(children[j]) == i) {
+                    child_use_shm = true;
+                }
+            }
+            
+            if (child_use_shm) {
+                n->parent = &parent->children[parent->num_children-1];
+            } else {
+                n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
+            }
         } else {
             n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
         }
