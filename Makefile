@@ -219,7 +219,9 @@ install : $(TARGET) bench/bar-bench bench/ab-bench-new bench/pairwise_raw bench/
 	cp *.so $(INSTALL_DIR)
 	cp bench/bar-bench $(INSTALL_DIR)
 	cp bench/ab-bench-new $(INSTALL_DIR)
+	cp bench/ab-bench-new_s $(INSTALL_DIR)
 	cp bench/pairwise_raw $(INSTALL_DIR)
+	cp bench/pairwise_raw_s $(INSTALL_DIR)
 	cp bench/pingpong $(INSTALL_DIR)
 	cp bench/polloverhead $(INSTALL_DIR)
 
