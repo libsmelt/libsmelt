@@ -21,12 +21,15 @@
 #include <numa.h>
 #include <sched.h>
 #include <backends/shm/swmr.h>
+#include <platforms/measurement_framework.h>
 
 //#define DEBUG
 #ifdef DEBUG
 #define NUM_WRITES 40
+#define NUM_VALUES 10
 #else
-#define NUM_WRITES 10000000
+#define NUM_WRITES 1000000
+#define NUM_VALUES 1000
 #endif
 
 #define LEAF 0
@@ -34,6 +37,9 @@
 int sleep_time = 0;
 void* shared_mem;
 static const int num_readers = 3;
+
+__thread struct sk_measurement m;
+__thread cycles_t buf[NUM_WRITES];
 
 void* thr_writer(void* arg)
 {
@@ -47,12 +53,15 @@ void* thr_writer(void* arg)
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
     swmr_init_context(shared_mem, queue, num_readers, 0);
+    sk_m_init(&m, NUM_VALUES, "writer", buf);
 
     uint64_t rid = 1;
     while (1) {
+        sk_m_restart_tsc(&m);
         swmr_send_raw(queue, rid, 0, 0, 0, 0, 0, 0);
-        rid++;
+        sk_m_add(&m);
 
+        rid++;
         if (rid == NUM_WRITES) {
             break;
         }
@@ -63,6 +72,7 @@ void* thr_writer(void* arg)
     printf("###################################################\n");
     printf("Writer Test finished\n");
     printf("###################################################\n");
+    sk_m_print_analysis(&m);
     return 0;
 }
 
@@ -85,9 +95,14 @@ void* thr_reader(void* arg)
     uint64_t num_wrong = 0;
     uintptr_t r[8];
 
+    sk_m_init(&m, NUM_VALUES, "reader", buf);
+
     while(1) {
+        sk_m_restart_tsc(&m);
         swmr_receive_raw(queue, &r[0], &r[1], &r[2], &r[3],
                         &r[4], &r[5], &r[6]);
+
+        sk_m_add(&m);
 
         if (r[0] != (previous+1)) {
             num_wrong++;  
@@ -107,6 +122,7 @@ void* thr_reader(void* arg)
         printf("Reader %"PRIu64": Test Succeeded \n", ((uint64_t)arg));
     }
     printf("###################################################\n");
+    sk_m_print_analysis(&m);
     return 0;
 }
 

@@ -28,6 +28,8 @@
 #include <shm/swmr.h>
 
 
+#define SLOT_SIZE CACHELINE_SIZE/sizeof(uintptr_t)
+
 //#define DEBUG_SHM
 
 /**
@@ -55,13 +57,13 @@ void swmr_init_context(void* shm, struct swmr_context* queue,
     queue->num_readers = num_readers;
     queue->id = id;
 
-    queue->num_slots = (SWMRQ_SIZE)-(num_readers+2);
+    queue->num_slots = (SWMRQ_SIZE)-(num_readers+1);
 #ifdef DEBUG_SHM
     queue->num_slots = 10;
 #endif
     queue->readers_pos = (union pos_point*) shm;
     queue->l_pos = 0;
-    queue->data = (uint8_t*) shm+((num_readers+2)*sizeof(union pos_point));
+    queue->data = (uint8_t*) shm+((num_readers+1)*sizeof(union pos_point));
     queue->next_sync = queue->num_slots-1;
     queue->next_seq = 1;
 }
@@ -150,7 +152,7 @@ void swmr_send_raw(struct swmr_context* context,
     uint64_t next_sync;
     //assert (context!=NULL);
     // if we reached the end reset local queue buffer pointer
-    if ((context->l_pos) == context->num_slots) {
+    if (context->l_pos == context->num_slots) {
         context->l_pos = 0;
     }
 
@@ -164,10 +166,9 @@ void swmr_send_raw(struct swmr_context* context,
        context->next_sync = next_sync;
     }
 
-    uintptr_t offset =  (context->l_pos*(CACHELINE_SIZE/sizeof(uintptr_t)));
-    //assert (offset<SHMQ_SIZE*CACHELINE_SIZE);
+    //uintptr_t offset =  (context->l_pos*SLOT_SIZE);
 
-    uintptr_t* slot_start = (uintptr_t*) context->data + offset;
+    uintptr_t* slot_start = (uintptr_t*) context->data + (context->l_pos*SLOT_SIZE);
 
     slot_start[1] = p1; 
     slot_start[2] = p2; 
@@ -185,13 +186,12 @@ void swmr_send_raw(struct swmr_context* context,
     context->next_seq++;
 
     // increse write pointer..
-    context->l_pos = context->l_pos+1;
+    context->l_pos++;
 }
 
 void swmr_send_raw0(struct swmr_context* context)
 {
     uint64_t next_sync;
-    //assert (context!=NULL);
     // if we reached the end reset local queue buffer pointer
     if ((context->l_pos) == context->num_slots) {
         context->l_pos = 0;
@@ -207,24 +207,20 @@ void swmr_send_raw0(struct swmr_context* context)
        context->next_sync = next_sync;
     }
 
-    uintptr_t offset =  (context->l_pos*(CACHELINE_SIZE/sizeof(uintptr_t)));
-    //assert (offset<SHMQ_SIZE*CACHELINE_SIZE);
-
-    uintptr_t* slot_start = (uintptr_t*) context->data + offset;
+    uintptr_t* slot_start = (uintptr_t*) context->data + (context->l_pos*SLOT_SIZE);
 
     slot_start[0] = context->next_seq;
     context->next_seq++;
 
     // increse write pointer..
-    context->l_pos = context->l_pos+1;
+    context->l_pos++;
 }
 
 
 bool swmr_can_receive(struct swmr_context* context)
 {
     uintptr_t* start;
-    start = (uintptr_t*) context->data + ((context->l_pos)*
-                 CACHELINE_SIZE/(sizeof(uintptr_t)));
+    start = (uintptr_t*) context->data + ((context->l_pos)*SLOT_SIZE);
 
     if (context->next_seq == start[0]) {
         return true;
@@ -245,8 +241,7 @@ bool swmr_receive_non_blocking(struct swmr_context* context,
 {
     //assert (context!=NULL);
     uintptr_t* start;
-    start = (uintptr_t*) context->data + ((context->l_pos)*
-                 CACHELINE_SIZE/(sizeof(uintptr_t)));
+    start = (uintptr_t*) context->data + ((context->l_pos)*SLOT_SIZE);
 
     if (context->next_seq == start[0]) {
         *p1 = start[1];
@@ -262,14 +257,14 @@ bool swmr_receive_non_blocking(struct swmr_context* context,
                 *((uintptr_t *) start)); 
     
 #endif
-        context->l_pos = (context->l_pos+1);
+        context->l_pos++;
         context->next_seq++;
         if (context->l_pos == context->num_slots) {
             context->l_pos = 0;
         }
 
-	// only update read pointer every 16th read
-        if ((context->next_seq & 0xF) == 0) {
+   	    // only update read pointer every 16th read
+        if ((context->next_seq & 0x20) == 0) {
             context->readers_pos[context->id].pos = (context->next_seq -1);
         }
         return true;
@@ -283,18 +278,17 @@ bool swmr_receive_non_blocking0(struct swmr_context* context)
 {
     //assert (context!=NULL);
     uintptr_t* start;
-    start = (uintptr_t*) context->data + ((context->l_pos)*
-                 CACHELINE_SIZE/(sizeof(uintptr_t)));
+    start = (uintptr_t*) context->data + ((context->l_pos)*SLOT_SIZE);
 
     if (context->next_seq == start[0]) {
-        context->l_pos = (context->l_pos+1);
+        context->l_pos++;
         context->next_seq++;
         if (context->l_pos == context->num_slots) {
             context->l_pos = 0;
         }
 
-	// only update read pointer every 16th read
-        if ((context->next_seq & 0xF) == 0) {
+	    // only update read pointer every 16th read
+        if ((context->next_seq & 0x20) == 0) {
             context->readers_pos[context->id].pos = (context->next_seq -1);
         }
         return true;
