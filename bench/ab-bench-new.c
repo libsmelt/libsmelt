@@ -115,8 +115,13 @@ static void* pingpong(void* a)
 
     if ((smlt_node_get_id() == num_threads-1) ||
         (smlt_node_get_id() == 0)) {
+#ifdef PRINT_SUMMARY
+        sk_m_print_analysis(&m);
+        sk_m_print_analysis(&m2);
+#else
         sk_m_print(&m);
         sk_m_print(&m2);
+#endif
 
     }
 
@@ -159,7 +164,11 @@ static void* ab(void* a)
         }
 
         if (smlt_node_get_id() == last_node) {
+#ifdef PRINT_SUMMARY
+            sk_m_print_analysis(&m);
+#else
             sk_m_print(&m);
+#endif
         }
     }
     return 0;
@@ -197,7 +206,11 @@ static void* reduction(void* a)
         }
 
         if (smlt_node_get_id() == last_node) {
+#ifdef PRINT_SUMMARY
+            sk_m_print_analysis(&m);
+#else
             sk_m_print(&m);
+#endif
         }
     }
     return 0;
@@ -226,7 +239,11 @@ static void* barrier(void* a)
 
     if (smlt_context_is_root(context) ||
         smlt_node_get_id() == (num_threads-1)) {
+#ifdef PRINT_SUMMARY
+        sk_m_print_analysis(&m);
+#else
         sk_m_print(&m);
+#endif
     }
 
     return 0;
@@ -274,7 +291,11 @@ static void* agreement(void* a)
         }
 
         if (smlt_node_get_id() == last_node) {
+#ifdef PRINT_SUMMARY
+            sk_m_print_analysis(&m);
+#else
             sk_m_print(&m);
+#endif
         }
     }
     return 0;
@@ -343,9 +364,9 @@ int main(int argc, char **argv)
 
     for (int j = 0; j < num_topos; j++) {
         struct smlt_generated_model* model = NULL;
-        
+
         err = smlt_generate_model(cores, num_threads, topo_names[j], &model);
-        
+
         if (smlt_err_is_fail(err)) {
             printf("Failed to generated model, aborting\n");
             return 1;
