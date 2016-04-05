@@ -201,7 +201,7 @@ static cycles_t *sk_m_sort(struct sk_measurement *m)
 } // end function: do_sorting
 
 #ifndef SK_M_CUTOFF
-#define SK_M_CUTOFF 0.98
+#define SK_M_CUTOFF 0.90
 #endif
 
 
