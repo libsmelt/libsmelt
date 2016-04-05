@@ -18,8 +18,13 @@
 
 struct smlt_qp ***queue_pairs;
 
+#ifdef PRINT_SUMMARY
+#define NUM_EXP 15000
+#define NUM_DATA 5000
+#else
 #define NUM_EXP 10000
 #define NUM_DATA 2000
+#endif
 #define NUM_MESSAGES 8
 
 #define STR(X) #X
