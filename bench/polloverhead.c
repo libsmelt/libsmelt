@@ -21,10 +21,10 @@ struct smlt_qp **queue_pairs[2];
 size_t chan_per_core = 0;
 cycles_t tsc_overhead = 0;
 
-#define NUM_CHANNELS 2048
+#define NUM_CHANNELS 1024
 
-#define NUM_EXP 10000
-#define NUM_WARMUP 2000
+#define NUM_EXP 2048
+#define NUM_WARMUP 50000
 
 #define STR(X) #X
 
@@ -78,7 +78,7 @@ void* thr_poll(void* a)
             smlt_queuepair_can_recv(qp);
         }
         tsc_end = bench_tsc();
-        tsc_measurements[i] = tsc_end - tsc_start - tsc_overhead;
+        tsc_measurements[i % NUM_EXP] = tsc_end - tsc_start - tsc_overhead;
     }
 
     for (size_t i=0; i<NUM_EXP; i++) {
@@ -147,7 +147,7 @@ void* thr_poll_recv(void* a)
             smlt_queuepair_recv(qp, msg);
         }
         tsc_end = bench_tsc();
-        tsc_measurements[i] = tsc_end - tsc_start -  tsc_overhead;
+        tsc_measurements[i % NUM_EXP] = tsc_end - tsc_start - tsc_overhead;
 
         for (size_t n = 0; n < num_chan; ++n) {
             struct smlt_qp *qp = queue_pairs[0][n];
