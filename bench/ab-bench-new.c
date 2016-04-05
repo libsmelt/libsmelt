@@ -21,11 +21,18 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
+#ifdef PRINT_SUMMARY
+#define NUM_RUNS 15000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RESULTS 5000
+#else
+#define NUM_RUNS 10000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 1000
+#endif
+
+#define NUM_TOPO 7
 #define NUM_EXP 5
 
-uint32_t num_topos = 7;
+uint32_t num_topos = NUM_TOPO;
 uint32_t num_threads;
 
 struct smlt_context *context = NULL;
@@ -327,14 +334,14 @@ int main(int argc, char **argv)
         "Barrier",
     };
 
-    char *topo_names[7] = {
-        "adaptivetree",
+    char *topo_names[NUM_TOPO] = {
         "mst",
         "bintree",
         "cluster",
         "badtree",
         "fibonacci",
         "sequential",
+        "adaptivetree",
     };
 
     pthread_barrier_init(&bar, NULL, num_threads);
