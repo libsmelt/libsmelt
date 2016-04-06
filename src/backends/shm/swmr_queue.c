@@ -82,7 +82,7 @@ void swmr_queue_create(struct swmr_queue** queue,
     swmr_init_context(shm, &(*queue)->src, count, 0);
 
     (*queue)->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
-                                                SMLT_DEFAULT_ALIGNMENT, 
+                                                SMLT_ARCH_CACHELINE_SIZE, 
                                                 numa_node_of_cpu(dst[0]), true);
 
     for (int i = 0; i < count ; i++) {

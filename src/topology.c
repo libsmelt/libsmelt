@@ -261,7 +261,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                     node->topology = *topo;
                     node->children_shm[shm_child_index] = &((*topo)->all_nodes[y]);
                     node->node_id = x; // TODO change to real node ID
-                    (*topo)->all_nodes[y].array_index_shm = shm_child_index-1;
+                    (*topo)->all_nodes[y].array_index_shm = shm_child_index;
                     shm_child_index++;
                 } else if ((val > 49) && (val < 70)) {
                     // slave of shared memory channel

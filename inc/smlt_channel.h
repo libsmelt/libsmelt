@@ -11,6 +11,8 @@
 
 #include <smlt_queuepair.h>
 #include <backends/shm/swmr.h>
+//#include <platforms/linux.h>
+
 
 /*
  * ===========================================================================
@@ -247,6 +249,46 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
                     smlt_swmr_recv(&chan->c.shm.send_owner.dst[i], msg);
                 }
             }
+            //smlt_swmr_recv(&chan->c.shm.send_owner.dst[smlt_node_self_id-1], msg);
+        }
+    }
+    return err;
+}
+
+/**
+ * @brief receives a message or a notification from the queuepair
+ *
+ * @param chan      the Smelt channel to call he operation on
+ * @param msg       Smelt message argument
+ * @param core_id   the core id of child on which the msg is received
+ * @param index     for 1:n channels we need to know on which receieing end
+ *                  we receive otherwise ignored
+ *
+ * @returns error value
+ *
+ * this function is BLOCKING if there is no message on the queuepair
+ */
+static inline errval_t smlt_channel_recv_index(struct smlt_channel *chan,
+                                               struct smlt_msg *msg,
+                                               uint32_t index)
+{
+    // 1:1
+    errval_t err = SMLT_SUCCESS;
+    if (chan->n == chan->m) {
+        if (chan->owner == smlt_node_self_id){
+            err = smlt_queuepair_recv(&chan->c.mp.send[0], msg);
+        } else {
+            err = smlt_queuepair_recv(&chan->c.mp.recv[0], msg);
+        }
+        // TODO error checking
+    } else {
+        if (chan->owner == smlt_node_self_id){
+            // recv from all channels
+            for (int i = 0; i < chan->m; i++) {
+                err = smlt_queuepair_recv(chan->c.shm.recv_owner[i], msg);
+            }
+        } else {
+            smlt_swmr_recv(&chan->c.shm.send_owner.dst[index], msg);
         }
     }
     return err;

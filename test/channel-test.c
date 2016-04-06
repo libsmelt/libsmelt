@@ -24,10 +24,15 @@
 #include <smlt_node.h>
 #include <smlt_channel.h>
 #include <smlt_message.h>
+#include <platforms/measurement_framework.h>
 
 #define NUM_RUNS 10000000
+#define NUM_VALUES 1000
 
 struct smlt_channel chan;
+
+__thread struct sk_measurement m;
+__thread cycles_t buf[NUM_VALUES];
 
 void* worker1(void* arg)
 {
@@ -41,18 +46,26 @@ void* worker1(void* arg)
 
     struct smlt_msg* msg = smlt_message_alloc(56);
     int num_wrong = 0;
+
+
     if (id == 0) {
+        sk_m_init(&m, NUM_VALUES, "writer_shm", buf);
         for (uint64_t i = 0; i < NUM_RUNS; i++) {
             msg->data[0] = i;
+            sk_m_restart_tsc(&m);
             smlt_channel_send(&chan, msg);
+            sk_m_add(&m);
             smlt_channel_recv(&chan, msg);
             if (msg->data[0] != i) {
                 num_wrong++;
             }
         }
     } else {
+        sk_m_init(&m, NUM_VALUES, "reader_shm", buf);
         for (int i = 0; i < NUM_RUNS; i++) {
+            sk_m_restart_tsc(&m);
             smlt_channel_recv(&chan, msg);
+            sk_m_add(&m);
             if (msg->data[0] != i) {
                 num_wrong++;
             }
@@ -65,7 +78,7 @@ void* worker1(void* arg)
     } else {
         printf("Node %d: Test Succeeded \n", smlt_node_get_id());
     }
-    
+    sk_m_print_analysis(&m);   
 
     return 0;
 }

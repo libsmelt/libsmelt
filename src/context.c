@@ -29,6 +29,7 @@ struct smlt_context_node
     struct smlt_channel *parent;
     struct smlt_channel *children;
     uint32_t num_children;
+    uint32_t index;
 };
 
 /**
@@ -91,7 +92,6 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
         n->node_id = current_nid;
         n->num_children = num_children;
-
         if (num_children) {
             // if we use shared memory need to allocate additional channel
             if (smlt_topology_node_use_shm(tn)) {
@@ -195,8 +195,10 @@ errval_t smlt_context_create(struct smlt_topology *topo,
             
             if (child_use_shm) {
                 n->parent = &parent->children[parent->num_children-1];
+                n->index = smlt_topology_node_get_child_idx_shm(tn);
             } else {
                 n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
+                n->index = smlt_topology_node_get_child_idx(tn);
             }
         } else {
             n->parent = &parent->children[smlt_topology_node_get_child_idx(tn)];
@@ -326,6 +328,20 @@ bool smlt_context_node_is_leaf(struct smlt_context *ctx,
         return 0;
     }
     return (ctx->nid_to_node[node->id]->num_children == 0);
+}
+
+
+/**
+ * @brief gets the index into receiving array
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return the index
+ */
+uint32_t smlt_context_node_get_child_idx(struct smlt_context *ctx)
+{
+    return ctx->nid_to_node[smlt_node_self_id]->index;
 }
 
 /**

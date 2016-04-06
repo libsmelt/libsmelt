@@ -146,6 +146,17 @@ errval_t smlt_context_get_parent_channel(struct smlt_context *ctx,
 bool smlt_context_node_is_root(struct smlt_context *ctx,
                                struct smlt_node *node);
 
+
+/**
+ * @brief gets the index into receiving array
+ *
+ * @param ctx   Smelt context
+ * @param node  Smelt node
+ *
+ * @return the index
+ */
+uint32_t smlt_context_node_get_child_idx(struct smlt_context *ctx);
+
 /**
  * @brief checks if the current node is the root in the context
  *
