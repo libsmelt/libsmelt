@@ -116,7 +116,8 @@ all: $(TARGET) \
 		 bench/pairwise_raw \
 		 bench/pairwise_raw_s \
 		 bench/pingpong \
-		 bench/polloverhead
+		 bench/polloverhead \
+		 bench/writeoverhead
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -182,6 +183,9 @@ bench/pingpong: $(DEPS) $(EXTERNAL_OBJS) bench/pingpong.c
 
 bench/polloverhead: $(DEPS) $(EXTERNAL_OBJS) bench/polloverhead.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/polloverhead.c -lm -o $@
+
+bench/writeoverhead: $(DEPS) $(EXTERNAL_OBJS) bench/writeoverhead.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/writeoverhead.c -lm -o $@
 
 bench/bar-bench: bench/diss_bar/barrier.c
 	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c $(LIBS) -lpthread -lsmltrt -lm -o $@
