@@ -90,12 +90,47 @@ errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id,
         *cores = result;
         *size = node_size;
 
+        numa_free_cpumask(node);
+
         return SMLT_SUCCESS;
     } else {
+        numa_free_cpumask(node);
+
+
         *cores = NULL;
         *size = 0;
         return SMLT_ERR_TOPOLOGY_INIT;
     }
+}
+
+/**
+ * @brief  obtains the number of cores in the system
+ *
+ * @retursn     the number of cores on the system
+ */
+uint32_t smlt_platform_num_cores(void)
+{
+    return (uint32_t) numa_num_configured_cpus();
+}
+
+/**
+ * @brief  obtains the number of cores on a cluster
+ *
+ * @param cluster_id     the id of the cluster
+ *
+ * @retursn     the number of cores on the cluster
+ */
+uint32_t smlt_platform_num_cores_of_cluster(uint8_t cluster_id)
+{
+    struct bitmask* node = numa_allocate_cpumask();
+    uint32_t core_count = 0;
+
+    if (!numa_node_to_cpus(cluster_id, node)) {
+        core_count = numa_bitmask_weight(node);
+    }
+    numa_free_cpumask(node);
+
+    return core_count;
 }
 
 /**

@@ -111,12 +111,14 @@ all: $(TARGET) \
 		 test/smlt-mp-test \
 		 test/channel-test \
 		 bench/bar-bench \
-		 bench/ab-bench-new \
+	     bench/ab-bench-new \
+	     bench/ab-bench-scale \
 		 bench/ab-bench-new_s \
 		 bench/pairwise_raw \
 		 bench/pairwise_raw_s \
 		 bench/pingpong \
-		 bench/polloverhead
+		 bench/polloverhead \
+		 bench/writeoverhead
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -162,6 +164,9 @@ test/channel-test: test/channel-test.c $(TARGET)
 bench/ab-bench-new: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
 
+bench/ab-bench-scale: bench/ab-bench-scale.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-scale.c -o $@ -lsmltrt
+
 bench/ab-bench-new_s: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
 
@@ -182,6 +187,9 @@ bench/pingpong: $(DEPS) $(EXTERNAL_OBJS) bench/pingpong.c
 
 bench/polloverhead: $(DEPS) $(EXTERNAL_OBJS) bench/polloverhead.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/polloverhead.c -lm -o $@
+
+bench/writeoverhead: $(DEPS) $(EXTERNAL_OBJS) bench/writeoverhead.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/writeoverhead.c -lm -o $@
 
 bench/bar-bench: bench/diss_bar/barrier.c
 	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c $(LIBS) -lpthread -lsmltrt -lm -o $@
@@ -210,7 +218,7 @@ clean:
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
 	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
-	rm -f test/smlt-mp-test bench/bar-bench
+	rm -f test/smlt-mp-test bench/bar-bench bench/ab-bench-scale
 debug:
 	echo $(HEADERS)
 

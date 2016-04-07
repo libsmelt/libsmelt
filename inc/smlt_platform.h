@@ -281,4 +281,20 @@ uint8_t smlt_platform_cluster_of_core(coreid_t core_id);
  */
 uint32_t smlt_platform_num_clusters(void);
 
+/**
+ * @brief  obtains the number of cores in the system
+ *
+ * @retursn     the number of cores on the system
+ */
+uint32_t smlt_platform_num_cores(void);
+
+/**
+ * @brief  obtains the number of cores on a cluster
+ *
+ * @param cluster_id     the id of the cluster
+ *
+ * @retursn     the number of cores on the cluster
+ */
+uint32_t smlt_platform_num_cores_of_cluster(uint8_t cluster_id);
+
 #endif /* SMLT_PLATFORM_H_ */
