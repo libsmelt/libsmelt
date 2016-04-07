@@ -1,0 +1,40 @@
+Rationale behind the dissemination barrier
+
+Author: Sabela Ramos
+
+*************************************************************************************
+
+We are using a simple 1-way dissemination barrier.
+
+In a message-passing environment:
+
+We assume that:
+- log2 is defined
+- nthreads is the total number of threads.
+- my_id is the thread id.
+
+void barrier(){
+    int m=1; //we are using 1-way dissemination barrier
+    int rounds = ceil(log2(nthreads)); // ceil(log_(m+1) (nthreads))
+    int step = 1;
+    for (r =0; r<rounds; r++);
+        for(i=1; i<=m;i++){
+             peer = (my_id + i*step) % nthreads;
+             send_to_peer;
+        }
+        for(i=1; i<=m; i++){
+            peer = (my_id - i*step);
+            while(peer<0) peer = NTHREADS+peer;
+            receive_from_peer;
+        }
+        step = step * (m+1);
+    }
+}
+
+
+In a shared memory environment, each thread writes a flag per round (flag=r). The first inner loop becomes a writing to this flag. The second inner loop checks the flags of m peers (my_id -i*step) to see if it is greater or equal than the current round.
+
+We can use different flags per round to avoid line-stealing from the readers.
+
+
+
