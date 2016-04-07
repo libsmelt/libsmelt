@@ -111,7 +111,8 @@ all: $(TARGET) \
 		 test/smlt-mp-test \
 		 test/channel-test \
 		 bench/bar-bench \
-		 bench/ab-bench-new \
+	     bench/ab-bench-new \
+	     bench/ab-bench-scale \
 		 bench/ab-bench-new_s \
 		 bench/pairwise_raw \
 		 bench/pairwise_raw_s \
@@ -162,6 +163,9 @@ test/channel-test: test/channel-test.c $(TARGET)
 
 bench/ab-bench-new: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
+
+bench/ab-bench-scale: bench/ab-bench-scale.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-scale.c -o $@ -lsmltrt
 
 bench/ab-bench-new_s: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
@@ -214,7 +218,7 @@ clean:
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
 	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
-	rm -f test/smlt-mp-test bench/bar-bench
+	rm -f test/smlt-mp-test bench/bar-bench bench/ab-bench-scale
 debug:
 	echo $(HEADERS)
 
