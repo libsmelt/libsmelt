@@ -22,6 +22,7 @@
 #include <smlt_barrier.h>
 #include <platforms/measurement_framework.h>
 
+//#define PRINT_SUMMARY
 #ifdef PRINT_SUMMARY
 #define NUM_RUNS 15000 //50 // 10000 // Tested up to 1.000.000
 #define NUM_RESULTS 5000
@@ -30,7 +31,7 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 1
+#define NUM_TOPO 5
 #define NUM_EXP 4
 
 uint32_t num_topos = NUM_TOPO;
@@ -344,12 +345,16 @@ int main(int argc, char **argv)
         "Barrier",
     };
 
-    char *topo_name = argv[1];
+    char *topo_names[NUM_TOPO] = {
+        "mst",
+        "bintree",
+        "cluster",
+        "badtree",
+        //"fibonacci",
+        //"sequential",
+        "adaptivetree",
+    };
 
-    if (topo_name == NULL) {
-       printf("No tree name given \n");
-       exit(1);
-    }
     errval_t err;
     err = smlt_init(total, true);
     if (smlt_err_is_fail(err)) {
@@ -379,53 +384,52 @@ int main(int argc, char **argv)
         step_size = 2;
     }
 
-    for (int j = step_size; j < total; j+= step_size) {
-        num_threads = j;
-        cores = placement(num_threads, true);
-        pthread_barrier_init(&bar, NULL, num_threads);
-        struct smlt_generated_model* model = NULL;
+    for (int top = 0; top < NUM_TOPO; top++) {
+        for (int j = step_size; j < total+1; j+= step_size) {
+            num_threads = j;
+            cores = placement(num_threads, true);
+            pthread_barrier_init(&bar, NULL, num_threads);
+            struct smlt_generated_model* model = NULL;
 
-        for (int i = 0; i < num_threads;i++) {
-            fprintf(stderr, "Cores[%d]=%d \n", i, cores[i]);
-        }
+            fprintf(stderr, "%s nthreads %d \n", topo_names[top], num_threads);
+            err = smlt_generate_model(cores, num_threads, topo_names[top], &model);
 
-        err = smlt_generate_model(cores, num_threads, topo_name, &model);
+            if (smlt_err_is_fail(err)) {
+                printf("Failed to generated model, aborting\n");
+                return 1;
+            }
 
-        if (smlt_err_is_fail(err)) {
-            printf("Failed to generated model, aborting\n");
-            return 1;
-        }
+            struct smlt_topology *topo = NULL;
+            smlt_topology_create(model, topo_names[top], &topo);
+            active_topo = topo;
 
-        struct smlt_topology *topo = NULL;
-        smlt_topology_create(model, topo_name, &topo);
-        active_topo = topo;
+            err = smlt_context_create(topo, &context);
+            if (smlt_err_is_fail(err)) {
+                printf("FAILED TO INITIALIZE CONTEXT !\n");
+                return 1;
+            }
 
-        err = smlt_context_create(topo, &context);
-        if (smlt_err_is_fail(err)) {
-            printf("FAILED TO INITIALIZE CONTEXT !\n");
-            return 1;
-        }
-
-        for (int i = 0; i < NUM_EXP; i++){
+            for (int i = 0; i < NUM_EXP; i++){
 
 
-            printf("----------------------------------------\n");
-            printf("Executing experiment %s\n", labels[i]);
-            printf("----------------------------------------\n");
+                printf("----------------------------------------\n");
+                printf("Executing experiment %s\n", labels[i]);
+                printf("----------------------------------------\n");
 
-            struct smlt_node *node;
-            for (uint64_t j = 0; j < num_threads; j++) {
-                node = smlt_get_node_by_id(cores[j]);
-                err = smlt_node_start(node, workers[i], (void*)(uint64_t) cores[j]);
-                if (smlt_err_is_fail(err)) {
-                    printf("Staring node failed \n");
+                struct smlt_node *node;
+                for (uint64_t j = 0; j < num_threads; j++) {
+                    node = smlt_get_node_by_id(cores[j]);
+                    err = smlt_node_start(node, workers[i], (void*)(uint64_t) cores[j]);
+                    if (smlt_err_is_fail(err)) {
+                        printf("Staring node failed \n");
+                    }
                 }
-            }
 
-            for (int j=0; j < num_threads; j++) {
-                node = smlt_get_node_by_id(cores[j]);
-                smlt_node_join(node);
-            }
-       }
+                for (int j=0; j < num_threads; j++) {
+                    node = smlt_get_node_by_id(cores[j]);
+                    smlt_node_join(node);
+                }
+           }
+        }
     }
 }
