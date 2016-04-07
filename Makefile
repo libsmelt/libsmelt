@@ -165,7 +165,7 @@ bench/ab-bench-new: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
 
 bench/ab-bench-scale: bench/ab-bench-scale.c $(TARGET)
-	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-scale.c -o $@ -lsmltrt
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-scale.c -o $@ -lsmltrt -lnuma
 
 bench/ab-bench-new_s: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
