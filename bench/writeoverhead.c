@@ -73,7 +73,13 @@ void* thr_write(void* a)
 
     size_t num_chan = arg->num_channels;
 
+
     if (arg->r == 0) {
+
+        for (size_t n = 0; n < num_chan; ++n) {
+            printf ("writer: queue_pairs[0][%lu]\n", n);
+        }
+
         for (size_t i=0; i<NUM_WARMUP; i++) {
             tsc_start = bench_tsc();
             for (size_t n = 0; n < num_chan; ++n) {
@@ -95,6 +101,9 @@ void* thr_write(void* a)
             tsc_measurements[i] = (tsc_end - tsc_start - tsc_overhead) / num_chan;
         }
     } else {
+        for (size_t n = 1; n <= num_chan; ++n) {
+            printf("writer: queue_pairs[0][%lu]\n", n * arg->r);
+        }
         for (size_t i=0; i<NUM_WARMUP; i++) {
             tsc_start = bench_tsc();
             for (size_t n = 1; n <= num_chan; ++n) {
@@ -165,6 +174,11 @@ void* thr_receiver(void* a)
     msg->words = 0;
 
 //   printf("recv starated: %lu, arg->r = %u, arg->num_cores=%u, arg->num_chan=%lu\n", arg->num_channels, arg->r, arg->num_cores, arg->num_channels);
+
+    for (size_t i = 0; i < arg->num_channels; ++i) {
+        printf("reader: queue_pairs[1][%lu]\n", arg->r + i * arg->num_cores);
+    }
+
 
     for (size_t j=0; j<NUM_WARMUP; j++) {
         for (size_t i = 0; i < arg->num_channels; ++i) {
