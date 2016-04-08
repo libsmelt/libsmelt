@@ -165,4 +165,63 @@ inline static void sk_m_print(struct sk_measurement *m)
     sk_m_print_const(m, 0);
 }
 
+#define cycles_t uint64_t
+
+static cycles_t *sk_m_sort(struct sk_measurement *m)
+{
+    uint32_t len = sk_m_get_max(m);
+
+    size_t i, j;
+    cycles_t *sorted_array = m->buffer;
+    cycles_t temp_holder;
+
+
+    // sort the array
+    for (i = 0; i < len; ++i) {
+        for (j = i; j < len; ++j) {
+            if (sorted_array[i] > sorted_array[j]) {
+                temp_holder = sorted_array[i];
+                sorted_array[i] = sorted_array[j];
+                sorted_array[j] = temp_holder;
+            }
+        } // end for: j
+    } // end for: i
+    return sorted_array;
+} // end function: do_sorting
+
+#ifndef SK_M_CUTOFF
+#define SK_M_CUTOFF 0.90
+#endif
+
+
+inline static void sk_m_print_analysis(struct sk_measurement *m)
+{
+    sk_m_sort(m);
+    size_t count = sk_m_get_max(m) * SK_M_CUTOFF;
+
+    cycles_t sum = 0;
+    for (size_t i=0; i<count; i++) {
+        sum += m->buffer[i];
+    }
+    cycles_t avg = sum / count;
+
+    sum = 0;
+    for (size_t i=0; i<count; i++) {
+        if (m->buffer[i] > avg) {
+            sum += (m->buffer[i] - avg) * (m->buffer[i] - avg);
+        } else {
+            sum += (avg- m->buffer[i]) * (avg - m->buffer[i]);
+        }
+    }
+
+    sum /= count;
+
+    printf("sk_m_analysis(%d,%s) n=%" PRIu64 ", %" PRIu64 ", %" PRIu64
+           ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 "\n",
+           sched_getcpu(), m->label, count, avg, sum,
+           m->buffer[0], m->buffer[count / 2], m->buffer[count-1]);
+
+}
+
+
 #endif /* MEASUREMENT_FRAMEWORK_H */

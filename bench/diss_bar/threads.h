@@ -25,7 +25,7 @@ typedef struct threaddata
 {
 	unsigned int thread_id;			 // 4 byte
 	volatile unsigned int ack;	     // 8 byte
-	unsigned short int tag;		 //10 byte
+	unsigned int tag;		 //10 byte
 	sharedMemory_t* shm;				 // 18 byte
 	int bcastID;						 // 22 byte
 	int core_id;						 // 26 byte
@@ -97,6 +97,7 @@ void* function_thread (void * arg_threaddata){
         sprintf(outname, "barriers_dis_rr%d", threaddata->num_threads);
     }
 
+
     uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*NITERS);
     sk_m_init(&mes, NITERS, outname, buf);
 	threaddata->ack = 1;
@@ -106,6 +107,8 @@ void* function_thread (void * arg_threaddata){
 
 	int index_rdtsc=0;
 	for (n=0; n<NITERS; n++){
+
+
 		//TSC syncrho
 /*
 		HRT_GET_TIMESTAMP(actual);
@@ -133,7 +136,8 @@ void* function_thread (void * arg_threaddata){
 		index_rdtsc++;
 */		
 	}
-    sk_m_print(&mes);
+   sk_m_print(&mes);
+//    sk_m_print_analysis(&mes);
 }
 
 
@@ -168,6 +172,7 @@ void* function_thread_smlt(void * arg_threaddata){
 	threaddata->ack = 1;
 
 	while(threaddata->ack);
+
        
 
 	int index_rdtsc=0;
@@ -194,6 +199,8 @@ void* function_thread_smlt(void * arg_threaddata){
 		
 	}
     sk_m_print(&mes);
+//    sk_m_print_analysis(&mes);
+    free(buf);
 }
 
 

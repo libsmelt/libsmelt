@@ -11,18 +11,16 @@
 #include "sharedmemory.h"
 
 
-#if (defined DISSEMINATION_2) 
+#if (defined DISSEMINATION_2)
 
-void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id, 
-             unsigned short int * tag){
+void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id,
+             unsigned int * tag){
 
 //tag is increased by number of rounds per barrier call
 
-    unsigned short int op_tag = *tag;
-    unsigned short int index_tag = op_tag % MAXOPS;
-	unsigned short int actualFlag;
-	if(*tag<10000)       	(*tag)+=rounds; //to the content of my tag, i am the only one accessing 
-	else (*tag) = 2;
+    unsigned  int op_tag = *tag;
+    unsigned  int index_tag = op_tag % MAXOPS;
+	unsigned int actualFlag;
 	int r,i,peer,step;
 
 
@@ -34,14 +32,14 @@ void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id,
 	step = 1;
 	for (r =0; r<rounds; r++){
 		notificationLines[r].flag=actualFlag;; //Im the only one writing
-			
-		
+
+
 		for(i=1; i<=m; i++){
-			peer = (my_id - i*step); 
+			peer = (my_id - i*step);
 			while(peer<0) peer = nthreads+peer;
-			//printf("my_id = %d, round = %d, peer = %d\n",my_id,r,peer);fflush(stdout); 
+			//printf("my_id = %d, round = %d, peer = %d\n",my_id,r,peer);fflush(stdout);
 			while(notification->notifications[peer].notificationLines[r].flag<actualFlag);
-			//printf("my_id = %d, round = %d, peer = %d, its notification line is %d\n",my_id,r,peer,notification->notificationLines[peer].notification);fflush(stdout); 
+			//printf("my_id = %d, round = %d, peer = %d, its notification line is %d\n",my_id,r,peer,notification->notificationLines[peer].notification);fflush(stdout);
 		}
 		step = step * (m+1);
 		actualFlag++;
@@ -56,14 +54,12 @@ void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id,
 
 #ifdef DISSEMINATION_NAIVE
 
-void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id, 
-             unsigned short int * tag)
+void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id,
+             unsigned int * tag)
 {
-    unsigned short int op_tag = *tag;
-    unsigned short int index_tag = op_tag % MAXOPS;
-	unsigned short int actualFlag;
-	if(*tag<10000)       	(*tag)+=rounds; //to the content of my tag, i am the only one accessing 
-	else (*tag) = 2;
+    unsigned  int op_tag = *tag;
+    unsigned int index_tag = op_tag % MAXOPS;
+	unsigned int actualFlag;
 	int r,i,peer,step;
 
 
@@ -76,11 +72,11 @@ void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id,
 	for (r =0; r<rounds; r++){
 		notificationLines[0].flag=actualFlag;; //Im the only one writing
 		for(i=1; i<=m; i++){
-			peer = (my_id - i*step); 
+			peer = (my_id - i*step);
 			while(peer<0) peer = nthreads+peer;
-			//printf("my_id = %d, round = %d, peer = %d\n",my_id,r,peer);fflush(stdout); 
+			//printf("my_id = %d, round = %d, peer = %d\n",my_id,r,peer);fflush(stdout);
 			while(notification->notifications[peer].notificationLines[0].flag<actualFlag);
-			//printf("my_id = %d, round = %d, peer = %d, its notification line is %d\n",my_id,r,peer,notification->notificationLines[peer].notification);fflush(stdout); 
+			//printf("my_id = %d, round = %d, peer = %d, its notification line is %d\n",my_id,r,peer,notification->notificationLines[peer].notification);fflush(stdout);
 		}
 		step = step * (m+1);
 		actualFlag++;
@@ -96,13 +92,3 @@ void barrier(int nthreads, sharedMemory_t * shm, int m, int rounds, int my_id,
 
 
 #endif /* BARRIER_H_ */
-
-
-
-
-
-
-
-
-
-
