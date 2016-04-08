@@ -104,6 +104,7 @@ CFLAGS += $(OPT)
 all: $(TARGET) \
 	   test/nodes-test \
 		 test/topo-create-test \
+		 test/dissem-bar-test \
 		 test/contrib-lib-test \
 		 test/shm-queue-test \
 		 test/queuepair-test \
@@ -158,6 +159,8 @@ test/smlt-mp-test: test/smlt-mp-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/smlt-mp-test.c -o $@ -lsmltrt
 test/channel-test: test/channel-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/channel-test.c -o $@ -lsmltrt
+test/dissem-bar-test: test/dissem-bar-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/dissem-bar-test.c -o $@ -lsmltrt
 # Benchmarks
 # --------------------------------------------------
 
@@ -219,6 +222,7 @@ clean:
 	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 	rm -f test/smlt-mp-test bench/bar-bench bench/ab-bench-scale
+	rm -f test/dissem-bar-test
 debug:
 	echo $(HEADERS)
 

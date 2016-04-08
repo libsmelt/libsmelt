@@ -6,12 +6,21 @@
  * If you do not find this file, copies can be found by writing to:
  * ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
  */
+#include <math.h>
+#include <stdbool.h>
 #include <smlt.h>
 #include <smlt_barrier.h>
+#include <smlt_channel.h>
 #include <smlt_reduction.h>
 #include <smlt_broadcast.h>
 #include <shm/smlt_shm.h>
 
+struct smlt_dissem_barrier {
+    int num_threads;
+    uint32_t rounds;
+    uint32_t* cores;
+    struct smlt_channel** channels;
+};
 
 /**
  * @brief destroys a smlt barrier
@@ -55,9 +64,85 @@ errval_t smlt_barrier_wait(struct smlt_context *ctx)
     return smlt_broadcast_notify(ctx);
 }
 
+errval_t smlt_dissem_barrier_init(uint32_t* cores, uint32_t num_cores,
+                                  struct smlt_dissem_barrier** bar) 
+{
+    errval_t err;
+    (*bar) = smlt_platform_alloc(sizeof(struct smlt_dissem_barrier),
+                                 SMLT_ARCH_CACHELINE_SIZE, true);
+    struct smlt_dissem_barrier* b = *bar;
+    b->num_threads = num_cores;
+    
+    b->cores = smlt_platform_alloc(sizeof(uint32_t)*num_cores,
+                                   SMLT_ARCH_CACHELINE_SIZE, true);    
+    b->channels = smlt_platform_alloc(sizeof(struct smlt_channel*)*num_cores*num_cores,
+                                      SMLT_ARCH_CACHELINE_SIZE, true);    
 
+    for (int i = 0; i < num_cores; i++) {
+        b->cores[i] = cores[i];
+    }
 
+    for (uint32_t i = 0; i < num_cores; i++) {
+        for (uint32_t j = i; j < num_cores; j++) {
+            b->channels[i*num_cores+j] = smlt_platform_alloc(sizeof(struct smlt_channel),
+                                                             SMLT_ARCH_CACHELINE_SIZE,
+                                                             true);           
+            err = smlt_channel_create(&b->channels[i*num_cores+j], 
+                                      &cores[i], &cores[j], 1, 1);
+            if (smlt_err_is_fail(err)) {
+                return SMLT_ERR_CHAN_CREATE;
+            }
+            b->channels[j*num_cores+i] = b->channels[i*num_cores+j];
+        }
+    }    
+    
+    b->rounds = ceil(log2(num_cores));
 
+    return SMLT_SUCCESS;
+}
+
+errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier* bar)
+{
+    int step = 1;
+    int my_id = 0;
+    int peer;
+    errval_t err = SMLT_SUCCESS; 
+
+    for (int i = 0; i < bar->num_threads; i++) {
+        if (bar->cores[i] == smlt_node_self_id) {
+            my_id = i;
+        }
+    }
+    // m = 1
+    for (int r = 0; r < bar->rounds; r++) {
+    
+        // send to peer
+        peer = (my_id + step) % bar->num_threads;
+        err = smlt_channel_notify(bar->channels[my_id*bar->num_threads+peer]);
+        
+        if(smlt_err_is_fail(err)) {
+            printf("Dissemination Barrier failed \n");
+            return err;
+        }
+       
+        // recv from peer
+        peer = (my_id - step) % bar->num_threads;
+        if (peer < 0) {
+           peer = bar->num_threads + peer;
+        }
+
+        err = smlt_channel_recv_notification(bar->channels[my_id*
+                                                           bar->num_threads+
+                                                           peer]);
+        if(smlt_err_is_fail(err)) {
+            printf("Dissemination Barrier failed \n");
+            return err;
+        }
+        // m = 1
+        step = step*2;
+    }    
+    return SMLT_SUCCESS;
+}
 
 void shl_barrier_shm(int b_count);
 

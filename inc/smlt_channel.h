@@ -336,7 +336,7 @@ static inline bool smlt_channel_can_recv(struct smlt_channel *chan)
 static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
 {
     // 1:1
-    errval_t err;
+    errval_t err = SMLT_SUCCESS;
     if (chan->n == chan->m) {
         if (chan->owner == smlt_node_self_id){
             err = smlt_queuepair_recv0(&chan->c.mp.send[0]);

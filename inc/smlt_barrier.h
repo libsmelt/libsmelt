@@ -13,6 +13,8 @@
 
 /* forward declaration */
 struct smlt_context;
+struct smlt_channel;
+struct smlt_dissem_barrier;
 
 /*
  * ===========================================================================
@@ -26,7 +28,6 @@ struct smlt_context;
  * Smelt barrier type declarations
  * ===========================================================================
  */
-
 
 /**
  * the smelt barrier data structure
@@ -72,6 +73,30 @@ errval_t smlt_barrier_destroy(struct smlt_context *ctx);
 errval_t smlt_barrier_wait(struct smlt_context *ctx);
 
 
+
+
+
+/**
+ * @brief initalized a dissemination barrier based on smelt 
+ *        channels
+ *
+ * @param cores     the core_ids that participate in the barrier
+ * @param num_cores the number of cores participating
+ * @param bar       return struct of the barrier context
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_dissem_barrier_init(uint32_t* cores, uint32_t num_cores,
+                                  struct smlt_dissem_barrier** bar);
+
+/**
+ * @brief waits on the supplied barrier
+ *
+ * @param bar context for the barrier
+ *
+ * @returns TODO:errval
+ */
+errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier *bar);
 
 
 struct shl_barrier_t {
