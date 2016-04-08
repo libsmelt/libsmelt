@@ -23,12 +23,15 @@ cycles_t tsc_overhead = 0;
 
 #define NUM_CHANNELS 1024
 
-#define NUM_EXP 2048
-#define NUM_WARMUP 50000
+#define NUM_DATA 10000
+#define NUM_EXP 20000
+#define NUM_WARMUP 5000
 
 #define STR(X) #X
 
-cycles_t tsc_measurements[NUM_EXP];
+char *glb_label = NULL;
+
+cycles_t tsc_measurements[NUM_DATA];
 
 //#define bench_tsc() rdtscp()
 
@@ -37,6 +40,7 @@ struct thr_args {
     coreid_t r;
     coreid_t num_cores;
     size_t num_channels;
+    size_t num_msg;
 };
 
 static cycles_t *do_sorting(cycles_t *array,
@@ -73,47 +77,22 @@ void* thr_write(void* a)
 
     size_t num_chan = arg->num_channels;
 
-
     if (arg->r == 0) {
-
-        for (size_t n = 0; n < num_chan; ++n) {
-            printf ("writer: queue_pairs[0][%lu]\n", n);
-        }
-
-        for (size_t i=0; i<NUM_WARMUP; i++) {
-            tsc_start = bench_tsc();
-            for (size_t n = 0; n < num_chan; ++n) {
-                struct smlt_qp *qp = queue_pairs[0][n];
-                smlt_queuepair_send(qp, msg);
-            }
-            tsc_end = bench_tsc();
-            tsc_measurements[i % NUM_EXP] = tsc_end - tsc_start - tsc_overhead;
-        }
-
         for (size_t i=0; i<NUM_EXP; i++) {
             struct smlt_qp *qp = queue_pairs[0][0];
             tsc_start = bench_tsc();
-            for (size_t n = 0; n < num_chan; ++n) {
+            for (size_t n = arg->s; n < arg->s+num_chan; ++n) {
                 qp = queue_pairs[0][n];
                 smlt_queuepair_send(qp, msg);
             }
             tsc_end = bench_tsc();
-            tsc_measurements[i] = (tsc_end - tsc_start - tsc_overhead) / num_chan;
+            tsc_measurements[i % NUM_DATA] = (tsc_end - tsc_start) / num_chan;
+            for (size_t n = arg->s; n < arg->s + num_chan; ++n) {
+                qp = queue_pairs[0][n];
+                smlt_queuepair_recv(qp, msg);
+            }
         }
     } else {
-        for (size_t n = 1; n <= num_chan; ++n) {
-            printf("writer: queue_pairs[0][%lu]\n", n * arg->r);
-        }
-        for (size_t i=0; i<NUM_WARMUP; i++) {
-            tsc_start = bench_tsc();
-            for (size_t n = 1; n <= num_chan; ++n) {
-                struct smlt_qp *qp = queue_pairs[0][n * arg->r];
-                smlt_queuepair_send(qp, msg);
-            }
-            tsc_end = bench_tsc();
-            tsc_measurements[i % NUM_EXP] = tsc_end - tsc_start - tsc_overhead;
-        }
-
         for (size_t i=0; i<NUM_EXP; i++) {
             struct smlt_qp *qp = queue_pairs[0][0];
             tsc_start = bench_tsc();
@@ -122,18 +101,20 @@ void* thr_write(void* a)
                 smlt_queuepair_send(qp, msg);
             }
             tsc_end = bench_tsc();
-            tsc_measurements[i] = (tsc_end - tsc_start - tsc_overhead) / num_chan;
+            tsc_measurements[i%NUM_DATA] = (tsc_end - tsc_start) / num_chan;
+            for (size_t n = 1; n <= num_chan; ++n) {
+                qp = queue_pairs[0][n * arg->r];
+                smlt_queuepair_recv(qp, msg);
+            }
         }
     }
 
-    cycles_t sum = 0;
-    cycles_t max = 0;
-    cycles_t min = (cycles_t)-1;
+    cycles_t sum = 0, max = 0, min = (cycles_t)-1;
     size_t count = 0;
 
-    cycles_t *sorted = do_sorting(tsc_measurements, NUM_EXP);
+    cycles_t *sorted = do_sorting(tsc_measurements, NUM_DATA);
 
-    for (size_t i=0; i<(NUM_EXP * 0.95); i++) {
+    for (size_t i=0; i<(NUM_DATA * 0.95); i++) {
         count ++;
         sum += tsc_measurements[i];
         if (tsc_measurements[i] < min) {
@@ -156,11 +137,8 @@ void* thr_write(void* a)
 
     sum /= count;
 
-    printf("WRITE %3lu, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
-            arg->num_channels, avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
-//    printf("POLL %lu, src=0, dst=%02u is avg=%5lu, stdev=%5lu, med=%5lu, min=%5lu, max=%5lu cycles, count=%lu, ignored=%lu\n",
-//                    num_chan, arg->r, avg/num_chan, (cycles_t)sqrt(sum)/num_chan,sorted[NUM_EXP/2]/num_chan, min/num_chan, max/num_chan, count, NUM_EXP - count);
-
+    printf("%s %3lu, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
+            glb_label, arg->num_channels, avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
 
     return NULL;
 }
@@ -173,39 +151,101 @@ void* thr_receiver(void* a)
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-//   printf("recv starated: %lu, arg->r = %u, arg->num_cores=%u, arg->num_chan=%lu\n", arg->num_channels, arg->r, arg->num_cores, arg->num_channels);
-
-    for (size_t i = 0; i < arg->num_channels; ++i) {
-        printf("reader: queue_pairs[1][%lu]\n", arg->r + i * arg->num_cores);
-    }
-
-
-    for (size_t j=0; j<NUM_WARMUP; j++) {
-        for (size_t i = 0; i < arg->num_channels; ++i) {
-            struct smlt_qp *qp = queue_pairs[1][arg->r + i * arg->num_cores];
-        //    printf("warmup send: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
-            smlt_queuepair_recv(qp, msg);
-        }
-    }
-
-//    printf("real rounds\n");
-
     for (size_t j=0; j<NUM_EXP; j++) {
         for (size_t i = 0; i < arg->num_channels; ++i) {
-        //    printf("send: %lu/%lu qp[%lu]\n", i, arg->num_channels, arg->r + i * arg->num_cores);
             struct smlt_qp *qp = queue_pairs[1][arg->r + i * arg->num_cores];
             smlt_queuepair_recv(qp, msg);
         }
+        for (size_t i = 0; i < arg->num_channels; ++i) {
+            struct smlt_qp *qp = queue_pairs[1][arg->r + i * arg->num_cores];
+            smlt_queuepair_send(qp, msg);
+        }
+
     }
 
     return NULL;
 }
 
 
+void* thr_write_one(void* a)
+{
+    struct thr_args* arg = (struct thr_args*) a;
+
+    struct smlt_msg* msg = smlt_message_alloc(8);
+    msg->words = 0;
+
+    cycles_t tsc_start, tsc_end;
+
+
+    struct smlt_qp *qp = queue_pairs[0][arg->r];
+
+    for (size_t j=0; j<NUM_EXP; j++) {
+        tsc_start = bench_tsc();
+        for (size_t i = 0; i < arg->num_msg; ++i) {
+            smlt_queuepair_send(qp, msg);
+        }
+        tsc_end = bench_tsc();
+        tsc_measurements[j % NUM_DATA] = (tsc_end - tsc_start) / arg->num_msg;
+
+        smlt_queuepair_recv(qp, msg);
+    }
+    cycles_t sum = 0, max = 0, min = (cycles_t)-1;
+    size_t count = 0;
+
+    cycles_t *sorted = do_sorting(tsc_measurements, NUM_DATA);
+
+    for (size_t i=0; i<(NUM_DATA * 0.95); i++) {
+        count ++;
+        sum += tsc_measurements[i];
+        if (tsc_measurements[i] < min) {
+            min = tsc_measurements[i];
+        }
+        if (tsc_measurements[i] > max) {
+            max = tsc_measurements[i];
+        }
+    }
+    cycles_t avg = sum / count;
+
+    sum = 0;
+    for (size_t i=0; i<count; i++) {
+        if (tsc_measurements[i] > avg) {
+            sum += (tsc_measurements[i] - avg) * (tsc_measurements[i] - avg);
+        } else {
+            sum += (avg- tsc_measurements[i]) * (avg - tsc_measurements[i]);
+        }
+    }
+
+    sum /= count;
+
+    printf("%s %3lu, dst=%u, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
+            glb_label, arg->num_msg, arg->r, avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
+
+    return NULL;
+}
+
+void* thr_receiver_one(void* a)
+{
+    struct thr_args* arg = (struct thr_args*) a;
+    struct smlt_msg* msg = smlt_message_alloc(8);
+    msg->words = 0;
+
+    struct smlt_qp *qp = queue_pairs[1][arg->r];
+
+    for (size_t j=0; j<NUM_EXP; j++) {
+        for (size_t i = 0; i < arg->num_msg; ++i) {
+            smlt_queuepair_recv(qp, msg);
+        }
+        smlt_queuepair_send(qp, msg);
+
+    }
+
+    return NULL;
+}
+
 int main(int argc, char **argv)
 {
     errval_t err;
-    coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF);
+    coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF) / 2;
     printf("Running with %d cores\n", num_cores);
 
     printf("sizeof(struct smlt_ump_queuepair) = %lu\n", sizeof(struct smlt_ump_queuepair));
@@ -271,9 +311,11 @@ int main(int argc, char **argv)
 
     struct thr_args args[num_cores];
 
-    coreid_t num_local_cores = smlt_platform_num_cores_of_cluster(0);
+    coreid_t num_local_cores = smlt_platform_num_cores_of_cluster(0) / 2;
 
     printf("=============================================\n");
+
+    glb_label = "WRITEL";
 
     /* local polling */
     for (coreid_t core = 1; core < num_local_cores; ++core) {
@@ -305,12 +347,14 @@ int main(int argc, char **argv)
 
     printf("=============================================\n");
 
+    glb_label = "WRITEN";
+
     for (uint32_t c = 1; c < smlt_platform_num_clusters(); ++c) {
         for (coreid_t i = 1; i <= c; ++i) {
             coreid_t target = num_local_cores * i;
             struct smlt_node *dst = smlt_get_node_by_id(target);
             args[target].s = 0;
-            args[target].r = target-1;
+            args[target].r = target;
             args[target].num_channels = 1;
             args[target].num_cores = c;
 
@@ -322,9 +366,10 @@ int main(int argc, char **argv)
 
         args[0].s = 0;
         args[0].r = num_local_cores;
-        args[0].num_channels = core;
-        args[0].num_cores = core;
+        args[0].num_channels = c;
+        args[0].num_cores = c;
 
+        sleep(1);
         thr_write(args);
 
         for (coreid_t i = 1; i <= c; ++i) {
@@ -334,20 +379,93 @@ int main(int argc, char **argv)
         }
     }
 
+    printf("=============================================\n");
+
+    glb_label = "WRITES";
+
+    for (uint32_t c = 0; c < smlt_platform_num_clusters(); ++c) {
+            coreid_t target = num_local_cores * c;
+            if (target == 0) target = 1;
+            struct smlt_node *dst = smlt_get_node_by_id(target);
+         for (uint32_t num_msg = 1; num_msg <= 16; ++num_msg) {
+            args[target].s = 0;
+            args[target].r = target;
+            args[target].num_channels = 1;
+            args[target].num_cores = c;
+            args[target].num_msg = num_msg;
+
+            err = smlt_node_start(dst, thr_receiver_one, args + target);
+            if (smlt_err_is_fail(err)) {
+                printf("Staring node failed \n");
+            }
+
+        args[0].s = 0;
+        args[0].r = target;
+        args[0].num_channels = c;
+        args[0].num_cores = c;
+        args[0].num_msg = num_msg;
+
+        sleep(1);
+        thr_write_one(args);
+
+            smlt_node_join(dst);
+        }
+    }
+
 
     printf("=============================================\n");
 
-    for (size_t r=1; r<chan_per_core;  ++r) {
-        for (coreid_t core = 1; core < (num_cores); ++core) {
+    glb_label = "WRITEX";
+
+    for (size_t r=1; r<num_cores - num_local_cores;  ++r) {
+        for (coreid_t core = 0; core < r; ++core) {
+            //struct smlt_node *src = smlt_get_node_by_id(0);i
+            coreid_t target = num_local_cores + core;
+            struct smlt_node *dst = smlt_get_node_by_id(target);
+
+            args[target].s = 0;
+            args[target].r = target - 1;
+            args[target].num_channels = 1;
+            args[target].num_cores = r;
+
+            err = smlt_node_start(dst, thr_receiver, args + target);
+            if (smlt_err_is_fail(err)) {
+                printf("Staring node failed \n");
+            }
+        }
+
+        args[0].s = num_local_cores-1;
+        args[0].r = 0;
+        args[0].num_channels = r;
+        args[0].num_cores = r -1;
+
+
+        sleep(1);
+        thr_write(args);
+
+        // Wait for sender to complete
+        for (coreid_t core = 0; core < r; ++core) {
             //struct smlt_node *src = smlt_get_node_by_id(0);
+            coreid_t target = num_local_cores +  core;
+            struct smlt_node *dst = smlt_get_node_by_id(target);
+
+            smlt_node_join(dst);
+        }
+    }
+
+
+    printf("=============================================\n");
+
+    glb_label = "WRITE";
+
+    for (size_t r=1; r<num_cores;  ++r) {
+        for (coreid_t core = 1; core <= r; ++core) {
             struct smlt_node *dst = smlt_get_node_by_id(core);
 
             args[core].s = 0;
             args[core].r = core - 1;
-            args[core].num_channels = r;
-            args[core].num_cores = num_cores -1;
-
-        //    printf("starting.. %lu \n", r);
+            args[core].num_channels = 1;
+            args[core].num_cores = r;
 
             err = smlt_node_start(dst, thr_receiver, args + core);
             if (smlt_err_is_fail(err)) {
@@ -357,17 +475,18 @@ int main(int argc, char **argv)
 
         args[0].s = 0;
         args[0].r = 0;
-        args[0].num_channels = (num_cores -1) * r;
-        args[0].num_cores = num_cores -1;
+        args[0].num_channels = r;
+        args[0].num_cores = r -1;
 
+
+        sleep(1);
         thr_write(args);
 
         // Wait for sender to complete
-        for (coreid_t core = 1; core < (num_cores); ++core) {
+        for (coreid_t core = 1; core <= r; ++core) {
             //struct smlt_node *src = smlt_get_node_by_id(0);
             struct smlt_node *dst = smlt_get_node_by_id(core);
             smlt_node_join(dst);
         }
-        sleep(1);
     }
 }
