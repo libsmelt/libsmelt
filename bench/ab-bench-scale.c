@@ -377,7 +377,8 @@ int main(int argc, char **argv)
 
     int step_size = 0;
     if (numa_available() == 0) {
-        step_size = numa_max_node()+1;
+        int num_nodes = numa_max_node()+1;
+        step_size = total/num_nodes;
     }   
 
     if (step_size < 2) {
