@@ -77,7 +77,7 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
         // 1:n
         (*chan)->use_shm = true;
         struct swmr_queue* send = &((*chan)->c.shm.send_owner);
-        swmr_queue_create(&send, src[0], dst, num_chan);
+        swmr_queue_create(&send, src[0], dst, num_chan, false);
 
         ((*chan)->c.shm.dst) = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*
                                             count_dst, SMLT_DEFAULT_ALIGNMENT, true);

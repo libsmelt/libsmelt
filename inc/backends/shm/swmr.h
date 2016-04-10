@@ -34,6 +34,7 @@ struct swmr_context {
     // The shared memory itself
     uint8_t* shm;
     uint8_t* data;
+    uint8_t* header;
 
     // Positions of readers/writer within shared queue
     volatile union pos_point* write_pos;
@@ -59,12 +60,13 @@ struct swmr_queue {
 };
 
 void swmr_init_context(void* shm, struct swmr_context* queue,
-                       uint8_t num_readers, uint8_t id);
+                       uint8_t num_readers, uint8_t id, bool sep_header);
 
 void swmr_queue_create(struct swmr_queue**,
                        uint32_t src,
                        uint32_t* dst,
-                       uint16_t count);
+                       uint16_t count,
+                       bool sep_header);
 
 void swmr_send_raw(struct swmr_context* context,
                   uintptr_t p1,

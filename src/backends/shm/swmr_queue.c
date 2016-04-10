@@ -47,9 +47,11 @@
  * \param id An ID representing this reader, has to unique within a
  * cluster, starting at 0, i.e. for three readers, the id's would be
  * 0, 1 and 2.
+ *
+ * \param sep_header use a seperate cachline for the header
  */
 void swmr_init_context(void* shm, struct swmr_context* queue, 
-                       uint8_t num_readers, uint8_t id)
+                       uint8_t num_readers, uint8_t id, bool sep_header)
 {
     assert (queue!=NULL);
 
@@ -66,27 +68,40 @@ void swmr_init_context(void* shm, struct swmr_context* queue,
     queue->data = (uint8_t*) shm+((num_readers+1)*sizeof(union pos_point));
     queue->next_sync = queue->num_slots-1;
     queue->next_seq = 1;
+    if (sep_header) {
+        queue->header = (uint8_t*) queue->data + SWMRQ_SIZE*CACHELINE_SIZE;
+    } else {
+        queue->header = (uint8_t*) queue->data;
+    }
 }
 
 void swmr_queue_create(struct swmr_queue** queue,
                        uint32_t src,
                        uint32_t* dst,
-                       uint16_t count)
-{
-    void* shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
-                                            SMLT_ARCH_CACHELINE_SIZE, 
-                                            numa_node_of_cpu(dst[0]), true);
+                       uint16_t count,
+                       bool sep_header)
+{   
+    void* shm;
+    if (sep_header) {
+        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE*2, 
+                                          SMLT_ARCH_CACHELINE_SIZE, 
+                                          numa_node_of_cpu(dst[0]), true);
+    } else {
+        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
+                                          SMLT_ARCH_CACHELINE_SIZE, 
+                                          numa_node_of_cpu(dst[0]), true);
+    }
 
     assert(shm != NULL);
 
-    swmr_init_context(shm, &(*queue)->src, count, 0);
+    swmr_init_context(shm, &(*queue)->src, count, 0, sep_header);
 
     (*queue)->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
                                                 SMLT_ARCH_CACHELINE_SIZE, 
                                                 numa_node_of_cpu(dst[0]), true);
 
     for (int i = 0; i < count ; i++) {
-        swmr_init_context(shm, &((*queue)->dst[i]), count, i);
+        swmr_init_context(shm, &((*queue)->dst[i]), count, i, sep_header);
     }
 }
 
@@ -168,25 +183,31 @@ void swmr_send_raw(struct swmr_context* context,
 
     //uintptr_t offset =  (context->l_pos*SLOT_SIZE);
 
-    uintptr_t* slot_start = (uintptr_t*) context->data + (context->l_pos*SLOT_SIZE);
+    uint64_t offset = context->l_pos*SLOT_SIZE;
+    uintptr_t* data = (uintptr_t*) context->data + offset;
+    uintptr_t* header = (uintptr_t*) context->header + offset;
 
-    slot_start[1] = p1; 
-    slot_start[2] = p2; 
-    slot_start[3] = p3;
-    slot_start[4] = p4; 
-    slot_start[5] = p5;
-    slot_start[6] = p6; 
-    slot_start[7] = p7; 
+    data[1] = p1; 
+    data[2] = p2; 
+    data[3] = p3;
+    data[4] = p4; 
+    data[5] = p5;
+    data[6] = p6; 
+    data[7] = p7; 
 #ifdef DEBUG_SHM
         printf("Shm writer %d: write pos %d val %lu \n", 
                 sched_getcpu(), context->l_pos, 
                 context->next_seq);
 #endif
-    slot_start[0] = context->next_seq;
+    header[0] = context->next_seq;
     context->next_seq++;
 
     // increse write pointer..
     context->l_pos++;
+/*
+    printf("Core %d: DATA %p %ld HEADER %p %ld  offset %ld \n", sched_getcpu(), 
+           (void*) data, data[0], (void*) header, header[0], offset);
+*/
 }
 
 void swmr_send_raw0(struct swmr_context* context)
@@ -210,6 +231,7 @@ void swmr_send_raw0(struct swmr_context* context)
     uintptr_t* slot_start = (uintptr_t*) context->data + (context->l_pos*SLOT_SIZE);
 
     slot_start[0] = context->next_seq;
+
     context->next_seq++;
 
     // increse write pointer..
@@ -240,10 +262,15 @@ bool swmr_receive_non_blocking(struct swmr_context* context,
               uintptr_t *p7)
 {
     //assert (context!=NULL);
-    uintptr_t* start;
-    start = (uintptr_t*) context->data + ((context->l_pos)*SLOT_SIZE);
-
-    if (context->next_seq == start[0]) {
+    uint64_t offset = (context->l_pos*SLOT_SIZE);
+    uintptr_t* start = (uintptr_t*) context->data + offset;
+    uintptr_t* header = (uintptr_t*) context->header + offset;
+/*
+    printf("Core %d: DATA %p %ld HEADER %p %ld offset %ld lpos %d \n", sched_getcpu(), 
+           (void*) start, start[0], (void*) header, header[0], offset, context->l_pos);
+    sleep(1);
+*/
+    if (context->next_seq == header[0]) {
         *p1 = start[1];
         *p2 = start[2];
         *p3 = start[3]; 

@@ -52,7 +52,7 @@ void* thr_writer(void* arg)
 
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    swmr_init_context(shared_mem, queue, num_readers, 0);
+    swmr_init_context(shared_mem, queue, num_readers, 0, false);
     sk_m_init(&m, NUM_VALUES, "writer", buf);
 
     uint64_t rid = 1;
@@ -90,7 +90,7 @@ void* thr_reader(void* arg)
 
     sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
-    swmr_init_context(shared_mem, queue,num_readers, (uint64_t) arg);
+    swmr_init_context(shared_mem, queue,num_readers, (uint64_t) arg, false);
     uint64_t previous = 0;
     uint64_t num_wrong = 0;
     uintptr_t r[8];
@@ -129,7 +129,7 @@ void* thr_reader(void* arg)
 
 int main(int argc, char ** argv)
 {
-    shared_mem = calloc(1,64*64);
+    shared_mem = calloc(1,64*64*2);
     pthread_t *tids = (pthread_t*) malloc((num_readers+1)*sizeof(pthread_t));
     printf("###################################################\n");
     printf("SHM test started (%d writes/reads) \n", NUM_WRITES);
