@@ -26,8 +26,10 @@
 #include <smlt_message.h>
 #include <platforms/measurement_framework.h>
 
-#define NUM_RUNS 10000000
+#define NUM_RUNS 100000
 #define NUM_VALUES 1000
+
+#define NUM_READERS 3
 
 struct smlt_channel chan;
 
@@ -37,13 +39,6 @@ __thread cycles_t buf[NUM_VALUES];
 void* worker1(void* arg)
 {
     uint64_t id = (uint64_t) arg;
-    cpu_set_t cpu_mask;
-
-    CPU_ZERO(&cpu_mask);
-    CPU_SET(id, &cpu_mask);
-    //uintptr_t r[8];
-    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);    
-
     struct smlt_msg* msg = smlt_message_alloc(56);
     int num_wrong = 0;
 
@@ -55,6 +50,7 @@ void* worker1(void* arg)
             sk_m_restart_tsc(&m);
             smlt_channel_send(&chan, msg);
             sk_m_add(&m);
+
             smlt_channel_recv(&chan, msg);
             if (msg->data[0] != i) {
                 num_wrong++;
@@ -62,7 +58,7 @@ void* worker1(void* arg)
         }
     } else {
         sk_m_init(&m, NUM_VALUES, "reader_shm", buf);
-        for (int i = 0; i < NUM_RUNS; i++) {
+        for (uint64_t i = 0; i < NUM_RUNS; i++) {
             sk_m_restart_tsc(&m);
             smlt_channel_recv(&chan, msg);
             sk_m_add(&m);
@@ -83,10 +79,11 @@ void* worker1(void* arg)
     return 0;
 }
 
+
 int main(int argc, char ** argv)
 {
     errval_t err;
-    err = smlt_init(4, true);
+    err = smlt_init(sysconf(_SC_NPROCESSORS_ONLN), true);
     if (smlt_err_is_fail(err)) {
         printf("SMLT init failed \n");
     }        
@@ -94,20 +91,41 @@ int main(int argc, char ** argv)
 
     struct smlt_channel* c = &chan;
     uint32_t src = 0;
-    uint32_t dst[3] = {1,2,3};
-    smlt_channel_create(&c, &src, dst, 1, 3);   
+    /*
+    uint32_t dst[NUM_READERS] = {4, 8, 12, 16, 20, 24, 28,
+                                 32, 36, 40, 44, 48, 52, 56,
+                                 60};
+    */
+    //uint32_t dst[NUM_READERS] = {4, 8, 12, 16, 20, 24, 28};
+    //uint32_t dst[NUM_READERS] = {4,8,12};
+    uint32_t dst[NUM_READERS] = {1,2,3};
+    smlt_channel_create(&c, &src, dst, 1, NUM_READERS);   
 
     struct smlt_node* node;
-    for (uint64_t i=0; i<4; i++) {
-       node = smlt_get_node_by_id(i);
-       err = smlt_node_start(node, worker1, (void*) i);
+    // writer
+    node = smlt_get_node_by_id(0);
+    err = smlt_node_start(node, worker1, (void*) 0);
+    if (smlt_err_is_fail(err)) {
+       // XXX
+    }
+
+    // readers
+    for (uint64_t i=0; i<NUM_READERS; i++) {
+       node = smlt_get_node_by_id(dst[i]);
+       err = smlt_node_start(node, worker1, (void*) ((uint64_t) i+1));
        if (smlt_err_is_fail(err)) {
            // XXX
        }
     }
 
-    for (uint64_t i=0; i<4; i++) {
-       node = smlt_get_node_by_id(i);
+    node = smlt_get_node_by_id(0);
+    err = smlt_node_join(node);
+    if (smlt_err_is_fail(err)) {
+           // XXX
+    }
+
+    for (uint64_t i=0; i<NUM_READERS; i++) {
+       node = smlt_get_node_by_id(dst[i]);
        err = smlt_node_join(node);
        if (smlt_err_is_fail(err)) {
            // XXX
