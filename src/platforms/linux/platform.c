@@ -70,8 +70,8 @@ errval_t smlt_platform_cores_of_cluster(uint8_t cluster_id,
                                         coreid_t** cores,
                                         uint32_t* size)
 {
-    int max_nodes = numa_num_configured_nodes()+1;
-    int num_cores = numa_num_configured_cpus()+1;
+    int max_nodes = numa_num_configured_nodes();
+    int num_cores = numa_num_configured_cpus();
     int node_size = num_cores/max_nodes;
 
     coreid_t* result = (coreid_t*) malloc(sizeof(coreid_t)*node_size);

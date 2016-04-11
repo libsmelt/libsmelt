@@ -226,7 +226,7 @@ clean:
 	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 	rm -f test/smlt-mp-test bench/bar-bench bench/ab-bench-scale
-	rm -f test/dissem-bar-test
+	rm -f test/dissem-bar-test bench/shm-mp-bench
 debug:
 	echo $(HEADERS)
 
