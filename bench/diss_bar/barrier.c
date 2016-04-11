@@ -17,6 +17,8 @@
 #include <smlt_context.h>
 #include <smlt_node.h>
 struct smlt_context* context;
+struct smlt_dissem_barrier* bar;
+
 
 static uint32_t* placement(uint32_t n, bool do_fill)
 {
@@ -77,29 +79,6 @@ static uint32_t* placement(uint32_t n, bool do_fill)
                 }
                 taken_per_node = 0;
             }            
-
-            /*
-            uint8_t ith_of_node = 0;
-            // go through numa nodes
-            for (int i = 0; i < numa_nodes; i++) {
-                // go through cores and see if part of numa node
-                for (int j = 0; j < num_cores; j++) {
-                    // take the ith core of the node
-                    if (numa_bitmask_isbitset(nodes[i], j)){
-                        int index = i+ith_of_node*numa_nodes;
-                        if (index < n) {
-                            result[i+ith_of_node*numa_nodes] = j;
-                            num_taken++;
-                            ith_of_node++;
-                        }
-                    }
-                    if (num_taken == n) {
-                        return result;
-                    }
-                }
-                ith_of_node = 0;
-            }
-            */
         }
     } else {
         printf("Libnuma not available \n");
@@ -180,7 +159,7 @@ void run_diss(bool fill) {
 
         initThreads(n_thr, threaddata, shm, g_timerfreq, rdtsc_synchro,
                     rdtsc_latency, naccesses, &accesses, shm->m,
-                    shm->rounds, cores, fill);
+                    shm->rounds, cores, fill, false);
 
         for(int t=0 ; t < n_thr; t++){
             pthread_create(&threads[t],NULL,function_thread, 
@@ -212,7 +191,7 @@ void run_diss(bool fill) {
 }
 
 
-void run_smlt(bool fill) {
+void run_smlt(bool fill, bool smlt_dissem) {
 
 	sharedMemory_t * shm;
 	threaddata_t * threaddata;
@@ -238,9 +217,17 @@ void run_smlt(bool fill) {
 
     for (int n_thr = step_size; n_thr < num_threads+1; n_thr += step_size) {
         if (fill) {
-            fprintf(stderr, "Running SMLT %d fill\n", n_thr);
+            if (smlt_dissem) {
+                fprintf(stderr, "Running dissemination SMLT %d fill\n", n_thr);
+            } else {
+                fprintf(stderr, "Running SMLT %d fill\n", n_thr);
+            }
         } else {
-            fprintf(stderr, "Running SMLT %d rr\n", n_thr);
+            if (smlt_dissem) {
+                fprintf(stderr, "Running dissemination SMLT %d rr\n", n_thr);
+            } else {
+                fprintf(stderr, "Running SMLT %d rr\n", n_thr);
+            }
         }
 
         if(posix_memalign((void**)(&(shm)), ALIGNMENT,
@@ -286,28 +273,35 @@ void run_smlt(bool fill) {
 
         initThreads(n_thr, threaddata, shm, g_timerfreq, rdtsc_synchro,
                     rdtsc_latency, naccesses, &accesses, shm->m, shm->rounds,
-                    cores, fill);
+                    cores, fill, smlt_dissem);
 
-        struct smlt_generated_model* model = NULL;
-        err = smlt_generate_model(cores, n_thr, NULL, &model);
-        if (smlt_err_is_fail(err)) {
-            printf("Faild to init SMLT model \n");
-            return ;
+        if (!smlt_dissem) {
+            struct smlt_generated_model* model = NULL;
+            err = smlt_generate_model(cores, n_thr, NULL, &model);
+            if (smlt_err_is_fail(err)) {
+                printf("Faild to init SMLT model \n");
+                return ;
+            }
+
+            struct smlt_topology *topo = NULL;
+            err = smlt_topology_create(model, "adaptivetree", &topo);
+            if (smlt_err_is_fail(err)) {
+                printf("Faild to init SMLT model \n");
+                return ;
+            }
+
+            err = smlt_context_create(topo, &context);
+            if (smlt_err_is_fail(err)) {
+                printf("Faild to init SMLT context \n");
+                return ;
+            }
+        } else {
+            err = smlt_dissem_barrier_init(cores, n_thr, &bar);
+            if (smlt_err_is_fail(err)) {
+                printf("Faild to init SMLT context \n");
+                return ;
+            }
         }
-
-        struct smlt_topology *topo = NULL;
-        err = smlt_topology_create(model, "adaptivetree", &topo);
-        if (smlt_err_is_fail(err)) {
-            printf("Faild to init SMLT model \n");
-            return ;
-        }
-
-        err = smlt_context_create(topo, &context);
-        if (smlt_err_is_fail(err)) {
-            printf("Faild to init SMLT context \n");
-            return ;
-        }
-
         struct smlt_node *node;
         for (uint64_t t = 0; t < n_thr; t++) {
             node = smlt_get_node_by_id(cores[t]);
@@ -357,8 +351,12 @@ int main(int argc, char** argv){
         exit(1);
     }
     
-    run_smlt(true);
-    run_smlt(false);
+    // smlt tree barrier
+    run_smlt(true, false);
+    run_smlt(false, false);
+    // smlt dissemination barrier
+    run_smlt(true, true);
+    run_smlt(false, true);
 }
 
 

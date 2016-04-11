@@ -17,6 +17,8 @@
 #include <smlt_barrier.h>
 
 extern struct smlt_context* context;
+extern struct smlt_dissem_barrier* bar;
+
 
 __thread struct sk_measurement mes;
 
@@ -38,7 +40,8 @@ typedef struct threaddata
 	int *accesses;						 //66
     int num_threads;                    // 70
     bool fill;                          // 71
-	unsigned char padding[57];  // 128 byte
+    bool smlt_dissem;                   // 72
+	unsigned char padding[56];  // 128 byte
 } threaddata_t;
 
 typedef struct timer{
@@ -50,7 +53,7 @@ typedef struct timer{
 void initThreads(int num_threads, threaddata_t * threaddata, sharedMemory_t * shm, 
                  unsigned long long g_timerfreq, UINT64_T * rdtsc_synchro, 
                  int rdtsc_latency, int naccesses, int *accesses, int m, 
-                 int rounds, uint32_t* cores, bool fill){
+                 int rounds, uint32_t* cores, bool fill, bool smlt_dissem){
 	for(int i=0; i< num_threads; i++){
 		threaddata[i].thread_id = i;
 		threaddata[i].ack = 0;
@@ -66,6 +69,7 @@ void initThreads(int num_threads, threaddata_t * threaddata, sharedMemory_t * sh
 		threaddata[i].m = m;
 		threaddata[i].rounds = rounds;
         threaddata[i].fill = fill;
+        threaddata[i].smlt_dissem = smlt_dissem;
         threaddata[i].num_threads = num_threads;
 	}
 }
@@ -108,19 +112,6 @@ void* function_thread (void * arg_threaddata){
 	int index_rdtsc=0;
 	for (n=0; n<NITERS; n++){
 
-
-		//TSC syncrho
-/*
-		HRT_GET_TIMESTAMP(actual);
-		ticks = (((( UINT64_T ) actual.h) << 32) | actual.l);
-		ell =  HRT_GET_USEC(threaddata->rdtsc_synchro[index_rdtsc]-ticks, threaddata->g_timerfreq);
-		while(ticks<threaddata->rdtsc_synchro[index_rdtsc]){
-			HRT_GET_TIMESTAMP(actual);
-			ticks = (((( UINT64_T ) actual.h) << 32) | actual.l);
-		}
-
-		HRT_GET_TIMESTAMP (timer.t1);
-*/
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
                 thread_id,&(threaddata->tag));
 
@@ -128,13 +119,6 @@ void* function_thread (void * arg_threaddata){
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
                 thread_id,&(threaddata->tag));
         sk_m_add(&mes);
-/*
-		HRT_GET_TIMESTAMP (timer.t2);
-		HRT_GET_ELAPSED_TICKS(timer.t1,timer.t2, &(timer.elapsed_ticks));
-		timer.elapsed_ticks -= threaddata->rdtsc_latency;
-		tmp_usecs = HRT_GET_USEC(timer.elapsed_ticks, threaddata->g_timerfreq);
-		index_rdtsc++;
-*/		
 	}
    sk_m_print(&mes);
 //    sk_m_print_analysis(&mes);
@@ -162,9 +146,17 @@ void* function_thread_smlt(void * arg_threaddata){
 	pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
 
     if (threaddata->fill) {
-        sprintf(outname, "barriers_adaptivetree_fill%d", threaddata->num_threads);
+        if (threaddata->smlt_dissem) {
+            sprintf(outname, "barriers_smltdissem_fill%d", threaddata->num_threads);
+        } else {
+            sprintf(outname, "barriers_adaptivetree_fill%d", threaddata->num_threads);
+        }
     } else {
-        sprintf(outname, "barriers_adaptivetree_rr%d", threaddata->num_threads);
+        if (threaddata->smlt_dissem) {
+            sprintf(outname, "barriers_smltdissem_rr%d", threaddata->num_threads);
+        } else {
+            sprintf(outname, "barriers_adaptivetree_rr%d", threaddata->num_threads);
+        }
     }
 
     uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*NITERS);
@@ -173,33 +165,24 @@ void* function_thread_smlt(void * arg_threaddata){
 
 	while(threaddata->ack);
 
-       
-
 	int index_rdtsc=0;
 	for (n=0; n<NITERS; n++){
 		//TSC syncrho
-/*
-		HRT_GET_TIMESTAMP(actual);
-		ticks = (((( UINT64_T ) actual.h) << 32) | actual.l);
-		ell =  HRT_GET_USEC(threaddata->rdtsc_synchro[index_rdtsc]-ticks, 
-                            threaddata->g_timerfreq);
-		while(ticks<threaddata->rdtsc_synchro[index_rdtsc]){
-			HRT_GET_TIMESTAMP(actual);
-			ticks = (((( UINT64_T ) actual.h) << 32) | actual.l);
-		}
-*/
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
                 thread_id,&(threaddata->tag));
 
- 	    sk_m_restart_tsc(&mes);
-        smlt_barrier_wait(context);
-        sk_m_add(&mes);
-
-//		index_rdtsc++;
+        if (threaddata->smlt_dissem) {
+            sk_m_restart_tsc(&mes);
+            smlt_dissem_barrier_wait(bar);
+            sk_m_add(&mes);
+        } else {
+            sk_m_restart_tsc(&mes);
+            smlt_barrier_wait(context);
+            sk_m_add(&mes);
+        }
 		
 	}
     sk_m_print(&mes);
-//    sk_m_print_analysis(&mes);
     free(buf);
 }
 
