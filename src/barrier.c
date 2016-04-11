@@ -144,6 +144,22 @@ errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier* bar)
     return SMLT_SUCCESS;
 }
 
+errval_t smlt_dissem_barrier_destroy(struct smlt_dissem_barrier* bar) 
+{
+    
+    for (uint32_t i = 0; i < bar->num_threads; i++) {
+        for (uint32_t j = i; j < bar->num_threads; j++) {
+            smlt_platform_free((void*) bar->channels[i*bar->num_threads+j]);     
+        }
+    }    
+    
+    smlt_platform_free(bar->cores);
+    smlt_platform_free(bar->channels);
+    smlt_platform_free(bar);
+    return SMLT_SUCCESS;
+}
+
+
 void shl_barrier_shm(int b_count);
 
 /**

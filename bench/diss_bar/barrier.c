@@ -332,6 +332,9 @@ void run_smlt(bool fill, bool smlt_dissem) {
         free(threaddata);
         free(rdtsc_synchro);
         free(shm);
+        if (smlt_dissem) {
+            smlt_dissem_barrier_destroy(bar);       
+        }
     }
 }
 

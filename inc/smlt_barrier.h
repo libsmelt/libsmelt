@@ -98,6 +98,7 @@ errval_t smlt_dissem_barrier_init(uint32_t* cores, uint32_t num_cores,
  */
 errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier *bar);
 
+errval_t smlt_dissem_barrier_destroy(struct smlt_dissem_barrier *bar);
 
 struct shl_barrier_t {
     int num;
