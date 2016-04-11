@@ -78,7 +78,7 @@ void* shm_func(void* arg)
         }
     }
 
-    sk_m_print_analysis(&m);   
+    sk_m_print(&m);   
 
     return 0;
 }
@@ -124,7 +124,7 @@ void* mp_func(void* arg)
         }
     }
 
-    sk_m_print_analysis(&m);   
+    sk_m_print(&m);   
 
     return 0;
 }
