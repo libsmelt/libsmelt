@@ -120,7 +120,8 @@ all: $(TARGET) \
 		 bench/pingpong \
 		 bench/polloverhead \
 		 bench/writeoverhead \
-		 bench/shm-mp-bench
+		 bench/shm-mp-bench \
+		 bench/multimessage
 
 test: test/nodes-test \
 			test/topo-create-test \
@@ -194,6 +195,9 @@ bench/polloverhead: $(DEPS) $(EXTERNAL_OBJS) bench/polloverhead.c
 
 bench/writeoverhead: $(DEPS) $(EXTERNAL_OBJS) bench/writeoverhead.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/writeoverhead.c -lm -o $@
+
+bench/multimessage: $(DEPS) $(EXTERNAL_OBJS) bench/multimessage.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/multimessage.c -lm -o $@
 
 bench/shm-mp-bench: $(DEPS) $(EXTERNAL_OBJS) bench/shm-mp-bench.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/shm-mp-bench.c -lm -o $@
