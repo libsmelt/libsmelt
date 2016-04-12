@@ -25,6 +25,10 @@
 #include <smlt_channel.h>
 #include <smlt_message.h>
 #include <smlt_barrier.h>
+#include <smlt_broadcast.h>
+#include <smlt_generator.h>
+#include <smlt_topology.h>
+#include <smlt_context.h>
 #include <platforms/measurement_framework.h>
 
 #define NUM_RUNS 1000000
@@ -33,6 +37,7 @@
 struct smlt_channel shm;
 struct smlt_channel* mp;
 struct smlt_dissem_barrier* bar;
+struct smlt_context* ctx;
 
 int num_threads = 0;
 
@@ -129,9 +134,38 @@ void* mp_func(void* arg)
     return 0;
 }
 
+// tree
+void* tree_func(void* arg)
+{
+    struct smlt_msg* msg = smlt_message_alloc(56);
+
+    char writer[128];
+    char reader[128];
+
+    sprintf(writer, "writer_tree%d", num_threads);
+    sprintf(reader, "reader_tree%d", num_threads);
+
+    sk_m_init(&m, NUM_VALUES, writer, buf);
+    for (uint64_t i = 0; i < NUM_RUNS; i++) {
+        msg->data[0] = i;
+        // synchro
+        smlt_dissem_barrier_wait(bar);
+        smlt_dissem_barrier_wait(bar);
+
+        sk_m_restart_tsc(&m);
+        smlt_broadcast(ctx, msg);
+        sk_m_add(&m);
+
+    }
+
+    sk_m_print(&m);   
+
+    return 0;
+}
+
 
 // multiple readers
-void run(bool use_mp)
+void run(bool use_mp, bool use_tree)
 {
     errval_t err;
     struct smlt_channel* c;;
@@ -165,7 +199,24 @@ void run(bool use_mp)
                 c = &mp[j];
                 smlt_channel_create(&c, &cores[0], &cores[j], 1, 1);  
             }
-        } else {
+        } else if (use_tree) {
+            struct smlt_generated_model* model = NULL;
+            err = smlt_generate_model(cores, num_threads, "adaptivetree", &model);
+            if (smlt_err_is_fail(err)) {
+                printf("Failed to generated model \n");
+                exit(1);
+            }
+
+            struct smlt_topology *topo = NULL;
+            smlt_topology_create(model, "adaptivetree", &topo);
+
+            err = smlt_context_create(topo, &ctx);
+            if (smlt_err_is_fail(err)) {
+                printf("Failed to create context \n");
+                exit(1);
+            }
+
+        }else {
             c = &shm;
             smlt_channel_create(&c, &cores[0], &cores[1], 1, i-1);  
         } 
@@ -176,6 +227,8 @@ void run(bool use_mp)
            node = smlt_get_node_by_id(cores[j]);
            if (use_mp) {
                err = smlt_node_start(node, mp_func, (void*) j);
+           } else if (use_tree) {
+               err = smlt_node_start(node, tree_func, (void*) j);
            } else {
                err = smlt_node_start(node, shm_func, (void*) j);
            }
@@ -204,8 +257,9 @@ int main(int argc, char ** argv)
         printf("SMLT init failed \n");
     }        
 
-    run(false);
-    run(true);
+    run(false, false);
+    run(true, false);
+    run(false, true);
     
 }
 
