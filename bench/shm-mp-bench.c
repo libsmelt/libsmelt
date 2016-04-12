@@ -137,6 +137,8 @@ void* mp_func(void* arg)
 // tree
 void* tree_func(void* arg)
 {
+
+    uint64_t id = (uint64_t) arg;
     struct smlt_msg* msg = smlt_message_alloc(56);
 
     char writer[128];
@@ -145,19 +147,35 @@ void* tree_func(void* arg)
     sprintf(writer, "writer_tree%d", num_threads);
     sprintf(reader, "reader_tree%d", num_threads);
 
-    sk_m_init(&m, NUM_VALUES, writer, buf);
-    for (uint64_t i = 0; i < NUM_RUNS; i++) {
-        msg->data[0] = i;
-        // synchro
-        smlt_dissem_barrier_wait(bar);
-        smlt_dissem_barrier_wait(bar);
 
-        sk_m_restart_tsc(&m);
-        smlt_broadcast(ctx, msg);
-        sk_m_add(&m);
+    if (id == 0) {
+        sk_m_init(&m, NUM_VALUES, writer, buf);
+        for (uint64_t i = 0; i < NUM_RUNS; i++) {
+            msg->data[0] = i;
+            // synchro
+            smlt_dissem_barrier_wait(bar);
+            smlt_dissem_barrier_wait(bar);
+
+            sk_m_restart_tsc(&m);
+            smlt_broadcast(ctx, msg);
+            sk_m_add(&m);
+
+        }
+    } else {
+        sk_m_init(&m, NUM_VALUES, reader, buf);
+        for (uint64_t i = 0; i < NUM_RUNS; i++) {
+            msg->data[0] = i;
+            // synchro
+            smlt_dissem_barrier_wait(bar);
+            smlt_dissem_barrier_wait(bar);
+
+            sk_m_restart_tsc(&m);
+            smlt_broadcast(ctx, msg);
+            sk_m_add(&m);
+
+        }
 
     }
-
     sk_m_print(&m);   
 
     return 0;
@@ -257,8 +275,11 @@ int main(int argc, char ** argv)
         printf("SMLT init failed \n");
     }        
 
+    // shared memory
     run(false, false);
+    // message passing
     run(true, false);
+    // tree
     run(false, true);
     
 }
