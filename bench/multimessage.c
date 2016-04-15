@@ -25,9 +25,11 @@ cycles_t tsc_overhead = 0;
 
 #define NUM_THREADS 2
 
-#define NUM_DATA 10
-#define NUM_EXP 200
+#define NUM_DATA 1000
+#define NUM_EXP 2000
 #define NUM_WARMUP 5000
+
+
 
 #define STR(X) #X
 
@@ -75,7 +77,7 @@ void* thr_write(void* a)
     msg->words = 0;
 
     for (uint32_t i = 0; i < arg->num_cores; ++i) {
-        printf("send: queue_pairs[0][%u]\n", arg->cores[i]);
+    //    printf("send: queue_pairs[0][%u]\n", arg->cores[i]);
     }
 
     cycles_t tsc_start, tsc_end;
@@ -138,7 +140,7 @@ void* thr_receiver(void* a)
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-    printf("receiver: queue_pairs[1][%u]\n", arg->cores[0]);
+    //printf("receiver: queue_pairs[1][%u]\n", arg->cores[0]);
 
     for (size_t j=0; j<NUM_EXP; j++) {
         struct smlt_qp *qp = queue_pairs[1][arg->cores[0]];
@@ -155,7 +157,7 @@ int run_experiment(uint32_t num_local, uint32_t num_remote)
 {
     errval_t err;
 
-    printf("run_experiment(nl=%u, nr=%u)\n", num_local,num_remote);
+    //printf("run_experiment(nl=%u, nr=%u)\n", num_local,num_remote);
 
     coreid_t *cores = calloc(num_local + num_remote, sizeof(coreid_t));
 
