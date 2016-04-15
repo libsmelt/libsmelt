@@ -13,6 +13,7 @@
 #include <smlt_broadcast.h>
 #include <shm/smlt_shm.h>
 #include "debug.h"
+#include <string.h>
 
 
 /**
@@ -37,19 +38,6 @@ errval_t smlt_reduce(struct smlt_context *ctx,
     }
 
     // --------------------------------------------------
-    // Shared memory first
-
-    // Note: tree is processed in backwards direction, i.e. a receive
-    // corresponds to a send and vica-versa.
-/*
-    if (smlt_context_does_shared_memory(ctx)) {
-        err = smlt_shm_reduce(input, result);
-        if (smlt_err_is_fail(err)) {
-            return err;
-        }
-    }
-  */  
-    // --------------------------------------------------
     // Message passing
 
     /*
@@ -71,6 +59,27 @@ errval_t smlt_reduce(struct smlt_context *ctx,
 
     // Receive (this will be from several children)
     // --------------------------------------------------
+    bool recv[count];
+    memset(recv, 0, sizeof(bool)*count);
+    int num_recv = 0;
+    int i = 0;
+    while( num_recv < count) {
+        if (smlt_channel_can_recv(&children[i]) && !recv[i]) {
+            err = smlt_channel_recv(&children[i], result);
+            if (smlt_err_is_fail(err)) {
+                return err;
+            }
+            recv[i] = true;
+            num_recv++;
+        }
+
+        i++;
+
+        if (i == count) {
+            i = 0;
+        }
+    }
+    /*
     for (uint32_t i = 0; i < count; ++i) {
 
         err = smlt_channel_recv(&children[i], result);
@@ -83,7 +92,7 @@ errval_t smlt_reduce(struct smlt_context *ctx,
             // TODO: error handling
         }
     }
-
+    */
     // Receive (this will be from several children)
     // --------------------------------------------------
     struct smlt_channel *parent;
@@ -111,19 +120,6 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
     errval_t err;
 
     // --------------------------------------------------
-    // Shared memory first
-
-    // Note: tree is processed in backwards direction, i.e. a receive
-    // corresponds to a send and vica-versa.
-/*
-    if (smlt_context_does_shared_memory(ctx)) {
-        err = smlt_shm_reduce_notify();
-        if (smlt_err_is_fail(err)) {
-            return err;
-        }
-    }
-*/
-    // --------------------------------------------------
     // Message passing
 
     /*
@@ -143,6 +139,28 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
         return err; // TODO: adding more error values
     }
 
+
+    bool recv[count];
+    memset(recv, 0, sizeof(bool)*count);
+    int num_recv = 0;
+    int i = 0;
+    while( num_recv < count) {
+        if (smlt_channel_can_recv(&children[i]) && !recv[i]) {
+            err = smlt_channel_recv_notification(&children[i]);
+            if (smlt_err_is_fail(err)) {
+                return err;
+            }
+            recv[i] = true;
+            num_recv++;
+        }
+
+        i++;
+
+        if (i == count) {
+            i = 0;
+        }
+    }
+/*
     for (uint32_t i = 0; i < count; ++i) {
 
  //       SMLT_DEBUG(SMLT_DBG__REDUCE, "Node %d: reduction recv from chan %p \n",
@@ -151,7 +169,7 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
         err = smlt_channel_recv_notification(&children[i]);
         // TODO: error handling
     }
-
+*/
     // Send (this should only be sending one message)
     // --------------------------------------------------
     struct smlt_channel *parent;
