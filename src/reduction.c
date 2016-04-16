@@ -64,7 +64,7 @@ errval_t smlt_reduce(struct smlt_context *ctx,
     int num_recv = 0;
     int i = 0;
     while( num_recv < count) {
-        if (smlt_channel_can_recv(&children[i]) && !recv[i]) {
+        if (!recv[i] && smlt_channel_can_recv(&children[i])) {
             err = smlt_channel_recv(&children[i], result);
             if (smlt_err_is_fail(err)) {
                 return err;
@@ -145,7 +145,7 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
     int num_recv = 0;
     int i = 0;
     while( num_recv < count) {
-        if (smlt_channel_can_recv(&children[i]) && !recv[i]) {
+        if (!recv[i] && smlt_channel_can_recv(&children[i])) {
             err = smlt_channel_recv_notification(&children[i]);
             if (smlt_err_is_fail(err)) {
                 return err;
