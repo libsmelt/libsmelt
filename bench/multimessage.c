@@ -23,7 +23,7 @@ cycles_t tsc_overhead = 0;
 
 #define NUM_CHANNELS 1024
 
-#define NUM_THREADS 2
+#define NUM_THREADS 1
 
 #define NUM_DATA 1000
 #define NUM_EXP 2000
@@ -160,12 +160,37 @@ int run_experiment(uint32_t num_local, uint32_t num_remote)
     //printf("run_experiment(nl=%u, nr=%u)\n", num_local,num_remote);
 
     coreid_t *cores = calloc(num_local + num_remote, sizeof(coreid_t));
+    uint32_t idx = 0;
+
+    coreid_t *cluster_cores;
+    uint32_t num_cores;
+
+    printf("remote cores: ");
+    for (uint32_t i = 1; i <= num_remote; ++i) {
+        /* */
+        err = smlt_platform_cores_of_cluster(i, &cluster_cores, &num_cores);
+        if (smlt_err_is_fail(err)) { printf("error getting cores of cluster\n");}
+        cores[idx++] = cluster_cores[0];
+        printf("%u ", cluster_cores[0]);
+
+        free(cluster_cores);
+    }
+    
+    printf("\nlocal cores: ");
+    err = smlt_platform_cores_of_cluster(0, &cluster_cores, &num_cores);
+    if (smlt_err_is_fail(err)) { printf("error getting cores of cluster\n");}
+
+    for (uint32_t i = 1; i <= num_local; ++i) {
+        cores[idx++] = cluster_cores[i];
+        printf("%u ", cluster_cores[i]);
+    } 
+    free(cluster_cores);
+    printf("\n");
 
     struct thr_args args[num_local + num_remote];
 
     for (coreid_t i = 0; i < num_local + num_remote; ++i) {
 
-        cores[i] = i;
 
         struct smlt_node *dst = smlt_get_node_by_id(cores[i]);
         args[i].cores = cores + i;
