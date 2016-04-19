@@ -286,8 +286,13 @@ int main(int argc, char **argv)
     printf("=============================================\n");
 
 
-    for (coreid_t nl = 1; nl < num_local_cores; ++nl) {
+    for (coreid_t nl = 0; nl < num_local_cores; ++nl) {
         for (coreid_t nr = 0; nr < num_cluster; ++nr) {
+
+            if (nl == 0 && nr == 0) {
+                continue;
+            }
+
             run_experiment(nl, nr);
         }
     }
