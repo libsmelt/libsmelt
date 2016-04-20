@@ -1,8 +1,8 @@
 #include <omp.h>
 #include "measurement_framework.h"
-
-
-
+#include "placement.h"
+#include <sched.h>
+#include <pthread.h>
 
 /*-----------------------------------------------------------*/
 /* barrierKernel                                             */
@@ -13,26 +13,34 @@
 /* process. MPI barrier is called within a OpenMP master     */
 /* directive.                                                */
 /*-----------------------------------------------------------*/
-int barrierKernel(int totalReps){
+int barrierKernel(int totalReps, int fill){
 	int repIter;
 	struct sk_measurement * mes;
 	char outname[512];
 	int i;
     	
-	sprintf(outname, "barriers_omp%d", omp_get_max_threads());
-	printf("Init mes (nthreads = %d)\n",omp_get_max_threads());
+	if (fill) {
+        	sprintf(outname, "barriers_omp_fill%d", omp_get_max_threads());
+    	} else {
+        	sprintf(outname, "barriers_omp_rr%d", omp_get_max_threads());
+    	}
 	mes = (struct sk_measurement*) malloc(sizeof(struct sk_measurement)*omp_get_max_threads());
 	for(i=0; i<omp_get_max_threads(); i++){
 		uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*totalReps);
 		sk_m_init(&(mes[i]), totalReps, outname, buf);
 	}
-	
+	uint32_t* cores = placement(omp_get_max_threads(), fill);
 	/* Open the parallel region */
 #pragma omp parallel default(none) \
 	private(repIter) \
-	shared(totalReps,mes)//,comm)
+	shared(totalReps,mes,cores)//,comm)
 	{
 	int tid =omp_get_thread_num(); 
+	//set affinity
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(cores[tid],&mask);
+	pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
 	for (repIter=0; repIter<totalReps; repIter++){
 
 #pragma omp barrier
@@ -57,9 +65,9 @@ int barrierDriver(int totalReps){
 //	barrierKernel(warmUpIters,1);
 //	printf("Warmup done\n");fflush(stdout);
 	/* Initialise the benchmark */
-	barrierKernel(repsToDo);
+	barrierKernel(repsToDo, 1);
 
-	
+	barrierKernel(repsToDo, 0);
 	return 0;
 }
 
