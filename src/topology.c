@@ -232,7 +232,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
 
         // find number of children (for SHM) and allocate accordingly
         int shm_children = 0;
-        for (int z = 0; z < model->len; z++) {
+        for (unsigned z = 0; z < model->len; z++) {
             int val = model->model[x*(model->len)+z];
             if ((val > 69) && (val < 99)) {
                 shm_children++;
@@ -253,15 +253,16 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                     SMLT_DEBUG(SMLT_DBG__INIT,"Parent of %d is %d \n", x, y);
                     node->parent = &((*topo)->all_nodes[y]);
                 } else if ((val > 69) && (val != 99)) {
+                    assert (!"Fix compile bug");
                     // master of shared memory channel
-                    node->use_shm = true;
-                    SMLT_DEBUG(SMLT_DBG__GENERAL,"Child (SHM) of %d is %d at pos %d \n",
-                               x, y, shm_child_index);
-                    node->topology = *topo;
-                    node->children_shm[shm_child_index] = &((*topo)->all_nodes[y]);
-                    node->node_id = x; // TODO change to real node ID
-                    (*topo)->all_nodes[y].array_index_shm = shm_child_index;
-                    shm_child_index++;
+                    /* node->use_shm = true; */
+                    /* SMLT_DEBUG(SMLT_DBG__GENERAL,"Child (SHM) of %d is %d at pos %d \n", */
+                    /*            x, y, shm_child_index); */
+                    /* node->topology = *topo; */
+                    /* node->children_shm[shm_child_index] = &((*topo)->all_nodes[y]); */
+                    /* node->node_id = x; // TODO change to real node ID */
+                    /* (*topo)->all_nodes[y].array_index_shm = shm_child_index; */
+                    /* shm_child_index++; */
                 } else if ((val > 49) && (val < 70)) {
                     // slave of shared memory channel
                     SMLT_DEBUG(SMLT_DBG__INIT,"Parent (SHM) of %d is %d \n",

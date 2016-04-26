@@ -59,16 +59,16 @@ static uint32_t* placement(uint32_t n, bool do_fill)
     uint32_t num_cores = numa_num_configured_cpus();
     struct bitmask* nodes[numa_nodes];
 
-    for (int i = 0; i < numa_nodes; i++) {
+    for (unsigned i = 0; i < numa_nodes; i++) {
         nodes[i] = numa_allocate_cpumask();
         numa_node_to_cpus(i, nodes[i]);
     }
 
-    int num_taken = 0;
+    unsigned num_taken = 0;
     if (numa_available() == 0) {
         if (do_fill) {
-            for (int i = 0; i < numa_nodes; i++) {
-                for (int j = 0; j < num_cores; j++) {
+            for (unsigned i = 0; i < numa_nodes; i++) {
+                for (unsigned j = 0; j < num_cores; j++) {
                     if (numa_bitmask_isbitset(nodes[i], j)) {
                         result[num_taken] = j;
                         num_taken++;
@@ -82,12 +82,12 @@ static uint32_t* placement(uint32_t n, bool do_fill)
         } else {
             int cores_per_node = n/numa_nodes;
             int rest = n - (cores_per_node*numa_nodes);
-            int taken_per_node = 0;        
+            int taken_per_node = 0;
 
             fprintf(stderr, "Cores per node %d \n", cores_per_node);
             fprintf(stderr, "rest %d \n", rest);
-            for (int i = 0; i < numa_nodes; i++) {
-                for (int j = 0; j < num_cores; j++) {
+            for (unsigned i = 0; i < numa_nodes; i++) {
+                for (unsigned j = 0; j < num_cores; j++) {
                     if (numa_bitmask_isbitset(nodes[i], j)) {
                         if (taken_per_node == cores_per_node) {
                             if (rest > 0) {
@@ -110,7 +110,7 @@ static uint32_t* placement(uint32_t n, bool do_fill)
                     }
                 }
                 taken_per_node = 0;
-            }            
+            }
         }
     } else {
         printf("Libnuma not available \n");
@@ -124,15 +124,15 @@ errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
     return 0;
 }
 
-static uint32_t* get_leafs(struct smlt_topology* topo,  
+static uint32_t* get_leafs(struct smlt_topology* topo,
                            uint32_t* count,
                            uint32_t* cores)
 {
         struct smlt_topology_node* tn;
         tn = smlt_topology_get_first_node(active_topo);
         int num_leafs = 0;
-        for (int i = 0; i < total; i++) {
-            for (int j = 0; j < num_threads; j++) {
+        for (unsigned i = 0; i < total; i++) {
+            for (unsigned j = 0; j < num_threads; j++) {
                 if (smlt_topology_node_is_leaf(tn) && (i == cores[j])) {
                     num_leafs++;
                 }
@@ -144,8 +144,8 @@ static uint32_t* get_leafs(struct smlt_topology* topo,
 
         int index = 0;
         tn = smlt_topology_get_first_node(active_topo);
-        for (int i = 0; i < total; i++) {
-            for (int j = 0; j < num_threads; j++) {
+        for (unsigned i = 0; i < total; i++) {
+            for (unsigned j = 0; j < num_threads; j++) {
                 if (smlt_topology_node_is_leaf(tn) && (i == cores[j])) {
                     ret[index] = smlt_topology_node_get_id(tn);
                     index++;
@@ -170,7 +170,7 @@ static void* ab(void* a)
     leafs = get_leafs(active_topo, &count, cores);
 
     struct smlt_msg* msg = smlt_message_alloc(56);
-    for (int i = 0; i < count; i++) {
+    for (unsigned i = 0; i < count; i++) {
         coreid_t last_node = (coreid_t) leafs[i];
         sk_m_reset(&m);
 
@@ -214,7 +214,7 @@ static void* reduction(void* a)
     leafs = get_leafs(active_topo, &count, cores);
 
     struct smlt_msg* msg = smlt_message_alloc(56);
-    for (int i = 0; i < count; i++) {
+    for (unsigned i = 0; i < count; i++) {
         coreid_t last_node = (coreid_t) leafs[i];
         sk_m_reset(&m);
 
@@ -288,7 +288,7 @@ static void* agreement(void* a)
 
     pthread_barrier_wait(&bar);
 
-    for (int i = 0; i < count; i++) {
+    for (unsigned i = 0; i < count; i++) {
         coreid_t last_node = (coreid_t) leafs[i];
         sk_m_reset(&m);
 
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
     if (numa_available() == 0) {
         int num_nodes = numa_max_node()+1;
         step_size = total/num_nodes;
-    }   
+    }
 
     if (step_size < 2) {
         step_size = 2;

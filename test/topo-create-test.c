@@ -82,10 +82,5 @@ int main(int argc, char **argv)
     }
 
     smlt_generate_model(cores, NUM_THREADS, name, &m2);
-<<<<<<< HEAD
     smlt_topology_create(m2, name, &topo2);
-
-=======
-    smlt_topology_create(m2, name, &topo2);
->>>>>>> Use g++ instead of gcc
 }

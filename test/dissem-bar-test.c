@@ -45,7 +45,7 @@ void* worker_test(void* arg)
     CPU_ZERO(&cpu_mask);
     CPU_SET(id, &cpu_mask);
     //uintptr_t r[8];
-    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);    
+    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
     for (uint64_t i = 0; i < NUM_RUNS_TEST; i++) {
         if (smlt_node_get_id() == 0) {
@@ -67,7 +67,7 @@ void* worker_bench(void* arg)
     CPU_ZERO(&cpu_mask);
     CPU_SET(id, &cpu_mask);
     //uintptr_t r[8];
-    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);    
+    sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
 
     sk_m_init(&m, NUM_VALUES, "barrier", buf);
 
@@ -88,17 +88,17 @@ void* worker_bench(void* arg)
 int main(int argc, char ** argv)
 {
     errval_t err;
-    
+
     err = smlt_init(sysconf(_SC_NPROCESSORS_ONLN), true);
     if (smlt_err_is_fail(err)) {
         printf("SMLT init failed \n");
-    }        
+    }
 
     uint32_t cores[NUM_THREADS] = {0,1,2,3};
     err = smlt_dissem_barrier_init(cores, NUM_THREADS, &bar);
     if (smlt_err_is_fail(err)) {
         printf("SMLT init failed \n");
-    }        
+    }
 
 
     struct smlt_node* node;
@@ -135,4 +135,3 @@ int main(int argc, char ** argv)
        }
     }
 }
-

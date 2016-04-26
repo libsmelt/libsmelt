@@ -284,7 +284,7 @@ static inline errval_t smlt_channel_recv_index(struct smlt_channel *chan,
     } else {
         if (chan->owner == smlt_node_self_id){
             // recv from all channels
-            for (int i = 0; i < chan->m; i++) {
+            for (unsigned i = 0; i < chan->m; i++) {
                 err = smlt_queuepair_recv(chan->c.shm.recv_owner[i], msg);
             }
         } else {
@@ -347,12 +347,12 @@ static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
     } else {
         if (chan->owner == smlt_node_self_id){
             // recv from all channels
-            for (int i = 0; i < chan->m; i++) {
+            for (unsigned i = 0; i < chan->m; i++) {
                 err = smlt_queuepair_recv0(chan->c.shm.recv_owner[i]);
             }
 
         } else {
-            for (int i = 0; i < chan->m; i++) {
+            for (unsigned i = 0; i < chan->m; i++) {
                 if (chan->c.shm.dst[i] == smlt_node_self_id) {
                     smlt_swmr_recv0(&chan->c.shm.send_owner.dst[i]);
                 }
