@@ -28,7 +28,14 @@ do
 
     >&2 echo "Running Rank File $f"
 
-   # /home/haeckir/Desktop/openmpi-1.10.2/bin/mpirun -H localhost -n ${SPLIT[3]} -rf $f -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier
+    S1='rr'
+    S2=${SPLIT[2]}
+
+    if [ $S1 = $S2 ]
+    then
+        /home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n ${SPLIT[3]} -rf $f -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier
+    else
+        /home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n ${SPLIT[3]} -rf $f -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier 1
+    fi
 done
-rm 1
 rm -r rank_files
