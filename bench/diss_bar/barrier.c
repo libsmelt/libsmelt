@@ -99,19 +99,9 @@ void run_diss(bool fill) {
 	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
     int naccesses; //for no use in barrier, inherited from the bcast benchmark.
     int accesses;
-    int step_size = 4;        
     uint32_t* cores;
 
-    if (numa_available() == 0) {
-        step_size = numa_max_node()+1;
-    }
-
-    if (step_size < 2) {
-        step_size = 2;
-    }
-
-
-    for (int n_thr = step_size; n_thr < num_threads+1; n_thr += step_size) {
+    for (int n_thr = 2; n_thr < num_threads+1; n_thr++) {
 
         if (fill) {
             fprintf(stderr, "Running Dissemination %d fill\n", n_thr);
@@ -202,20 +192,11 @@ void run_smlt(bool fill, bool smlt_dissem) {
 	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
     int naccesses; //for no use in barrier, inherited from the bcast benchmark.
     int accesses;
-    int step_size = 4;        
     uint32_t* cores;
     errval_t err;
     struct smlt_node* node;
 
-    if (numa_available() == 0) {
-        step_size = numa_max_node()+1;
-    }
-
-    if (step_size < 2) {
-        step_size = 2;
-    }
-
-    for (int n_thr = step_size; n_thr < num_threads+1; n_thr += step_size) {
+    for (int n_thr = 2; n_thr < num_threads+1; n_thr++) {
         if (fill) {
             if (smlt_dissem) {
                 fprintf(stderr, "Running dissemination SMLT %d fill\n", n_thr);
@@ -357,9 +338,6 @@ int main(int argc, char** argv){
     // smlt tree barrier
     run_smlt(true, false);
     run_smlt(false, false);
-    // smlt dissemination barrier
-    run_smlt(true, true);
-    run_smlt(false, true);
 }
 
 
