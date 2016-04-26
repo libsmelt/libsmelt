@@ -84,6 +84,18 @@ void* thr_write(void* a)
 
     for (size_t i=0; i<NUM_EXP; i++) {
         struct smlt_qp *qp = queue_pairs[0][0];
+
+        // Wait a while to ensure that receivers already polled the
+        // line, so that it is in shared state
+        assert (tsc_overhead>0);
+        for (size_t i=0;; i++) {
+
+            bench_tsc(); // Waste some time
+            if (i*tsc_overhead>1000) {
+                break;
+            }
+        }
+
         tsc_start = bench_tsc();
         for (uint32_t i = 0; i < arg->num_cores; ++i) {
             qp = queue_pairs[0][arg->cores[i]];
@@ -175,7 +187,7 @@ int run_experiment(uint32_t num_local, uint32_t num_remote)
 
         free(cluster_cores);
     }
-    
+
     printf("\nlocal cores: ");
     err = smlt_platform_cores_of_cluster(0, &cluster_cores, &num_cores);
     if (smlt_err_is_fail(err)) { printf("error getting cores of cluster\n");}
@@ -183,7 +195,7 @@ int run_experiment(uint32_t num_local, uint32_t num_remote)
     for (uint32_t i = 1; i <= num_local; ++i) {
         cores[idx++] = cluster_cores[i];
         printf("%u ", cluster_cores[i]);
-    } 
+    }
     free(cluster_cores);
     printf("\n");
 
