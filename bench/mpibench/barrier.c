@@ -27,7 +27,7 @@ void dissem_bar(void)
     
     char payload = 0;
     for (int r = 0; r < rounds; r++) {
-        for (int i = 0; i <= m; i++) {
+        for (int i = 1; i <= m; i++) {
             peer = (rank + i*step) % nprocs;
             MPI_Isend(&payload, 0, MPI_BYTE, peer, 0, MPI_COMM_WORLD, &req);
         }
@@ -55,7 +55,7 @@ int main(int argc, char **argv){
 	MPI_Comm_size(MPI_COMM_WORLD,&size);
 
     char outname[128];
-    if (argc > 2) {
+    if (argc == 2) {
         sprintf(outname, "barriers_mpi_f%d", size);
     } else {
         sprintf(outname, "barriers_mpi_r%d", size);
