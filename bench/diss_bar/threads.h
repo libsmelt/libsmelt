@@ -19,7 +19,7 @@
 
 extern struct smlt_context* context;
 extern struct smlt_dissem_barrier* bar;
-extern mcs_barrier_t bar_mcs;
+extern mcs_barrier_t* bar_mcs;
  
 __thread struct sk_measurement mes;
 
@@ -163,7 +163,7 @@ void* function_thread_mcs(void * arg_threaddata){
                 thread_id,&(threaddata->tag));
 
  	    sk_m_restart_tsc(&mes);
-        mcs_barrier_wait(&bar_mcs, thread_id);
+        mcs_barrier_wait(bar_mcs, thread_id);
         sk_m_add(&mes);
 	}
     sk_m_print(&mes);

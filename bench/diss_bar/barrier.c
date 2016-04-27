@@ -20,13 +20,18 @@
 #include <smlt_node.h>
 struct smlt_context* context;
 struct smlt_dissem_barrier* bar;
-mcs_barrier_t bar_mcs;
+mcs_barrier_t* bar_mcs;
 
-static uint32_t* placement(uint32_t n, bool do_fill)
+static uint32_t* placement(uint32_t n, bool do_fill, bool hyperthreads)
 {
     uint32_t* result = (uint32_t*) malloc(sizeof(uint32_t)*n);
     uint32_t numa_nodes = numa_max_node()+1;
-    uint32_t num_cores = numa_num_configured_cpus();
+    uint32_t num_cores = 0;
+    if (hyperthreads){
+        num_cores = numa_num_configured_cpus()/2;
+    } else {
+        num_cores = numa_num_configured_cpus();
+    }
     struct bitmask* nodes[numa_nodes];
 
     for (int i = 0; i < numa_nodes; i++) {
@@ -90,7 +95,7 @@ static uint32_t* placement(uint32_t n, bool do_fill)
 }
 
 
-void run_diss(bool fill) {
+void run_diss(bool fill, bool hyperthreads) {
 
 	sharedMemory_t * shm;
 	threaddata_t * threaddata;
@@ -98,7 +103,12 @@ void run_diss(bool fill) {
 	UINT64_T g_timerfreq;
 	UINT64_T * rdtsc_synchro;
 	int rdtsc_latency;
-	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    int num_threads = 0;
+    if (hyperthreads) {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN)/2;
+    } else {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    }
     int naccesses; //for no use in barrier, inherited from the bcast benchmark.
     int accesses;
     uint32_t* cores;
@@ -137,7 +147,7 @@ void run_diss(bool fill) {
 
         initSharedMemory(shm, n_thr);
 
-        cores = placement(n_thr, fill);
+        cores = placement(n_thr, fill, hyperthreads);
 
         initThreads(n_thr, threaddata, shm, g_timerfreq, rdtsc_synchro,
                     rdtsc_latency, naccesses, &accesses, shm->m,
@@ -170,16 +180,22 @@ void run_diss(bool fill) {
 }
 
 
-void run_mcs(bool fill) {
+void run_mcs(bool fill, bool hyperthreads) {
 
 
 	sharedMemory_t * shm;
 	threaddata_t * threaddata;
 	pthread_t * threads;
-	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
     int naccesses; //for no use in barrier, inherited from the bcast benchmark.
     int accesses;
     uint32_t* cores;
+    int num_threads;
+
+    if (hyperthreads) {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN)/2;
+    } else {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    }
 
     for (int n_thr = 2; n_thr < num_threads+1; n_thr++) {
 
@@ -213,10 +229,18 @@ void run_mcs(bool fill) {
             exit(127);
         }
 
+        if(posix_memalign((void**)(&(bar_mcs)), ALIGNMENT,
+                          sizeof(bar_mcs))){
+            //returns 0 on success
+            fprintf(stderr, "Error allocation of thread data structure failed\n");
+            fflush(stderr);
+            exit(127);
+        }
+
         initSharedMemory(shm, n_thr);
-        cores = placement(n_thr, fill);
+        cores = placement(n_thr, fill, hyperthreads);
     
-        mcs_barrier_init(&bar_mcs, n_thr);
+        mcs_barrier_init(bar_mcs, n_thr);
 
         initThreads(n_thr, threaddata, shm, 0, 0, 0, naccesses, &accesses, 
                     shm->m, shm->rounds,
@@ -244,11 +268,12 @@ void run_mcs(bool fill) {
 
         free(threads);
         free(threaddata);
+        free(bar_mcs);
     }
 }
 
 
-void run_smlt(bool fill, bool smlt_dissem) {
+void run_smlt(bool fill, bool smlt_dissem, bool hyperthreads) {
 
 	sharedMemory_t * shm;
 	threaddata_t * threaddata;
@@ -256,12 +281,18 @@ void run_smlt(bool fill, bool smlt_dissem) {
 	UINT64_T g_timerfreq;
 	UINT64_T * rdtsc_synchro;
 	int rdtsc_latency;
-	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
     int naccesses; //for no use in barrier, inherited from the bcast benchmark.
     int accesses;
     uint32_t* cores;
     errval_t err;
     struct smlt_node* node;
+    int num_threads;
+
+    if (hyperthreads) {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN)/2;
+    } else {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    }
 
     for (int n_thr = 2; n_thr < num_threads+1; n_thr++) {
         if (fill) {
@@ -311,7 +342,7 @@ void run_smlt(bool fill, bool smlt_dissem) {
 
         initSharedMemory(shm, n_thr);
 
-        cores = placement(n_thr, fill);
+        cores = placement(n_thr, fill, hyperthreads);
 
         for (int t=0; t < n_thr; t++) {
             fprintf(stderr, "Core[%d]=%d\n", t, cores[t]);
@@ -385,14 +416,6 @@ void run_smlt(bool fill, bool smlt_dissem) {
 
 int main(int argc, char** argv){
 
-
-    run_mcs(true);
-    run_mcs(false);
-
-
-    run_diss(true);
-    run_diss(false);
-
     int total_threads = sysconf(_SC_NPROCESSORS_ONLN);
     errval_t err;
 
@@ -402,12 +425,25 @@ int main(int argc, char** argv){
         exit(1);
     }
     
-    // smlt tree barrier
-    run_smlt(true, false);
-    run_smlt(false, false);
+    bool hyper = false;
+    if(argc == 2) {
+        printf("HYPERTHREADS ENABLED");
+        hyper = true;
+    }
 
-    run_smlt(true, true);
-    run_smlt(false, true);
+    // smlt tree barrier
+    run_smlt(true, false, hyper);
+    run_smlt(false, false, hyper);
+
+    run_smlt(true, true, hyper);
+    run_smlt(false, true, hyper);
+
+    run_mcs(true, hyper);
+    run_mcs(false, hyper);
+
+    run_diss(true, hyper);
+    run_diss(false, hyper);
+
 }
 
 

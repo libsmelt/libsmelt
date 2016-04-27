@@ -8,7 +8,7 @@ static uint32_t* placement(uint32_t n, bool do_fill)
 {
     uint32_t* result = (uint32_t*) malloc(sizeof(uint32_t)*n);
     uint32_t numa_nodes = numa_max_node()+1;
-    uint32_t num_cores = numa_num_configured_cpus();
+    uint32_t num_cores = numa_num_configured_cpus()/2;
     struct bitmask* nodes[numa_nodes];
 
     for (int i = 0; i < numa_nodes; i++) {
@@ -70,7 +70,7 @@ static uint32_t* placement(uint32_t n, bool do_fill)
 }
 
 int main(int argc, char** argv){
-    uint32_t num_cores = numa_num_configured_cpus();
+    uint32_t num_cores = numa_num_configured_cpus()/2;
     uint32_t num_nodes = numa_max_node()+1;
 
     if (num_nodes < 2) {
@@ -79,9 +79,9 @@ int main(int argc, char** argv){
 
     FILE* f;
     char name[128];
-    for (int j = num_nodes; j < num_cores+1; j+=num_nodes) {
+    for (int j = 2; j < num_cores+1; j++) {
         uint32_t* rr = placement(j, false);
-        uint32_t* fill = placement(j, false);
+        uint32_t* fill = placement(j, true);
         sprintf(name,"rank_files/rfile_fill_%d", j);
         f = fopen(name, "w+");
 

@@ -126,9 +126,9 @@ errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier* bar)
         }
        
         // recv from peer
-        peer = (my_id - step) % bar->num_threads;
-        if (peer < 0) {
-           peer = bar->num_threads + peer;
+        peer = (my_id - step);
+        while (peer < 0) {
+           peer = peer + bar->num_threads;
         }
 
         err = smlt_channel_recv_notification(bar->channels[my_id*
