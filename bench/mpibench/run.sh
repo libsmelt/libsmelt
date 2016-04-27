@@ -26,7 +26,9 @@ else
     ./parse_cores
 fi
 
-
+<<comment
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n 32 -rf rank_files/rfile_fill_32 -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier 
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n 32 -rf rank_files/rfile_rr_32 -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier 1
 echo "run benchmark"
 FILES=rank_files/*
 for f in $FILES
@@ -37,6 +39,7 @@ do
 
     S1='rr'
     S2=${SPLIT[2]}
+    echo ${SPLIT[2]}
 <<c
     if [${SPLIT[3]} = 32]
     then
@@ -55,4 +58,11 @@ c
         /home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n ${SPLIT[3]} -rf $f -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier 
     fi
 done
+comment
+for i in {2..32}
+do
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n $i -rf rank_files/rfile_fill_$i -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier 
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n $i -rf rank_files/rfile_rr_$i -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier 1
+done
+
 rm -r rank_files

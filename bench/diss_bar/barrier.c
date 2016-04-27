@@ -332,13 +332,6 @@ void run_smlt(bool fill, bool smlt_dissem, bool hyperthreads) {
             fflush(stderr);
             exit(127);
         }
-        if(posix_memalign((void **)(&rdtsc_synchro), ALIGNMENT,
-                                    sizeof(rdtsc_synchro)*NITERS)){
-            //returns 0 on success
-            fprintf(stderr, "Error allocation of rdtsc_synchro failed\n");
-            fflush(stderr);
-            exit(127);
-        }
 
         initSharedMemory(shm, n_thr);
 
@@ -431,6 +424,8 @@ int main(int argc, char** argv){
         hyper = true;
     }
 
+    run_diss(true, hyper);
+    run_diss(false, hyper);
     // smlt tree barrier
     run_smlt(true, false, hyper);
     run_smlt(false, false, hyper);
@@ -441,8 +436,6 @@ int main(int argc, char** argv){
     run_mcs(true, hyper);
     run_mcs(false, hyper);
 
-    run_diss(true, hyper);
-    run_diss(false, hyper);
 
 }
 
