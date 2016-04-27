@@ -32,9 +32,9 @@ void dissem_bar(void)
             MPI_Isend(&payload, 0, MPI_BYTE, peer, 0, MPI_COMM_WORLD, &req);
         }
 
-        for (int i = 0; i <= m; i++) {
-            peer = (rank - i*step) % nprocs;
-            if (peer < 0) {
+        for (int i = 1; i <= m; i++) {
+            peer = (rank - i*step);
+            while (peer < 0) {
                 peer = nprocs+peer;
             }
             MPI_Recv(&payload, 0, MPI_BYTE, peer, 0, MPI_COMM_WORLD, &stat);
