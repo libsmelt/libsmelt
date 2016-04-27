@@ -10,6 +10,8 @@
 #include <numa.h>
 #include <stdbool.h>
 #include "threads.h"
+#include "mcs.h"
+
 
 #include <smlt.h>
 #include <smlt_generator.h>
@@ -18,7 +20,7 @@
 #include <smlt_node.h>
 struct smlt_context* context;
 struct smlt_dissem_barrier* bar;
-
+mcs_barrier_t bar_mcs;
 
 static uint32_t* placement(uint32_t n, bool do_fill)
 {
@@ -132,18 +134,8 @@ void run_diss(bool fill) {
             fflush(stderr);
             exit(127);
         }
-        if(posix_memalign((void **)(&rdtsc_synchro), ALIGNMENT,
-                                    sizeof(rdtsc_synchro)*NITERS)){
-            //returns 0 on success
-            fprintf(stderr, "Error allocation of rdtsc_synchro failed\n");
-            fflush(stderr);
-            exit(127);
-        }
 
         initSharedMemory(shm, n_thr);
-        init_time(&g_timerfreq, &rdtsc_latency);
-        fprintf(stderr,"Frequency %lu\n", g_timerfreq);
-
 
         cores = placement(n_thr, fill);
 
@@ -161,7 +153,84 @@ void run_diss(bool fill) {
             fprintf(stderr, "Core[%d]=%d\n", t, cores[t]);
         }
 
-        generate_rdtscsynchro(rdtsc_synchro, NITERS, g_timerfreq);
+        //let them start
+        for(int t=0; t < n_thr; t++)
+            threaddata[t].ack = 0;
+
+        // wait for them to finish
+
+        for (int t=0; t < n_thr; t++){
+            pthread_join(threads[t],NULL);
+        }
+
+        free(threads);
+        free(threaddata);
+        free(shm);
+    }
+}
+
+
+void run_mcs(bool fill) {
+
+
+	sharedMemory_t * shm;
+	threaddata_t * threaddata;
+	pthread_t * threads;
+	int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    int naccesses; //for no use in barrier, inherited from the bcast benchmark.
+    int accesses;
+    uint32_t* cores;
+
+    for (int n_thr = 2; n_thr < num_threads+1; n_thr++) {
+
+        if (fill) {
+            fprintf(stderr, "Running MCS %d fill\n", n_thr);
+        } else {
+            fprintf(stderr, "Running MCS %d rr\n", n_thr);
+        }
+
+        if(posix_memalign((void**)(&(shm)), ALIGNMENT,
+                          sizeof(sharedMemory_t))){
+            //returns 0 on success
+            fprintf(stderr, "Error allocation of shared memory structure failed\n");
+            fflush(stderr);
+            exit(127);
+        }
+
+        if(posix_memalign((void**)(&threads),
+                          ALIGNMENT,n_thr*sizeof(pthread_t))){
+            //returns 0 on success
+            fprintf(stderr, "Error allocation of threads failed\n");
+            fflush(stderr);
+            exit(127);
+        }
+
+        if(posix_memalign((void**)(&(threaddata)), ALIGNMENT,
+                          n_thr*sizeof(threaddata_t))){
+            //returns 0 on success
+            fprintf(stderr, "Error allocation of thread data structure failed\n");
+            fflush(stderr);
+            exit(127);
+        }
+
+        initSharedMemory(shm, n_thr);
+        cores = placement(n_thr, fill);
+    
+        mcs_barrier_init(&bar_mcs, n_thr);
+
+        initThreads(n_thr, threaddata, shm, 0, 0, 0, naccesses, &accesses, 
+                    shm->m, shm->rounds,
+                    cores, fill, false);
+
+        for(int t=0 ; t < n_thr; t++){
+            pthread_create(&threads[t],NULL,function_thread_mcs, 
+                           (void *)(&(threaddata[t])));
+            while (!threaddata[t].ack); // initialized thread
+        }
+
+        for (int t=0; t < n_thr; t++) {
+            fprintf(stderr, "Core[%d]=%d\n", t, cores[t]);
+        }
 
         //let them start
         for(int t=0; t < n_thr; t++)
@@ -175,8 +244,6 @@ void run_diss(bool fill) {
 
         free(threads);
         free(threaddata);
-        free(rdtsc_synchro);
-        free(shm);
     }
 }
 
@@ -243,8 +310,6 @@ void run_smlt(bool fill, bool smlt_dissem) {
         }
 
         initSharedMemory(shm, n_thr);
-        init_time(&g_timerfreq, &rdtsc_latency);
-        fprintf(stderr,"Frequency %lu\n", g_timerfreq);
 
         cores = placement(n_thr, fill);
 
@@ -293,8 +358,6 @@ void run_smlt(bool fill, bool smlt_dissem) {
             while (!threaddata[t].ack); // initialized thread
         }
 
-        generate_rdtscsynchro(rdtsc_synchro, NITERS, g_timerfreq);
-
         //let them start
         for(int t=0; t < n_thr; t++)
             threaddata[t].ack = 0;
@@ -311,7 +374,6 @@ void run_smlt(bool fill, bool smlt_dissem) {
 
         free(threads);
         free(threaddata);
-        free(rdtsc_synchro);
         free(shm);
         if (smlt_dissem) {
             smlt_dissem_barrier_destroy(bar);       
@@ -322,6 +384,11 @@ void run_smlt(bool fill, bool smlt_dissem) {
 
 
 int main(int argc, char** argv){
+
+
+    run_mcs(true);
+    run_mcs(false);
+
 
     run_diss(true);
     run_diss(false);
@@ -338,6 +405,9 @@ int main(int argc, char** argv){
     // smlt tree barrier
     run_smlt(true, false);
     run_smlt(false, false);
+
+    run_smlt(true, true);
+    run_smlt(false, true);
 }
 
 

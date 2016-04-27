@@ -12,14 +12,15 @@
 #include <math.h>
 #include "barrier.h"
 #include "measurement_framework.h"
+#include "mcs.h"
 
 #include <smlt.h>
 #include <smlt_barrier.h>
 
 extern struct smlt_context* context;
 extern struct smlt_dissem_barrier* bar;
-
-
+extern mcs_barrier_t bar_mcs;
+ 
 __thread struct sk_measurement mes;
 
 /* data needed by each thread */
@@ -114,14 +115,58 @@ void* function_thread (void * arg_threaddata){
 
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
                 thread_id,&(threaddata->tag));
-
+		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                thread_id,&(threaddata->tag));
  	    sk_m_restart_tsc(&mes);
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
                 thread_id,&(threaddata->tag));
         sk_m_add(&mes);
 	}
-   sk_m_print(&mes);
-//    sk_m_print_analysis(&mes);
+    sk_m_print(&mes);
+}
+
+
+void* function_thread_mcs(void * arg_threaddata){
+	my_timer_t timer;
+	threaddata_t * threaddata = ((threaddata_t*)arg_threaddata);
+	unsigned int thread_id = threaddata->thread_id;
+
+	int i,n,j,m;
+
+    char outname[512];
+	//set affinity
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(threaddata->core_id,&mask);
+	pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
+
+    if (threaddata->fill) {
+        sprintf(outname, "barriers_mcs_fill%d", threaddata->num_threads);
+    } else {
+        sprintf(outname, "barriers_mcs_rr%d", threaddata->num_threads);
+    }
+
+
+    uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*NITERS);
+    sk_m_init(&mes, NITERS, outname, buf);
+	threaddata->ack = 1;
+
+	while(threaddata->ack);
+       
+
+	int index_rdtsc=0;
+	for (n=0; n<NITERS; n++){
+
+		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                thread_id,&(threaddata->tag));
+		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                thread_id,&(threaddata->tag));
+
+ 	    sk_m_restart_tsc(&mes);
+        mcs_barrier_wait(&bar_mcs, thread_id);
+        sk_m_add(&mes);
+	}
+    sk_m_print(&mes);
 }
 
 
@@ -168,6 +213,8 @@ void* function_thread_smlt(void * arg_threaddata){
 	int index_rdtsc=0;
 	for (n=0; n<NITERS; n++){
 		//TSC syncrho
+		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                thread_id,&(threaddata->tag));
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
                 thread_id,&(threaddata->tag));
 

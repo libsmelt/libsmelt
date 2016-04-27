@@ -203,7 +203,7 @@ bench/shm-mp-bench: $(DEPS) $(EXTERNAL_OBJS) bench/shm-mp-bench.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/shm-mp-bench.c -lm -o $@
 
 bench/bar-bench: bench/diss_bar/barrier.c
-	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c $(LIBS) -lpthread -lsmltrt -lm -o $@
+	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c bench/diss_bar/mcs.c $(LIBS) -lpthread -lsmltrt -lm -o $@
 
 # Build shared library
 # --------------------------------------------------
