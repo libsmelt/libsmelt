@@ -19,12 +19,21 @@ int reduceKernel(int totalReps, int fill){
 	char outname[512];
 	int i;
     	char address = 1;
+
+	//ensure that master runs in core 0
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(0,&mask);
+	pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
+
+
+
 	if (fill) {
         	sprintf(outname, "barriers_omp_fill%d", omp_get_max_threads());
     	} else {
         	sprintf(outname, "barriers_omp_rr%d", omp_get_max_threads());
     	}
-	mes = (struct sk_measurement*) malloc(sizeof(struct sk_measurement)*(omp_get_max_threads()+1));
+	mes = (struct sk_measurement*) malloc(sizeof(struct sk_measurement)*(omp_get_max_threads()));
 	for(i=0; i<omp_get_max_threads(); i++){
 		uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*totalReps);
 		sk_m_init(&(mes[i]), totalReps, outname, buf);
@@ -32,29 +41,31 @@ int reduceKernel(int totalReps, int fill){
 	uint32_t* cores = placement(omp_get_max_threads(), fill);
 	for (repIter=0; repIter<totalReps; repIter++){	
 /* Open the parallel region */
-		sk_m_restart_tsc(&(mes[omp_get_max_threads()]));	
+	//	sk_m_restart_tsc(&(mes[omp_get_max_threads()]));	
 
 #pragma omp parallel default(none) \
+	private(mask)\
 	shared(mes,cores)\
 	reduction(+:address)
 		{
 		int tid =omp_get_thread_num(); 
-		sk_m_restart_tsc(&(mes[tid]));	
+//		sk_m_restart_tsc(&(mes[tid]));	
 
 	//set affinity
-		cpu_set_t mask;
 		CPU_ZERO(&mask);
 		CPU_SET(cores[tid],&mask);
 		pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
 		address+=1;
 #pragma omp barrier
 #pragma omp barrier 
-		sk_m_add(&(mes[tid]));	
+		sk_m_restart_tsc(&(mes[tid]));	
+	//	sk_m_add(&(mes[tid]));	
 		}
-		sk_m_add(&(mes[omp_get_max_threads()]));	
+		//sk_m_add(&(mes[omp_get_max_threads()]));	
+		sk_m_add(&(mes[tid]));	
 	}
-	for(i=0; i<=omp_get_max_threads(); i++)
-   		sk_m_print(&(mes[i]),i);
+//	for(i=0; i<=omp_get_max_threads(); i++)
+   		sk_m_print(&(mes[0]),0);
 	return 0;
 }
 int reduceDriver(int totalReps){
