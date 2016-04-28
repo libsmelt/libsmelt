@@ -56,23 +56,22 @@ int main(int argc, char **argv){
 
     char outname[128];
     if (argc == 2) {
-        sprintf(outname, "barriers_mpi_r%d", size);
+        sprintf(outname, "broadcast_mpisync_%d", size);
     } else {
-        sprintf(outname, "barriers_mpi_f%d", size);
+        sprintf(outname, "broadcast_mpi_%d", size);
     }
-
     uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*NITERS);
     sk_m_init(&mes, NVALUES, outname, buf);
 
+    char a = 0;
 	for(int n=0; n<NITERS; n++){
         // synchro
-        dissem_bar();
-        dissem_bar();
- //       MPI_Barrier(MPI_COMM_WORLD);
- //       MPI_Barrier(MPI_COMM_WORLD);
-
+        if (argc == 2) {
+            dissem_bar();
+            dissem_bar();
+        }
         sk_m_restart_tsc(&mes);
-        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Bcast((void*) &a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
         sk_m_add(&mes);
 	}
 
