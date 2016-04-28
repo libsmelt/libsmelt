@@ -68,8 +68,8 @@ int main(int argc, char **argv){
         // synchro
         dissem_bar();
         dissem_bar();
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Barrier(MPI_COMM_WORLD);
+ //       MPI_Barrier(MPI_COMM_WORLD);
+ //       MPI_Barrier(MPI_COMM_WORLD);
 
         sk_m_restart_tsc(&mes);
         MPI_Barrier(MPI_COMM_WORLD);
