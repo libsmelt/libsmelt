@@ -2,6 +2,7 @@
 #include <time.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "measurement_framework.h"
 
 #include <stdio.h>
@@ -55,22 +56,36 @@ int main(int argc, char **argv){
 	MPI_Comm_size(MPI_COMM_WORLD,&size);
 
     char outname[128];
+    bool sync = false;
     if (argc == 2) {
         sprintf(outname, "barriers_mpi_r%d", size);
+        sync = true;
     } else {
         sprintf(outname, "barriers_mpi_f%d", size);
+        sync = true;
     }
+
+    if (argc == 3) {
+        int arg = 0;
+        arg = atol(argv[2]);
+        if (arg > 1) {
+            sprintf(outname, "barriers_mpisync_%d", size);
+            sync = true;
+        } else {
+            sprintf(outname, "barriers_mpi_%d", size);
+            sync = false;
+        }
+    } 
 
     uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*NITERS);
     sk_m_init(&mes, NVALUES, outname, buf);
 
 	for(int n=0; n<NITERS; n++){
         // synchro
-        dissem_bar();
-        dissem_bar();
- //       MPI_Barrier(MPI_COMM_WORLD);
- //       MPI_Barrier(MPI_COMM_WORLD);
-
+        if (sync) {
+            dissem_bar();
+            dissem_bar();
+        }
         sk_m_restart_tsc(&mes);
         MPI_Barrier(MPI_COMM_WORLD);
         sk_m_add(&mes);
