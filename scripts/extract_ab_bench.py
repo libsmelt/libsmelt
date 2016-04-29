@@ -63,7 +63,7 @@ def parse_log(s=sys.stdin, output=True):
 
             # XXX store with respect to topo
             if title.startswith(t+'_'):
-                (mean, stderr, vmin, vmax, median) = statistics_cropped(values)
+                (mean, stderr, median, vmin, vmax) = statistics_cropped(values)
                 topo = title.replace(t+'_', '')
                 if not topo in res:
                     res[topo] = []ar
