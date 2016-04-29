@@ -99,6 +99,7 @@ void* thr_write(void* a)
         tsc_start = bench_tsc();
         for (uint32_t i = 0; i < arg->num_cores; ++i) {
             qp = queue_pairs[0][arg->cores[i]];
+            tsc_start = bench_tsc(); // update TSC - measure only LAST send
             smlt_queuepair_send(qp, msg);
         }
         tsc_end = bench_tsc();
