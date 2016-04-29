@@ -56,9 +56,9 @@ int main(int argc, char **argv){
 
     char outname[128];
     if (argc == 2) {
-        sprintf(outname, "ab_mpisync_%d", size);
+        sprintf(outname, "reduction_mpisync_%d", size);
     } else {
-        sprintf(outname, "ab_mpi_%d", size);
+        sprintf(outname, "reduction_mpi_%d", size);
     }
     uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*NITERS);
     sk_m_init(&mes, NVALUES, outname, buf);
@@ -73,7 +73,8 @@ int main(int argc, char **argv){
         }
 
         sk_m_restart_tsc(&mes);
-        MPI_Bcast((void*) &a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
+        MPI_Reduce((void*) &a, (void*) &global, 1, MPI_BYTE, MPI_SUM, 0,
+                   MPI_COMM_WORLD);
         sk_m_add(&mes);
 	}
 

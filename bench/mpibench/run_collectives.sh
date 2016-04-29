@@ -22,4 +22,12 @@ fi
 
 /home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n $NUMLOG -rf rank_files/rfile_fill_$NUMLOG -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self broadcast 
 
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n $NUMLOG -rf rank_files/rfile_fill_$NUMLOG -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier 1
+
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n $NUMLOG -rf rank_files/rfile_fill_$NUMLOG -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self barrier
+
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n $NUMLOG -rf rank_files/rfile_fill_$NUMLOG -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self reduction 1
+
+/home/haeckir/openmpi-1.10.2/bin/mpirun -H localhost -n $NUMLOG -rf rank_files/rfile_fill_$NUMLOG -mca rmaps_rank_file_physical 1 -mca --bind-to core -mca blt sm,self reduction
+
 rm -r rank_files
