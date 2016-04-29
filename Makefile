@@ -113,6 +113,7 @@ all: $(TARGET) \
 		 test/channel-test \
 		 bench/bar-bench \
 	     bench/ab-bench-new \
+	     bench/colbench \
 	     bench/ab-bench-scale \
 		 bench/ab-bench-new_s \
 		 bench/pairwise_raw \
@@ -202,6 +203,9 @@ bench/multimessage: $(DEPS) $(EXTERNAL_OBJS) bench/multimessage.c
 bench/shm-mp-bench: $(DEPS) $(EXTERNAL_OBJS) bench/shm-mp-bench.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/shm-mp-bench.c -lm -o $@
 
+bench/colbench: $(DEPS) $(EXTERNAL_OBJS) bench/colbench.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/colbench.c -lm -o $@
+
 bench/bar-bench: bench/diss_bar/barrier.c
 	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c bench/diss_bar/mcs.c $(LIBS) -lpthread -lsmltrt -lm -o $@
 
@@ -230,7 +234,7 @@ clean:
 	rm -f test/context-test bench/ab-bench-new test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 	rm -f test/smlt-mp-test bench/bar-bench bench/ab-bench-scale
-	rm -f test/dissem-bar-test bench/shm-mp-bench
+	rm -f test/dissem-bar-test bench/shm-mp-bench bench/colbench
 debug:
 	echo $(HEADERS)
 
