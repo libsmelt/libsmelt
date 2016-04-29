@@ -204,11 +204,18 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     
     Json::Value root;   // 'root' will contain the root value after parsing.
     root["machine"] = thishost;
+
+    const char *topo_name;
+
     if (tree_name == NULL) {
-        root["topology"] = "adaptivetree";
+        printf("Getting topo from env string\n");
+        topo_name = get_env_str("SMLT_TOPO", "adaptivetree");
     } else {
-        root["topology"] = tree_name;
+        topo_name = tree_name;
     }
+
+    root["topology"] = topo_name;
+    printf("Requesting topology: %s\n", topo_name);
 
     Json::Value coreids;
 
