@@ -98,6 +98,17 @@ struct smlt_topology_node *smlt_topology_get_first_node(struct smlt_topology *to
  */
 struct smlt_topology_node *smlt_topology_node_next(struct smlt_topology_node *node);
 
+
+/**
+ * @brief gets the topology node with id
+ *
+ * @param topo the topology
+ * @param id the node id
+ *
+ * @return
+ */
+struct smlt_topology_node *smlt_topology_node_by_id(struct smlt_topology* topo, smlt_nid_t id);
+
 /**
  * @brief gets the parent topology ndoe
  *
@@ -277,10 +288,9 @@ static inline bool smlt_topology_does_shared_memory(void)
  *
  * @returns pointer to the parent, NULL if the root
  */
-static inline struct smlt_node *smlt_topology_get_parent(void)
+static inline struct smlt_node *smlt_topology_get_parent_id(void)
 {
     return NULL;
-    //return smlt_node_self->parent;
 }
 
 /**

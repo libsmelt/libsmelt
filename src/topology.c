@@ -325,6 +325,19 @@ struct smlt_topology_node *smlt_topology_node_next(struct smlt_topology_node *no
 }
 
 /**
+ * @brief gets the topology node with id
+ *
+ * @param the topology node
+ *
+ * @return
+ */
+struct smlt_topology_node *smlt_topology_node_by_id(struct smlt_topology* topo, smlt_nid_t id)
+{
+    return &topo->all_nodes[id];
+}
+
+
+/**
  * @brief gets the parent topology ndoe
  *
  * @param node the current topology node
