@@ -284,6 +284,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
         node->num_children = max_child;
     }
 
+    
     for (int i = 0; i < model->len; i++) {
         for (int j = 0; j < model->len; j++) {
             if ((model->leafs[j] == i) && (i != 0)) {
@@ -333,7 +334,7 @@ struct smlt_topology_node *smlt_topology_node_next(struct smlt_topology_node *no
  */
 struct smlt_topology_node *smlt_topology_node_by_id(struct smlt_topology* topo, smlt_nid_t id)
 {
-    return &topo->all_nodes[id];
+    return &(topo->all_nodes[id]);
 }
 
 
@@ -346,6 +347,7 @@ struct smlt_topology_node *smlt_topology_node_by_id(struct smlt_topology* topo, 
  */
 struct smlt_topology_node *smlt_topology_node_parent(struct smlt_topology_node *node)
 {
+
     return node->parent;
 }
 
@@ -362,6 +364,27 @@ struct smlt_topology_node **smlt_topology_node_children(struct smlt_topology_nod
 {
     *children = node->num_children;
     return node->children;
+}
+
+/**
+ * @brief gets the parent topology ndoe
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+uint32_t* smlt_topology_node_children_ids(struct smlt_topology_node *node,
+                                          uint32_t* children)
+{
+    uint32_t* result;
+    result = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*node->num_children,
+                                 SMLT_DEFAULT_ALIGNMENT, true);
+
+    *children = node->num_children;
+    for (int i = 0; i < *children; i++) {
+        result[i] = node->children[i]->node_id;
+    }
+    return result;
 }
 
 

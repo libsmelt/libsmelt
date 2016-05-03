@@ -38,6 +38,16 @@ errval_t smlt_reduce(struct smlt_context *ctx,
                      struct smlt_msg *result,
                      smlt_reduce_fn_t operation);
 
+
+/**
+ * @brief checks if the children already send something for the reduction
+ *
+ * @param ctx       The smelt context
+ *
+ * @returns bool if there is something to receive
+ */
+bool smlt_reduce_can_recv(struct smlt_context *ctx);
+
 /**
  * @brief performs a reduction without any payload on teh current instance
  *

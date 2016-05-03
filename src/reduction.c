@@ -109,6 +109,30 @@ errval_t smlt_reduce(struct smlt_context *ctx,
 }
 
 /**
+ * @brief checks if the children already send something for the reduction
+ *
+ * @param ctx       The smelt context
+ *
+ * @returns bool if there is something to receive
+ */
+bool smlt_reduce_can_recv(struct smlt_context *ctx)
+{
+    errval_t err;
+    uint32_t count = 0;
+    struct smlt_channel *children;
+    err =  smlt_context_get_children_channels(ctx, &children, &count);
+    if (smlt_err_is_fail(err)) {
+        return err; // TODO: adding more error values
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (smlt_channel_can_recv(&children[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+/**
  * @brief performs a reduction without any payload on teh current instance
  *
  * @param ctx       The smelt context

@@ -53,6 +53,16 @@ errval_t smlt_broadcast_notify_subtree(struct smlt_context *ctx);
 errval_t smlt_broadcast(struct smlt_context *ctx,
                         struct smlt_msg *msg);
 
+
+/**
+ * @brief checks if the node can recv from his parent
+ * 
+ * @param ctx   the Smelt context to broadcast on
+ * 
+ * @returns bool if parent has message for node
+ */
+bool smlt_broadcast_can_recv(struct smlt_context *ctx);
+
 /**
  * @brief performs a broadcast without any payload to all nodes
  *

@@ -130,6 +130,16 @@ struct smlt_topology_node **smlt_topology_node_children(struct smlt_topology_nod
                                                         uint32_t* children);
 
 /**
+ * @brief gets the parent topology ndoe
+ *
+ * @param node the current topology node
+ *
+ * @return
+ */
+uint32_t* smlt_topology_node_children_ids(struct smlt_topology_node *node,
+                                          uint32_t* children);
+
+/**
  * @brief gets the shared memory children of a topology node
  *
  * @param node the current topology node
@@ -259,7 +269,6 @@ uint32_t smlt_topology_get_num_nodes(struct smlt_topology *topo);
  * @return size of the smelt cluster
  */
 uint32_t smlt_topology_get_cluster_size(coreid_t coordinator, int clusterid);
-
 
 /**
  * @brief checks if the node does message passing

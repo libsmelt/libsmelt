@@ -286,7 +286,6 @@ static inline errval_t smlt_node_recv(struct smlt_node *node,
                                       struct smlt_msg *msg)
 {
     SMLT_NODE_CHECK(node);
-    
     return smlt_channel_recv(&node->chan[smlt_node_self_id], msg);
 }
 

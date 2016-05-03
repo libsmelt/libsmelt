@@ -115,6 +115,36 @@ errval_t smlt_broadcast(struct smlt_context *ctx,
     }
 }
 
+
+/**
+ * @brief checks if the node can recv from his parent
+ * 
+ * @param ctx   the Smelt context to broadcast on
+ * 
+ * @returns bool if parent has message for node
+ */
+bool smlt_broadcast_can_recv(struct smlt_context *ctx)
+{
+    errval_t err;
+
+    if (smlt_context_is_root(ctx)) {
+        return false;
+    } else {
+
+        struct smlt_channel *parent;
+        err =  smlt_context_get_parent_channel(ctx, &parent);
+        if (smlt_err_is_fail(err)) {
+            return false; // TODO: adding more error values
+        }
+        
+        if (smlt_channel_can_recv(parent)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
 /**
  * @brief performs a broadcast without any payload to all nodes
  *
