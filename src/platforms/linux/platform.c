@@ -35,8 +35,8 @@ uint32_t smlt_platform_init(uint32_t num_proc)
     SMLT_NOTICE("UMP sleep disabled\n");
 #endif
 
-    if (num_proc > numa_num_possible_cpus()) {
-        num_proc = numa_num_possible_cpus();
+    if (num_proc > numa_num_configured_cpus()) {
+        num_proc = numa_num_configured_cpus();
     }
 
     return num_proc;

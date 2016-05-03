@@ -31,8 +31,8 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 5
-#define NUM_EXP 4
+#define NUM_TOPO 6
+#define NUM_EXP 1
 
 uint32_t num_topos = NUM_TOPO;
 uint32_t num_threads;
@@ -200,7 +200,7 @@ static void* ab(void* a)
     }
     return 0;
 }
-
+/*
 static void* reduction(void* a)
 {
     char outname[1024];
@@ -242,7 +242,7 @@ static void* reduction(void* a)
     }
     return 0;
 }
-
+*
 static void* barrier(void* a)
 {
     char outname[1024];
@@ -321,7 +321,7 @@ static void* agreement(void* a)
     }
     return 0;
 }
-
+*/
 int main(int argc, char **argv)
 {
     total = sysconf(_SC_NPROCESSORS_ONLN);
@@ -333,16 +333,16 @@ int main(int argc, char **argv)
     typedef void* (worker_func_t)(void*);
     worker_func_t * workers[NUM_EXP] = {
         &ab,
-        &reduction,
-        &agreement,
-        &barrier,
+        //&reduction,
+        //&agreement,
+        //&barrier,
     };
 
     const char *labels[NUM_EXP] = {
         "Atomic Broadcast",
-        "Reduction",
-        "Agreement",
-        "Barrier",
+        //"Reduction",
+        //"Agreement",
+        //"Barrier",
     };
 
     char *topo_names[NUM_TOPO] = {
@@ -351,7 +351,7 @@ int main(int argc, char **argv)
         "cluster",
         "badtree",
         //"fibonacci",
-        //"sequential",
+        "sequential",
         "adaptivetree",
     };
 
@@ -374,19 +374,8 @@ int main(int argc, char **argv)
         }
     }
 
-
-    int step_size = 0;
-    if (numa_available() == 0) {
-        int num_nodes = numa_max_node()+1;
-        step_size = total/num_nodes;
-    }   
-
-    if (step_size < 2) {
-        step_size = 2;
-    }
-
     for (int top = 0; top < NUM_TOPO; top++) {
-        for (int j = step_size; j < total+1; j+= step_size) {
+        for (int j = 2; j < total+1; j++) {
             num_threads = j;
             cores = placement(num_threads, true);
             pthread_barrier_init(&bar, NULL, num_threads);

@@ -66,7 +66,7 @@ int runBarrier(int totalReps, int fill, bool sync){
 	if (sync) {
         sprintf(outname, "barriers_ompsync_fill%d", omp_get_max_threads());
     } else {
-        sprintf(outname, "barriers_omp_rr%d", omp_get_max_threads());
+        sprintf(outname, "barriers_omp_fill%d", omp_get_max_threads());
     }
 	mes = (struct sk_measurement*) malloc(sizeof(struct sk_measurement)*omp_get_max_threads());
 	for(i=0; i<omp_get_max_threads(); i++){
