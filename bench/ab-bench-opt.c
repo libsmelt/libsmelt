@@ -212,10 +212,7 @@ uint32_t cores_gottardo[8] = {0,4,8,12,16,20,24,28};
 uint32_t leafs_gottardo[32] = {0, 16, 12, 20, 24, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-uint32_t leafs_adaptive_gottardo[32] = {0, 8, 16, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t num_leafs_gottardo = 6;
-uint32_t num_leafs_adaptive_gottardo = 4;
 uint32_t root_gottardo = 8;
 uint32_t num_cores_gottardo = 32;
 
@@ -280,11 +277,11 @@ static void* ab(void* a)
 
 
             if (smlt_node_get_id() == last_node) {
-                smlt_channel_send(&chan[last_node][0], msg);
+                smlt_send(root, msg);
             }
 
             if (smlt_context_is_root(context)) {
-                smlt_channel_recv(&chan[last_node][0], msg);
+                smlt_recv(last_node, msg);
                 smlt_broadcast(context, msg);
             } else {
                 smlt_broadcast(context, msg);
@@ -397,10 +394,14 @@ int main(int argc, char **argv)
             }
             leafs = model->leafs;
             for (int i = 0; i < num_cores; i++) {
-                if ((i != 0) && (model->leafs[i] == 0)) {
-                    num_leafs = i-1;
+                fprintf(stderr,"Leafs[%d]=%d \n", i, leafs[i]);
+                if ((i != 0) && ((model->leafs[i] == 0) || model->leafs[i] > num_cores)) {
+                    num_leafs = i;
+                    break;
                 }
             }
+            fprintf(stderr, "Num leafs %d \n",num_leafs);
+            root = model->root;
         }
 
         smlt_topology_create(model, topo_names[j], &topo);
