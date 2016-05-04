@@ -395,9 +395,11 @@ int main(int argc, char **argv)
                 printf("Failed to generated model, aborting\n");
                 return 1;
             }
-            if (strcmp(name, "gottardo") == 0) {
-                leafs = leafs_adaptive_gottardo;
-                num_leafs = num_leafs_adaptive_gottardo;
+            leafs = model->leafs;
+            for (int i = 0; i < num_cores; i++) {
+                if ((i != 0) && (model->leafs[i] == 0)) {
+                    num_leafs = i-1;
+                }
             }
         }
 
