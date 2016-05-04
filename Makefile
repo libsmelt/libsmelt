@@ -116,6 +116,7 @@ all: $(TARGET) \
 	     bench/colbench \
 	     bench/ab-bench-scale \
 		 bench/ab-bench-new_s \
+		 bench/ab-bench-opt \
 		 bench/ab-throughput \
 		 bench/pairwise_raw \
 		 bench/pairwise_raw_s \
@@ -203,6 +204,9 @@ bench/shm-mp-bench: $(DEPS) $(EXTERNAL_OBJS) bench/shm-mp-bench.c
 
 bench/colbench: $(DEPS) $(EXTERNAL_OBJS) bench/colbench.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/colbench.c -lm -o $@
+
+bench/ab-bench-opt: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench-opt.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-bench-opt.c -lm -o $@
 
 bench/bar-bench: bench/diss_bar/barrier.c
 	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c bench/diss_bar/mcs.c $(LIBS) -lpthread -lsmltrt -lm -o $@
