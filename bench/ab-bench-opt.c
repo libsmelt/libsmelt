@@ -87,6 +87,7 @@ uint16_t r815[32*32] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // 31
 };
 
+uint32_t cores_r815[8] = {0,4,8,12,16,20,24,28};
 uint32_t leafs_r815[32] = {4, 8, 16, 12, 20, 24, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t num_leafs_r815 = 7;
@@ -161,8 +162,7 @@ uint16_t r820[64*64] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 63
 };
 
-
-
+uint32_t cores_r820[8] = {0,4,8,12,16,20,24,28};
 uint32_t leafs_r820[64] = {8, 12, 24, 28, 16, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -207,6 +207,8 @@ uint16_t gottardo[32*32] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // 31
 };
 
+
+uint32_t cores_gottardo[8] = {0,4,8,12,16,20,24,28};
 uint32_t leafs_gottardo[32] = {0, 16, 12, 20, 24, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -216,6 +218,35 @@ uint32_t num_leafs_gottardo = 6;
 uint32_t num_leafs_adaptive_gottardo = 4;
 uint32_t root_gottardo = 8;
 uint32_t num_cores_gottardo = 32;
+
+
+uint16_t sbrinz[16*16] = {
+//   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+     0, 0, 0, 0, 0, 0,99, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  0
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  1
+     0, 0, 0, 0,99, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  2
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  3
+     0, 0, 4, 0, 0, 0, 1, 0, 0, 0, 3, 0, 2, 0, 0, 0, //  4
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  5
+     2, 0, 0, 0,99, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, //  6
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  7
+     0, 0, 0, 0, 0, 0,99, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  8
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  9
+     0, 0, 0, 0,99, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 10
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 11
+     0, 0, 0, 0,99, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, // 12
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 13
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,99, 0, 0, 0, // 14
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 15
+};
+
+uint32_t cores_sbrinz[8] = {0,2,4,6,8,10,12,14};
+uint32_t leafs_sbrinz[16] = {0, 2, 8, 12, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint32_t num_leafs_sbrinz = 5;
+uint32_t root_sbrinz = 4;
+uint32_t num_cores_sbrinz = 16;
+
+
 
 errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
 {
@@ -308,7 +339,7 @@ int main(int argc, char **argv)
     char name[1024];
     sprintf(name,"%s",argv[1]);   
 
-    uint32_t cores[8] = {0,4,8,12,16,20,24,28};
+    uint32_t cores[64];
     num_threads = 8;
 
     if (strcmp(name, "gottardo") == 0) {
@@ -317,6 +348,7 @@ int main(int argc, char **argv)
         matrix = gottardo;
         num_leafs = num_leafs_gottardo;
         num_cores = num_cores_gottardo;
+        memcpy(cores, cores_gottardo, sizeof(uint32_t)*num_threads);
         printf("Machine is gottardo \n");
     } else if (strcmp(name, "sgs-r820-01") == 0) {
         leafs = leafs_r820;
@@ -324,6 +356,7 @@ int main(int argc, char **argv)
         matrix = r820;
         num_leafs = num_leafs_r820;
         num_cores = num_cores_r820;
+        memcpy(cores, cores_r820, sizeof(uint32_t)*num_threads);
         printf("Machine is sgs-r820-01 \n");
     } else if (strcmp(name, "sgs-r815-03") == 0) {
         leafs = leafs_r815;
@@ -331,8 +364,16 @@ int main(int argc, char **argv)
         matrix = r815;
         num_leafs = num_leafs_r815;
         num_cores = num_cores_r815;
+        memcpy(cores, cores_r815, sizeof(uint32_t)*num_threads);
         printf("Machine is sgs-r815-03 \n");
-
+    } else if (strcmp(name, "sbrinz") == 0) {
+        leafs = leafs_sbrinz;
+        root = root_sbrinz;
+        matrix = sbrinz;
+        num_leafs = num_leafs_sbrinz;
+        num_cores = num_cores_sbrinz;
+        memcpy(cores, cores_sbrinz, sizeof(uint32_t)*num_threads);
+        printf("Machine is sgs-r815-03 \n");
     } else {
         printf("Unknown Machine \n");
         exit(1);
