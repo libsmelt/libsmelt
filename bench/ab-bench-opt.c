@@ -29,7 +29,7 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 7
+#define NUM_TOPO 2
 #define NUM_EXP 1
 
 uint32_t num_topos = NUM_TOPO;
@@ -209,7 +209,11 @@ uint16_t gottardo[32*32] = {
 
 uint32_t leafs_gottardo[32] = {0, 16, 12, 20, 24, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+uint32_t leafs_adaptive_gottardo[32] = {0, 8, 16, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 uint32_t num_leafs_gottardo = 6;
+uint32_t num_leafs_adaptive_gottardo = 4;
 uint32_t root_gottardo = 8;
 uint32_t num_cores_gottardo = 32;
 
@@ -238,7 +242,6 @@ static void* ab(void* a)
     struct smlt_msg* msg = smlt_message_alloc(56);
     for (int i = 0; i < count; i++) {
         coreid_t last_node = (coreid_t) leafs[i];
-        printf("Last node %d \n",last_node);
         sk_m_reset(&m);
 
         for (int j = 0; j < NUM_RUNS; j++) {
@@ -280,11 +283,6 @@ int main(int argc, char **argv)
 
     char *topo_names[NUM_TOPO] = {
         "optimal",
-        "mst",
-        "bintree",
-        "cluster",
-        "badtree",
-        "sequential",
         "adaptivetree",
     };
 
@@ -311,7 +309,6 @@ int main(int argc, char **argv)
     sprintf(name,"%s",argv[1]);   
 
     uint32_t cores[8] = {0,4,8,12,16,20,24,28};
-    printf("%s \n", name);
     num_threads = 8;
 
     if (strcmp(name, "gottardo") == 0) {
@@ -328,14 +325,17 @@ int main(int argc, char **argv)
         num_leafs = num_leafs_r820;
         num_cores = num_cores_r820;
         printf("Machine is sgs-r820-01 \n");
-    } else if (strcmp(name, "sgs-r815-01") == 0) {
+    } else if (strcmp(name, "sgs-r815-03") == 0) {
         leafs = leafs_r815;
         root = root_r815;
         matrix = r815;
         num_leafs = num_leafs_r815;
         num_cores = num_cores_r815;
-        printf("Machine is gottardo \n");
+        printf("Machine is sgs-r815-03 \n");
 
+    } else {
+        printf("Unknown Machine \n");
+        exit(1);
     }
 
     struct smlt_generated_model* model = NULL;
@@ -353,6 +353,10 @@ int main(int argc, char **argv)
             if (smlt_err_is_fail(err)) {
                 printf("Failed to generated model, aborting\n");
                 return 1;
+            }
+            if (strcmp(name, "gottardo") == 0) {
+                leafs = leafs_adaptive_gottardo;
+                num_leafs = num_leafs_adaptive_gottardo;
             }
         }
 
