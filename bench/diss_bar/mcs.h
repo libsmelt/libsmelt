@@ -59,7 +59,7 @@ cpu_relax(void)
      result; })
 
 #ifndef BARRELFISH
-  typedef unsigned int coreid_t;
+  //typedef unsigned int coreid_t;
 #endif
 #define MCS_LOG2_MAX_CORES 8
 #define CACHE_LINE_SIZE 64

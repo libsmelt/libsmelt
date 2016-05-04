@@ -116,6 +116,7 @@ all: $(TARGET) \
 	     bench/colbench \
 	     bench/ab-bench-scale \
 		 bench/ab-bench-new_s \
+		 bench/ab-throughput \
 		 bench/pairwise_raw \
 		 bench/pairwise_raw_s \
 		 bench/pingpong \
@@ -176,9 +177,6 @@ bench/ab-bench-scale: bench/ab-bench-scale.c $(TARGET)
 bench/ab-bench-new_s: bench/ab-bench-new.c $(TARGET)
 	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
 
-bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.cpp
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-throughput.c -o $@
-
 bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.c -o $@
 
@@ -208,6 +206,9 @@ bench/colbench: $(DEPS) $(EXTERNAL_OBJS) bench/colbench.c
 
 bench/bar-bench: bench/diss_bar/barrier.c
 	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c bench/diss_bar/mcs.c $(LIBS) -lpthread -lsmltrt -lm -o $@
+
+bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.c
+	gcc -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/mcs.c bench/ab-throughput.c -o $(LIBS) -lpthread -lsmltrt -lm -o $@
 
 # Build shared library
 # --------------------------------------------------
