@@ -45,10 +45,17 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
                                                          SMLT_ARCH_CACHELINE_SIZE,
                                                          src_affinity, true);
 
+    if (!qp_src) {
+        printf("malloc failed, affinities: %u->%u, %u->%u\n", core_src, src_affinity, core_dst, dst_affinity);
+        return SMLT_ERR_MALLOC_FAIL;
+    }
     struct smlt_qp *qp_dst = smlt_platform_alloc_on_node(sizeof (*qp_dst),
                                                          SMLT_ARCH_CACHELINE_SIZE,
                                                          dst_affinity, true);
-
+    if (!qp_dst) {
+        printf("malloc failed, affinities: %u, %u\n", src_affinity, dst_affinity);
+        return SMLT_ERR_MALLOC_FAIL;
+    }
 
 
     (qp_src)->type = type;
