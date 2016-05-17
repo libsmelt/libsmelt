@@ -32,6 +32,7 @@
 #define NUM_TOPO 2
 #define NUM_EXP 1
 
+
 uint32_t num_topos = NUM_TOPO;
 uint32_t num_threads;
 
@@ -42,6 +43,8 @@ static struct smlt_topology *active_topo;
 
 __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
+
+struct smlt_dissem_barrier* bar;
 
 #define TOPO_NAME(x,y) sprintf(x, "%s_%s", y, smlt_topology_get_name(active_topo));
 
@@ -654,6 +657,31 @@ static void* ab(void* a)
     return 0;
 }
 
+
+static void* ab_sync(void* a)
+{
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "ab_sync");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    struct smlt_msg* msg = smlt_message_alloc(56);
+    sk_m_reset(&m);
+
+    for (int j = 0; j < NUM_RUNS; j++) {
+        smlt_dissem_barrier_wait(bar);
+        smlt_dissem_barrier_wait(bar);
+
+        sk_m_restart_tsc(&m);
+        smlt_broadcast(context, msg);
+        sk_m_add(&m);
+    }
+
+    sk_m_print(&m);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     num_threads = sysconf(_SC_NPROCESSORS_ONLN);
@@ -824,6 +852,8 @@ int main(int argc, char **argv)
 
         active_topo = topo;
 
+        smlt_dissem_barrier_init(cores, num_threads, &bar);
+
         printf("----------------------------------------\n");
         printf("Executing experiment Atomic Broadcast\n");
         printf("----------------------------------------\n");
@@ -832,6 +862,19 @@ int main(int argc, char **argv)
         for (uint64_t z = 0; z < num_threads; z++) {
             node = smlt_get_node_by_id(cores[z]);
             err = smlt_node_start(node, &ab, (void*) z);
+            if (smlt_err_is_fail(err)) {
+                printf("Staring node failed \n");
+            }
+        }
+
+        for (int z=0; z < num_threads; z++) {
+            node = smlt_get_node_by_id(cores[z]);
+            smlt_node_join(node);
+        }
+
+        for (uint64_t z = 0; z < num_threads; z++) {
+            node = smlt_get_node_by_id(cores[z]);
+            err = smlt_node_start(node, &ab_sync, (void*) z);
             if (smlt_err_is_fail(err)) {
                 printf("Staring node failed \n");
             }
