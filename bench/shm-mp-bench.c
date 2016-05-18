@@ -202,7 +202,7 @@ void run(bool use_mp, bool use_tree)
 
         num_threads = i;
         for (int j = 0; j < i; j++) {
-            fprintf(stderr,"%d ", j);
+            fprintf(stderr,"%d ", cores[j]);
         }
         fprintf(stderr,"\n");
 
