@@ -436,7 +436,7 @@ bool smlt_topology_node_is_root(struct smlt_topology_node *node)
  */
 bool smlt_topology_node_is_leaf(struct smlt_topology_node *node)
 {
-    return (node->num_children == 0);
+    return (node->num_children == 0) && (node->num_children_shm == 0);
 }
 
 /**
