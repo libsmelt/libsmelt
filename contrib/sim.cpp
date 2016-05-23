@@ -239,8 +239,6 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     
     if (hyb) {
         root["hybrid"] = "True";
-    } else {
-        root["hybrid"] = "False";
     }
 
     std::string doc = Json::writeString(wbuilder, root);
