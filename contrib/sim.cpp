@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <memory> // unique_ptr
+#include <string.h>
 
 #include "sim.h"
 #include "jsoncpp/json/json.h"
@@ -181,6 +182,13 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     // Ask the Simulator to build a model
     const char *host = get_env_str("SMLT_HOSTNAME", "");
     const char *machine = get_env_str("SMLT_MACHINE", "unknown");
+    const char *hybrid = get_env_str("SMLT_HYBRID", "False");
+    bool hyb = false;
+
+    if ((strcmp(hybrid, "true") == 0) ||
+        (strcmp(hybrid, "True") == 0)) {
+        hyb = true;
+    }
 
     // Determine hostname of this machine
     char thishost[NAMELEN];
@@ -228,6 +236,12 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     }
 
     root["cores"] = coreids;
+    
+    if (hyb) {
+        root["hybrid"] = "True";
+    } else {
+        root["hybrid"] = "False";
+    }
 
     std::string doc = Json::writeString(wbuilder, root);
 
