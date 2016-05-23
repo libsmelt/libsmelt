@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include <unistd.h>
 #include <smlt.h>
 #include <smlt_node.h>
@@ -116,7 +117,7 @@ void* thr_write(void* a)
 
     uint32_t nc = arg->num_cores;
 
-    for (size_t i=0; i<NUM_EXP; i++) {
+    for (size_t iter=0; iter<NUM_EXP; iter++) {
         // Wait a while to ensure that receivers already polled the
         // line, so that it is in shared state
         assert (tsc_overhead>0);
@@ -136,9 +137,8 @@ void* thr_write(void* a)
             }
             tsc_start = bench_tsc();
             smlt_queuepair_send(*qp, msg);
-
             tsc_end = bench_tsc();
-            tsc_measurements[i % NUM_DATA] = (tsc_end - tsc_start);
+            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
         } else {
             tsc_start = bench_tsc();
             for (uint32_t i = 0; i < nc; ++i) {
@@ -146,7 +146,7 @@ void* thr_write(void* a)
                 qp++;
             }
             tsc_end = bench_tsc();
-            tsc_measurements[i % NUM_DATA] = (tsc_end - tsc_start);
+            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
         }
 
         qp = arg->queue_pairs;
@@ -329,7 +329,9 @@ int main(int argc, char **argv)
                 continue;
             }
             printf("\n\n--------------\n\n");
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
             run_experiment(nl, nr, false, true);
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
             run_experiment(nl, nr, true, false);
         }
     }
