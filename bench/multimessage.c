@@ -31,6 +31,20 @@ cycles_t tsc_overhead = 0;
 #define NUM_WARMUP 5000
 
 
+enum mode {
+    BENCH_MODE_TOTAL=0,
+    BENCH_MODE_LAST=1,
+    BENCH_MODE_ALL=2,
+    BENCH_MODE_ALL_TOTAL=3,
+    BENCH_MODE_MAX=4
+};
+
+char *modestring [4] = {
+    "sum ",
+    "last",
+    "all ",
+    "sumA"
+};
 
 #define STR(X) #X
 
@@ -46,7 +60,7 @@ struct thr_args {
     uint32_t num_cores;
     uint32_t num_local;
     uint32_t num_remote;
-    bool just_last;
+    enum mode mode;
 };
 
 static cycles_t *do_sorting(cycles_t *array,
@@ -77,7 +91,7 @@ static void eval_data(struct thr_args*arg)
 
     cycles_t *sorted = do_sorting(tsc_measurements, NUM_DATA);
 
-    for (size_t i=0; i<(NUM_DATA * 0.95); i++) {
+    for (size_t i=0; i<(NUM_DATA * 0.90); i++) {
         count ++;
         sum += tsc_measurements[i];
         if (tsc_measurements[i] < min) {
@@ -100,8 +114,8 @@ static void eval_data(struct thr_args*arg)
 
     sum /= count;
 
-    printf("r=%u,l=%u,l=%u, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
-            arg->num_remote, arg->num_local, arg->just_last, avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
+    printf("r=%u,l=%u, mode=%s, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
+            arg->num_remote, arg->num_local, modestring[arg->mode], avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
 
 
 }
@@ -129,9 +143,10 @@ void* thr_write(void* a)
         }
 
         struct smlt_qp **qp = arg->queue_pairs;
-        if (arg->just_last) {
-            uint32_t i;
-            for (i = 1; i < nc; ++i) {
+        switch (arg->mode) {
+            case BENCH_MODE_LAST :
+
+            for (uint32_t i = 1; i < nc; ++i) {
                 smlt_queuepair_send(*qp, msg);
                 qp++;
             }
@@ -139,7 +154,8 @@ void* thr_write(void* a)
             smlt_queuepair_send(*qp, msg);
             tsc_end = bench_tsc();
             tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
-        } else {
+            break;
+            case BENCH_MODE_TOTAL :
             tsc_start = bench_tsc();
             for (uint32_t i = 0; i < nc; ++i) {
                 smlt_queuepair_send(*qp, msg);
@@ -147,6 +163,29 @@ void* thr_write(void* a)
             }
             tsc_end = bench_tsc();
             tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
+            break;
+            case BENCH_MODE_ALL :
+            tsc_start = bench_tsc();
+            for (uint32_t i = 0; i < nc; ++i) {
+                tsc_start = bench_tsc();
+                smlt_queuepair_send(*qp, msg);
+                qp++;
+            }
+            tsc_end = bench_tsc();
+            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
+            break;
+            case BENCH_MODE_ALL_TOTAL :
+            tsc_start = bench_tsc();
+            for (uint32_t i = 0; i < nc; ++i) {
+                tsc_end = bench_tsc();
+                smlt_queuepair_send(*qp, msg);
+                qp++;
+            }
+            tsc_end = bench_tsc();
+            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
+            break;
+            default:
+            printf("ERROR: UNKNOWN MODE\n");
         }
 
         qp = arg->queue_pairs;
@@ -182,7 +221,7 @@ void* thr_receiver(void* a)
 }
 
 
-int run_experiment(uint32_t num_local, uint32_t num_remote, bool just_last, bool print)
+int run_experiment(uint32_t num_local, uint32_t num_remote, enum mode m, bool print)
 {
     errval_t err;
 
@@ -240,7 +279,7 @@ int run_experiment(uint32_t num_local, uint32_t num_remote, bool just_last, bool
     args[0].cores = cores;
     args[0].num_local = num_local;
     args[0].num_remote = num_remote;
-    args[0].just_last = just_last;
+    args[0].mode = m;
 
     thr_write(args);
 
@@ -328,11 +367,15 @@ int main(int argc, char **argv)
             if (nl == 0 && nr == 0) {
                 continue;
             }
-            printf("\n\n--------------\n\n");
+            printf("\n-----------------------------------------------------\n");
             memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(nl, nr, false, true);
+            run_experiment(nl, nr, BENCH_MODE_TOTAL, true);
             memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(nl, nr, true, false);
+            run_experiment(nl, nr, BENCH_MODE_ALL_TOTAL, false);
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
+            run_experiment(nl, nr, BENCH_MODE_LAST, false);
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
+            run_experiment(nl, nr, BENCH_MODE_ALL, false);
         }
     }
 
