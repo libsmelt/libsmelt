@@ -242,7 +242,6 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
             for (int i = 0; i < chan->m; i++) {
                 err = smlt_queuepair_recv(chan->c.shm.recv_owner[i], msg);
             }
-
         } else {
             for (int i = 0; i < chan->m; i++) {
                 if (chan->c.shm.dst[i] == smlt_node_self_id) {
@@ -309,14 +308,19 @@ static inline bool smlt_channel_can_recv(struct smlt_channel *chan)
     bool result = true;
     uint32_t num_chan = chan->m > chan->n ? chan->m : chan->n;
     for (int i = 0; i < num_chan; i++) {
-        if (chan->owner == smlt_node_self_id) {
-            if (!smlt_queuepair_can_recv(&chan->c.mp.send[i])) {
-                result = false;
+        if (!chan->use_shm) {
+            if (chan->owner == smlt_node_self_id) {
+                if (!smlt_queuepair_can_recv(&chan->c.mp.send[i])) {
+                    result = false;
+                }
+            } else {
+                if (!smlt_queuepair_can_recv(&chan->c.mp.recv[i])) {
+                    result = false;
+                }
             }
         } else {
-            if (!smlt_queuepair_can_recv(&chan->c.mp.recv[i])) {
-                result = false;
-            }
+            // TODO how to handle can recv on multiple channels
+            return true;
         }
     }
     return result;
