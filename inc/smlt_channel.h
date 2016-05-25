@@ -11,6 +11,7 @@
 
 #include <smlt_queuepair.h>
 #include <backends/shm/swmr.h>
+#include <string.h>
 //#include <platforms/linux.h>
 
 
@@ -239,8 +240,30 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
     } else {
         if (chan->owner == smlt_node_self_id){
             // recv from all channels
+            /*
             for (int i = 0; i < chan->m; i++) {
                 err = smlt_queuepair_recv(chan->c.shm.recv_owner[i], msg);
+            }
+            */
+            bool recv[chan->m];
+            memset(recv, 0, sizeof(bool)*chan->m);
+            int num_recv = 0;
+            int i = 0;
+            while( num_recv < chan->m) {
+                if (!recv[i] && smlt_queuepair_can_recv(chan->c.shm.recv_owner[i])) {
+                    err = smlt_queuepair_recv0(chan->c.shm.recv_owner[i]);
+                    if (smlt_err_is_fail(err)) {
+                        return err;
+                    }
+                    recv[i] = true;
+                    num_recv++;
+                }
+
+                i++;
+
+                if (i == chan->m) {
+                    i = 0;
+                }
             }
         } else {
             for (int i = 0; i < chan->m; i++) {
@@ -351,8 +374,28 @@ static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
     } else {
         if (chan->owner == smlt_node_self_id){
             // recv from all channels
-            for (int i = 0; i < chan->m; i++) {
-                err = smlt_queuepair_recv0(chan->c.shm.recv_owner[i]);
+            /*for (int i = 0; i < chan->m; i++) {
+            /    err = smlt_queuepair_recv0(chan->c.shm.recv_owner[i]);
+            } */
+            bool recv[chan->m];
+            memset(recv, 0, sizeof(bool)*chan->m);
+            int num_recv = 0;
+            int i = 0;
+            while( num_recv < chan->m) {
+                if (!recv[i] && smlt_queuepair_can_recv(chan->c.shm.recv_owner[i])) {
+                    err = smlt_queuepair_recv0(chan->c.shm.recv_owner[i]);
+                    if (smlt_err_is_fail(err)) {
+                        return err;
+                    }
+                    recv[i] = true;
+                    num_recv++;
+                }
+
+                i++;
+
+                if (i == chan->m) {
+                    i = 0;
+                }
             }
 
         } else {
