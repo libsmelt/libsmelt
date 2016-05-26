@@ -85,9 +85,9 @@ void swmr_queue_create(struct swmr_queue** queue,
     void* shm;
     uint32_t queue_size = SWMRQ_SIZE;
     // at least 32 slots
-    while ((queue_size - (count+1)) < 0x20) {
-	// Add another page 
-	queue_size += SWMRQ_SIZE;
+    while ((queue_size - (count+1)) < 48) {
+        // Add another page 
+        queue_size += SWMRQ_SIZE;
     }
 
     if (sep_header) {
