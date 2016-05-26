@@ -51,7 +51,8 @@
  * \param sep_header use a seperate cachline for the header
  */
 void swmr_init_context(void* shm, struct swmr_context* queue, 
-                       uint8_t num_readers, uint8_t id, bool sep_header)
+                       uint8_t num_readers, uint8_t id, bool sep_header,
+		       uint32_t queue_size)
 {
     assert (queue!=NULL);
 
@@ -59,7 +60,7 @@ void swmr_init_context(void* shm, struct swmr_context* queue,
     queue->num_readers = num_readers;
     queue->id = id;
 
-    queue->num_slots = (SWMRQ_SIZE)-(num_readers+1);
+    queue->num_slots = queue_size -(num_readers+1);
 #ifdef DEBUG_SHM
     queue->num_slots = 10;
 #endif
@@ -69,7 +70,7 @@ void swmr_init_context(void* shm, struct swmr_context* queue,
     queue->next_sync = queue->num_slots-1;
     queue->next_seq = 1;
     if (sep_header) {
-        queue->header = (uint8_t*) queue->data + SWMRQ_SIZE*CACHELINE_SIZE;
+        queue->header = (uint8_t*) queue->data + queue_size*CACHELINE_SIZE;
     } else {
         queue->header = (uint8_t*) queue->data;
     }
@@ -82,26 +83,34 @@ void swmr_queue_create(struct swmr_queue** queue,
                        bool sep_header)
 {   
     void* shm;
+    uint32_t queue_size = SWMRQ_SIZE;
+    // at least 32 slots
+    while ((queue_size - (count+1)) < 0x20) {
+	// Add another page 
+	queue_size += SWMRQ_SIZE;
+    }
+
     if (sep_header) {
-        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE*2, 
+        shm = smlt_platform_alloc_on_node(queue_size*SMLT_ARCH_CACHELINE_SIZE*2, 
                                           SMLT_ARCH_CACHELINE_SIZE, 
                                           numa_node_of_cpu(dst[0]), true);
     } else {
-        shm = smlt_platform_alloc_on_node(SWMRQ_SIZE*SMLT_ARCH_CACHELINE_SIZE, 
+        shm = smlt_platform_alloc_on_node(queue_size*SMLT_ARCH_CACHELINE_SIZE, 
                                           SMLT_ARCH_CACHELINE_SIZE, 
                                           numa_node_of_cpu(dst[0]), true);
     }
 
     assert(shm != NULL);
 
-    swmr_init_context(shm, &(*queue)->src, count, 0, sep_header);
+    swmr_init_context(shm, &(*queue)->src, count, 0, sep_header, queue_size);
 
     (*queue)->dst = smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
                                                 SMLT_ARCH_CACHELINE_SIZE, 
                                                 numa_node_of_cpu(dst[0]), true);
 
     for (int i = 0; i < count ; i++) {
-        swmr_init_context(shm, &((*queue)->dst[i]), count, i, sep_header);
+        swmr_init_context(shm, &((*queue)->dst[i]), count, i, 
+			  sep_header, queue_size);
     }
 }
 

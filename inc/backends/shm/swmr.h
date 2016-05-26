@@ -60,7 +60,8 @@ struct swmr_queue {
 };
 
 void swmr_init_context(void* shm, struct swmr_context* queue,
-                       uint8_t num_readers, uint8_t id, bool sep_header);
+                       uint8_t num_readers, uint8_t id, 
+		       bool sep_header, uint32_t queue_size);
 
 void swmr_queue_create(struct swmr_queue**,
                        uint32_t src,
