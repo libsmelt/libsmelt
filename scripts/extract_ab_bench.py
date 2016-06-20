@@ -66,7 +66,7 @@ def parse_log(s=sys.stdin, output=True):
                 (mean, stderr, median, vmin, vmax) = statistics_cropped(values)
                 topo = title.replace(t+'_', '')
                 if not topo in res:
-                    res[topo] = []ar
+                    res[topo] = []
                 res[topo].append((core, median, stderr))
 
 
@@ -84,12 +84,12 @@ def parse_log(s=sys.stdin, output=True):
             pred_ln = -1
             if t == 'ab':
                 key = lookup[topo] if topo in lookup else topo
-                (pred, pred_ln) = sim[key]
+                (pred, pred_ln) = sim.get(key, (-1, -1))
 
             res_t.append((topo, m, e, pred))
 
             if output:
-                print '%-20s %5d %2d %8.2f     %3d %5d %6.2f' % \
+                print '%-30s %5d %2d %8.2f     %3d %5d %6.2f' % \
                     (topo, m, c, e, pred_ln, pred, float(pred)/m )
 
         all_res.append((t, res_t))
@@ -99,8 +99,8 @@ def parse_log(s=sys.stdin, output=True):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Help')
-    parser.add_argument('sim', help='File with Simulator output')
+#    parser.add_argument('sim', help='File with Simulator output')
     args = parser.parse_args()
 
-    parse_simulator_output(args.sim)
+#    parse_simulator_output(args.sim)
     parse_log()
