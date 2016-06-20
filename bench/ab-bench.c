@@ -29,7 +29,7 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 7
+#define NUM_TOPO 9
 #define NUM_EXP 5
 
 uint32_t num_topos = NUM_TOPO;
@@ -342,6 +342,8 @@ int main(int argc, char **argv)
         "fibonacci",
         "sequential",
         "adaptivetree",
+        "adaptivetree_mm",
+        "adaptivetree_mmlast",
     };
 
     pthread_barrier_init(&bar, NULL, num_threads);
