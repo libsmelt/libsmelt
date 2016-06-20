@@ -112,10 +112,10 @@ all: $(TARGET) \
 		 test/smlt-mp-test \
 		 test/channel-test \
 		 bench/bar-bench \
-	     bench/ab-bench-new \
+	     bench/ab-bench \
 	     bench/colbench \
 	     bench/ab-bench-scale \
-		 bench/ab-bench-new_s \
+		 bench/ab-bench_s \
 		 bench/ab-bench-opt \
 		 bench/ab-throughput \
 		 bench/pairwise_raw \
@@ -169,14 +169,14 @@ test/dissem-bar-test: test/dissem-bar-test.c $(TARGET)
 # Benchmarks
 # --------------------------------------------------
 
-bench/ab-bench-new: bench/ab-bench-new.c $(TARGET)
-	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
+bench/ab-bench: bench/ab-bench.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench.c -o $@ -lsmltrt
 
 bench/ab-bench-scale: bench/ab-bench-scale.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) bench/ab-bench-scale.c -o $@ -lsmltrt -lnuma
 
-bench/ab-bench-new_s: bench/ab-bench-new.c $(TARGET)
-	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/ab-bench-new.c -o $@ -lsmltrt
+bench/ab-bench_s: bench/ab-bench.c $(TARGET)
+	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/ab-bench.c -o $@ -lsmltrt
 
 bench/pairwise: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pairwise.c -o $@
@@ -236,7 +236,7 @@ clean:
 	rm -f src/*.o test/*.o $(TARGET) $(patsubst %.so,%.a,$(TARGET))
 	rm -f test/mp-test test/topo-create-test test/contrib-lib-test
 	rm -f test/shm-queue-test test/nodes-test test/queuepair-test test/shmqp-test
-	rm -f test/context-test bench/ab-bench-new test/ffq-test
+	rm -f test/context-test bench/ab-bench test/ffq-test
 	rm -f src/backends/ffq/*.o src/backends/ump/*.o src/backends/shm/*.o
 	rm -f test/smlt-mp-test bench/bar-bench bench/ab-bench-scale
 	rm -f test/dissem-bar-test bench/shm-mp-bench bench/colbench
@@ -244,11 +244,11 @@ debug:
 	echo $(HEADERS)
 
 .PHONY: install
-install : $(TARGET) bench/multimessage bench/bar-bench bench/ab-bench-new bench/pairwise_raw bench/pingpong bench/polloverhead
+install : $(TARGET) bench/multimessage bench/bar-bench bench/ab-bench bench/pairwise_raw bench/pingpong bench/polloverhead
 	cp *.so $(INSTALL_DIR)
 	cp bench/bar-bench $(INSTALL_DIR)
-	cp bench/ab-bench-new $(INSTALL_DIR)
-	cp bench/ab-bench-new_s $(INSTALL_DIR)
+	cp bench/ab-bench $(INSTALL_DIR)
+	cp bench/ab-bench_s $(INSTALL_DIR)
 	cp bench/pairwise_raw $(INSTALL_DIR)
 	cp bench/pairwise_raw_s $(INSTALL_DIR)
 	cp bench/pingpong $(INSTALL_DIR)
