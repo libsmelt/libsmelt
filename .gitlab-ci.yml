@@ -1,0 +1,11 @@
+stages:
+  - build
+
+pdf:
+  stage: build
+  script:
+    - make
+  tags:
+    - rhel7
+
+
