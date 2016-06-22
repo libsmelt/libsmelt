@@ -6,6 +6,4 @@ pdf:
   script:
     - make
   tags:
-    - rhel7
-
-
+    - gcc
