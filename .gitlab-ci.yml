@@ -6,4 +6,5 @@ compile:
   script:
     - make
   tags:
-    - gcc
+    - c++
+	- cpp
