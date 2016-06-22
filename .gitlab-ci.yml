@@ -1,7 +1,7 @@
 stages:
   - build
 
-pdf:
+compile:
   stage: build
   script:
     - make
