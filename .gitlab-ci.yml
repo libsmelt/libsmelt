@@ -3,9 +3,23 @@ before_script:
 
 stages:
   - build
+  - test
 
 compile:
   image: ubuntu:xenial
   stage: build
   script:
     - make
+
+basetest:
+  image: ubuntu:xenial
+  stage: test
+  script:
+    - test/context-test
+    - test/channel-test
+
+shmtest:
+  image: ubuntu:xenial
+  stage: test
+  script:
+    - test/shm-queue-test
