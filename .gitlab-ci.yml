@@ -1,10 +1,11 @@
+before_script:
+  - "apt-get install -y build-essential git libnuma-dev"
+
 stages:
   - build
 
 compile:
+  image: ubuntu:xenial
   stage: build
   script:
     - make
-  tags:
-    - c++
-    - cpp
