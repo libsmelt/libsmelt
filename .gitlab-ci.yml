@@ -24,7 +24,6 @@ basetest:
     - compile
   script:
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
-    - test/context-test
     - test/channel-test
 
 shmtest:
