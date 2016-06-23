@@ -1,0 +1,48 @@
+before_script:
+  - "apt-get update; apt-get install -y git libnuma-dev"
+
+stages:
+  - build
+  - test
+
+compile:
+  image: ubuntu:xenial
+  stage: build
+  artifacts:
+    paths:
+      - test/*-test
+      - lib*.so
+    expire_in: 1 week
+  script:
+    - "apt-get update; apt-get install -y  build-essential"
+    - make
+
+basetest:
+  image: ubuntu:xenial
+  stage: test
+  dependencies:
+    - compile
+  script:
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
+    - "test/queuepair-test ump"
+	- test/context-test
+	- test/channel-test
+
+shmtest:
+  image: ubuntu:xenial
+  stage: test
+  dependencies:
+    - compile
+  script:
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
+    - "test/queuepair-test shm"
+    - test/shm-queue-test
+
+fftest:
+  image: ubuntu:xenial
+  stage: test
+  dependencies:
+    - compile
+  script:
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
+    - "test/queuepair-test ffq"

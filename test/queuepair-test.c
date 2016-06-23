@@ -196,4 +196,6 @@ int main(int argc, char **argv)
         smlt_queuepair_destroy(qp1);
         smlt_queuepair_destroy(qp2);
     }
+
+    return 0;
 }

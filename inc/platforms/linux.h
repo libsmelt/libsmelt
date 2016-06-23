@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <sched.h>
+#include <unistd.h>
 
 //#define SMLT_CONFIG_LINUX_NUMA_ALIGN 1
 

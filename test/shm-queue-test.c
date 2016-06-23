@@ -148,5 +148,6 @@ int main(int argc, char ** argv)
         pthread_join(tids[i], NULL);
     }
 
+    return 0;
 }
 

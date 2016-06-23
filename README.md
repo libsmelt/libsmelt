@@ -1,6 +1,8 @@
 Buildingblocks
 ==============
 
+[![build status](https://gitlab.inf.ethz.ch/skaestle/smelt/badges/master/build.svg)](https://gitlab.inf.ethz.ch/skaestle/smelt/commits/master)
+
 Endpoint (EP)
 -------------
  * Communication abstraction "address"
@@ -13,7 +15,7 @@ Queuepair (QP)
 
 Instance
 --------
- * a particular Smelt configuration: how the nodes communicate 
+ * a particular Smelt configuration: how the nodes communicate
  * queue pair specification
 
 
