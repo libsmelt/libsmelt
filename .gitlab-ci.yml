@@ -1,12 +1,9 @@
-before_script:
-  - "apt-get update; apt-get install -y git libnuma-dev"
-
 stages:
   - build
   - test
 
 compile:
-  image: ubuntu:xenial
+  image: stefankaestle/gcc
   stage: build
   artifacts:
     paths:
@@ -14,11 +11,10 @@ compile:
       - lib*.so
     expire_in: 1 week
   script:
-    - "apt-get update; apt-get install -y  build-essential"
     - make
 
 basetest:
-  image: ubuntu:xenial
+  image: stefankaestle/gcc
   stage: test
   dependencies:
     - compile
@@ -29,7 +25,7 @@ basetest:
     - test/channel-test
 
 shmtest:
-  image: ubuntu:xenial
+  image: stefankaestle/gcc
   stage: test
   dependencies:
     - compile
@@ -39,7 +35,7 @@ shmtest:
     - test/shm-queue-test
 
 fftest:
-  image: ubuntu:xenial
+  image: stefankaestle/gcc
   stage: test
   dependencies:
     - compile
