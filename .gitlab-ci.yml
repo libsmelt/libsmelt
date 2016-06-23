@@ -23,6 +23,7 @@ basetest:
   dependencies:
     - compile
   script:
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - test/context-test
     - test/channel-test
 
@@ -32,6 +33,7 @@ shmtest:
   dependencies:
     - compile
   script:
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "test/queuepair-test shm"
     - test/shm-queue-test
 
@@ -41,4 +43,5 @@ fftest:
   dependencies:
     - compile
   script:
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "test/queuepair-test ffq"
