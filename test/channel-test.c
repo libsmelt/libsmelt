@@ -131,5 +131,6 @@ int main(int argc, char ** argv)
            // XXX
        }
     }
-}
 
+    return 0;
+}

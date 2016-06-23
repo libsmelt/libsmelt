@@ -139,5 +139,5 @@ int main(int argc, char **argv)
         smlt_node_join(node);
     }
 
-
+    return 0;
 }
