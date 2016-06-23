@@ -1,5 +1,5 @@
 before_script:
-  - "apt-get update; apt-get install -y build-essential git libnuma-dev"
+  - "apt-get update; apt-get install -y git libnuma-dev"
 
 stages:
   - build
@@ -9,10 +9,12 @@ compile:
   image: ubuntu:xenial
   stage: build
   artifacts:
-    - test/*-test
-    - lib*.so
+    paths:
+      - test/*-test
+      - lib*.so
     expire_in: 1 week
   script:
+    - "apt-get update; apt-get install -y  build-essential"
     - make
 
 basetest:
