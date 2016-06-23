@@ -82,11 +82,15 @@ void* worker1(void* arg)
 
 int main(int argc, char ** argv)
 {
+
+    size_t nproc = sysconf( _SC_NPROCESSORS_ONLN );;
+
     errval_t err;
-    err = smlt_init(sysconf(_SC_NPROCESSORS_ONLN), true);
+    err = smlt_init(nproc, true);
     if (smlt_err_is_fail(err)) {
         printf("SMLT init failed \n");
-    }        
+        return 1;
+    }
 
 
     struct smlt_channel* c = &chan;

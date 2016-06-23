@@ -25,6 +25,8 @@ basetest:
   script:
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "test/queuepair-test ump"
+	- test/context-test
+	- test/channel-test
 
 shmtest:
   image: ubuntu:xenial

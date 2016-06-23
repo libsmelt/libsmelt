@@ -37,6 +37,12 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
 {
     errval_t err;
 
+    if (num_proc > sysconf(_SC_NPROCESSORS_ONLN)) {
+
+        SMLT_NOTICE("Not enough cores to initialize Smelt, exiting\n");
+        return SMLT_ERR_PLATFORM_INIT;
+    }
+
     SMLT_NOTICE("Initializing Smelt RT version=%s, num_proc=%" PRIu32 "\n",
                  SMLT_VERSION, num_proc);
 
