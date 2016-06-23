@@ -8,12 +8,18 @@ stages:
 compile:
   image: ubuntu:xenial
   stage: build
+  artifacts:
+    - test/*-test
+    - lib*.so
+    expire_in: 1 week
   script:
     - make
 
 basetest:
   image: ubuntu:xenial
   stage: test
+  dependencies:
+    - compile
   script:
     - test/context-test
     - test/channel-test
@@ -21,5 +27,16 @@ basetest:
 shmtest:
   image: ubuntu:xenial
   stage: test
+  dependencies:
+    - compile
   script:
+    - "test/queuepair-test shm"
     - test/shm-queue-test
+
+fftest:
+  image: ubuntu:xenial
+  stage: test
+  dependencies:
+    - compile
+  script:
+    - "test/queuepair-test ffq"
