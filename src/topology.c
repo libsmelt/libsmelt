@@ -380,7 +380,7 @@ uint32_t* smlt_topology_node_children_ids(struct smlt_topology_node *node,
                                  SMLT_DEFAULT_ALIGNMENT, true);
 
     *children = node->num_children;
-    for (int i = 0; i < *children; i++) {
+    for (unsigned int i = 0; i < *children; i++) {
         result[i] = node->children[i]->node_id;
     }
     return result;

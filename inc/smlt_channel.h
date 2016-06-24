@@ -247,8 +247,8 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
             */
             bool recv[chan->m];
             memset(recv, 0, sizeof(bool)*chan->m);
-            int num_recv = 0;
-            int i = 0;
+            unsigned int num_recv = 0;
+            unsigned int i = 0;
             while( num_recv < chan->m) {
                 if (!recv[i] && smlt_queuepair_can_recv(chan->c.shm.recv_owner[i])) {
                     err = smlt_queuepair_recv0(chan->c.shm.recv_owner[i]);
@@ -379,8 +379,8 @@ static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
             } */
             bool recv[chan->m];
             memset(recv, 0, sizeof(bool)*chan->m);
-            int num_recv = 0;
-            int i = 0;
+            unsigned int num_recv = 0;
+            unsigned int i = 0;
             while( num_recv < chan->m) {
                 if (!recv[i] && smlt_queuepair_can_recv(chan->c.shm.recv_owner[i])) {
                     err = smlt_queuepair_recv0(chan->c.shm.recv_owner[i]);

@@ -39,7 +39,7 @@ enum mode {
     BENCH_MODE_MAX=4
 };
 
-char *modestring [4] = {
+const char *modestring [4] = {
     "sum ",
     "last",
     "all ",
@@ -48,7 +48,7 @@ char *modestring [4] = {
 
 #define STR(X) #X
 
-char *glb_label = NULL;
+const char *glb_label = NULL;
 
 cycles_t tsc_measurements[NUM_DATA];
 
@@ -229,9 +229,12 @@ int run_experiment(uint32_t num_local, uint32_t num_remote, enum mode m, bool pr
 
     struct thr_args args[num_local + num_remote + 1];
 
-    args[0].queue_pairs = calloc(num_local + num_remote, sizeof(void *));
+    args[0].queue_pairs = (struct smlt_qp **) calloc(num_local + num_remote, sizeof(void *));
+    assert (args[0].queue_pairs);
 
-    coreid_t *cores = calloc(num_local + num_remote, sizeof(coreid_t));
+    coreid_t *cores = (coreid_t*) calloc(num_local + num_remote, sizeof(coreid_t));
+    assert (cores);
+
     uint32_t idx = 0;
 
     coreid_t *cluster_cores;
@@ -331,8 +334,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    queue_pairs[0] = calloc(num_cores, sizeof(void *));
-    queue_pairs[1] = calloc(num_cores, sizeof(void *));
+    queue_pairs[0] = (struct smlt_qp**) calloc(num_cores, sizeof(void *));
+    queue_pairs[1] = (struct smlt_qp**) calloc(num_cores, sizeof(void *));
     if (queue_pairs[0] == NULL || queue_pairs[1] == NULL) {
         printf("FAILED TO INITIALIZE calloc!\n");
         return -1;

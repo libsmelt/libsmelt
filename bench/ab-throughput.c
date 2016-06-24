@@ -93,15 +93,16 @@ int main(int argc, char **argv)
         "MCS barrier",
     };
 
-    
+
     err = smlt_init(num_threads, true);
     if (smlt_err_is_fail(err)) {
         printf("FAILED TO INITIALIZE !\n");
         return 1;
     }
-    
-    
-    uint32_t*  cores = malloc(sizeof(uint32_t)*num_threads);
+
+
+    uint32_t*  cores = (uint32_t*) malloc(sizeof(uint32_t)*num_threads);
+    assert (cores!=NULL);
 
     for (int i = 0; i < num_threads; i++) {
         cores[i] = i;

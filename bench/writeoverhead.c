@@ -29,7 +29,7 @@ cycles_t tsc_overhead = 0;
 
 #define STR(X) #X
 
-char *glb_label = NULL;
+const char *glb_label = NULL;
 
 cycles_t tsc_measurements[NUM_DATA];
 
@@ -280,8 +280,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    queue_pairs[0] = calloc(NUM_CHANNELS, sizeof(void *));
-    queue_pairs[1] = calloc(NUM_CHANNELS, sizeof(void *));
+    queue_pairs[0] = (struct smlt_qp **) calloc(NUM_CHANNELS, sizeof(void *));
+    queue_pairs[1] = (struct smlt_qp **) calloc(NUM_CHANNELS, sizeof(void *));
     if (queue_pairs[0] == NULL || queue_pairs[1] == NULL) {
         printf("FAILED TO INITIALIZE calloc!\n");
         return -1;

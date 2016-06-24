@@ -125,7 +125,7 @@ bool smlt_reduce_can_recv(struct smlt_context *ctx)
         return err; // TODO: adding more error values
     }
 
-    for (int i = 0; i < count; i++) {
+    for (unsigned int i = 0; i < count; i++) {
         if (smlt_channel_can_recv(&children[i])) {
             return true;
         }

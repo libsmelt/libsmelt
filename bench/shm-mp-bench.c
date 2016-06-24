@@ -196,12 +196,12 @@ void run(bool use_mp, bool use_tree)
         exit(1);
     }
 
-    mp = smlt_platform_alloc(sizeof(struct smlt_channel)*num_cores,
-                             SMLT_ARCH_CACHELINE_SIZE, true);
-    for (int i = 2; i < num_cores+1; i++) {
+    mp = (struct smlt_channel*) smlt_platform_alloc(sizeof(struct smlt_channel)*num_cores,
+                                                    SMLT_ARCH_CACHELINE_SIZE, true);
+    for (unsigned int i = 2; i < num_cores+1; i++) {
 
         num_threads = i;
-        for (int j = 0; j < i; j++) {
+        for (unsigned int j = 0; j < i; j++) {
             fprintf(stderr,"%d ", cores[j]);
         }
         fprintf(stderr,"\n");
@@ -213,7 +213,7 @@ void run(bool use_mp, bool use_tree)
         }
 
         if (use_mp) {
-            for (int j = 0; j < i; j++) {
+            for (unsigned int j = 0; j < i; j++) {
                 c = &mp[j];
                 smlt_channel_create(&c, &cores[0], &cores[j], 1, 1);  
             }

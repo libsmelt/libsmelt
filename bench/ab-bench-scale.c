@@ -363,8 +363,8 @@ int main(int argc, char **argv)
     }
 
     // TODO to many channels
-    for (int i = 0; i < total; i++) {
-        for (int j = 0; j < total; j++) {
+    for (unsigned int i = 0; i < total; i++) {
+        for (unsigned int j = 0; j < total; j++) {
             struct smlt_channel* ch = &chan[i][j];
             err = smlt_channel_create(&ch, (uint32_t *)&i, (uint32_t*) &j, 1, 1);
             if (smlt_err_is_fail(err)) {
@@ -375,7 +375,7 @@ int main(int argc, char **argv)
     }
 
     for (int top = 0; top < NUM_TOPO; top++) {
-        for (int j = 2; j < total+1; j++) {
+        for (unsigned int j = 2; j < total+1; j++) {
             num_threads = j;
             cores = placement(num_threads, true);
             pthread_barrier_init(&bar, NULL, num_threads);
@@ -415,7 +415,7 @@ int main(int argc, char **argv)
                     }
                 }
 
-                for (int j=0; j < num_threads; j++) {
+                for (unsigned int j=0; j < num_threads; j++) {
                     node = smlt_get_node_by_id(cores[j]);
                     smlt_node_join(node);
                 }

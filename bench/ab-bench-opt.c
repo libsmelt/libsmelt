@@ -671,7 +671,7 @@ static void* ab(void* a)
     uint32_t* leafs;
     leafs = get_leafs(active_topo, &count);
     struct smlt_msg* msg = smlt_message_alloc(56);
-    for (int i = 0; i < count; i++) {
+    for (unsigned int i = 0; i < count; i++) {
         coreid_t last_node = (coreid_t) leafs[i];
         sk_m_reset(&m);
 
@@ -733,11 +733,11 @@ int main(int argc, char **argv)
     num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 
     chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*num_threads);
-    for (int i = 0; i < num_threads; i++) {
+    for (unsigned int i = 0; i < num_threads; i++) {
         chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*num_threads);
     }
 
-    char *topo_names[NUM_TOPO] = {
+    const char *topo_names[NUM_TOPO] = {
         "optimal",
         "adaptivetree",
     };
@@ -750,8 +750,8 @@ int main(int argc, char **argv)
     }
 
     // TODO to many channels
-    for (int i = 0; i < num_threads; i++) {
-        for (int j = 0; j < num_threads; j++) {
+    for (unsigned int i = 0; i < num_threads; i++) {
+        for (unsigned int j = 0; j < num_threads; j++) {
             struct smlt_channel* ch = &chan[i][j];
             err = smlt_channel_create(&ch, (uint32_t *)&i, (uint32_t*) &j, 1, 1);
             if (smlt_err_is_fail(err)) {
@@ -870,7 +870,7 @@ int main(int argc, char **argv)
 
     struct smlt_generated_model* model = NULL;
     struct smlt_topology *topo = NULL;
-    for (int j = 0; j < num_topos; j++) {
+    for (unsigned int j = 0; j < num_topos; j++) {
         if (strcmp(topo_names[j], "optimal") == 0) {
             model = (struct smlt_generated_model*) malloc(sizeof(struct smlt_generated_model));
             model->model = matrix;
@@ -885,7 +885,7 @@ int main(int argc, char **argv)
                 return 1;
             }
             leafs = model->leafs;
-            for (int i = 0; i < num_cores; i++) {
+            for (unsigned int i = 0; i < num_cores; i++) {
                 fprintf(stderr,"Leafs[%d]=%d \n", i, leafs[i]);
                 if ((i != 0) && ((model->leafs[i] == 0) || model->leafs[i] > num_cores)) {
                     num_leafs = i;
@@ -921,7 +921,7 @@ int main(int argc, char **argv)
             }
         }
 
-        for (int z=0; z < num_threads; z++) {
+        for (unsigned int z=0; z < num_threads; z++) {
             node = smlt_get_node_by_id(cores[z]);
             smlt_node_join(node);
         }
@@ -934,7 +934,7 @@ int main(int argc, char **argv)
             }
         }
 
-        for (int z=0; z < num_threads; z++) {
+        for (unsigned int z=0; z < num_threads; z++) {
             node = smlt_get_node_by_id(cores[z]);
             smlt_node_join(node);
         }

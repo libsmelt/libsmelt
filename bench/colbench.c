@@ -60,16 +60,16 @@ static coreid_t* placement(uint32_t n, bool do_fill, bool hyper)
     }
     struct bitmask* nodes[numa_nodes];
 
-    for (int i = 0; i < numa_nodes; i++) {
+    for (unsigned int i = 0; i < numa_nodes; i++) {
         nodes[i] = numa_allocate_cpumask();
         numa_node_to_cpus(i, nodes[i]);
     }
 
-    int num_taken = 0;
+    unsigned int num_taken = 0;
     if (numa_available() == 0) {
         if (do_fill) {
-            for (int i = 0; i < numa_nodes; i++) {
-                for (int j = 0; j < num_cores; j++) {
+            for (unsigned int i = 0; i < numa_nodes; i++) {
+                for (unsigned int j = 0; j < num_cores; j++) {
                     if (numa_bitmask_isbitset(nodes[i], j)) {
                         result[num_taken] = j;
                         num_taken++;
@@ -85,8 +85,8 @@ static coreid_t* placement(uint32_t n, bool do_fill, bool hyper)
             int rest = n - (cores_per_node*numa_nodes);
             int taken_per_node = 0;        
 
-            for (int i = 0; i < numa_nodes; i++) {
-                for (int j = 0; j < num_cores; j++) {
+            for (unsigned int i = 0; i < numa_nodes; i++) {
+                for (unsigned int j = 0; j < num_cores; j++) {
                     if (numa_bitmask_isbitset(nodes[i], j)) {
                         if (taken_per_node == cores_per_node) {
                             if (rest > 0) {
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
             }   
         }
 
-        for (int j=0; j < num_threads; j++) {
+        for (unsigned int j=0; j < num_threads; j++) {
             node = smlt_get_node_by_id(cores[j]);
             smlt_node_join(node);
         }
@@ -291,7 +291,7 @@ int main(int argc, char **argv)
             }   
         }
 
-        for (int j=0; j < num_threads; j++) {
+        for (unsigned int j=0; j < num_threads; j++) {
             node = smlt_get_node_by_id(cores[j]);
             smlt_node_join(node);
         }

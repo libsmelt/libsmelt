@@ -16,7 +16,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <numa.h>
-
+#include <assert.h>
 
 
 /*
@@ -66,6 +66,7 @@ void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
 #else
     void *buf = numa_alloc_local(bytes + align + 2* sizeof(void *));
     if (!buf) {
+        assert (!"numa_alloc_local failed");
         return NULL;
     }
 
