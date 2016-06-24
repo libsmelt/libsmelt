@@ -39,7 +39,7 @@ errval_t smlt_node_create(struct smlt_node **node,
         return SMLT_ERR_INVAL;
     }
 
-    struct smlt_node *new_node = smlt_platform_alloc(SMLT_NODE_SIZE(args->num_nodes),
+    struct smlt_node *new_node = (struct smlt_node*) smlt_platform_alloc(SMLT_NODE_SIZE(args->num_nodes),
                                                      SMLT_ARCH_CACHELINE_SIZE, true);
     if (!new_node) {
         return SMLT_ERR_MALLOC_FAIL;

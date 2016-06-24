@@ -131,6 +131,5 @@ int main(int argc, char ** argv)
            assert (!"Smelt error");
        }
     }
-
     return 0;
 }

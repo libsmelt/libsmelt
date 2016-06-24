@@ -45,7 +45,7 @@ __thread cycles_t buf[NUM_WRITES];
 
 void* thr_writer(void* arg)
 {
-    struct swmr_context* queue = (struct swmr_context*) 
+    struct swmr_context* queue = (struct swmr_context*)
                         malloc(sizeof(struct swmr_context));
     cpu_set_t cpu_mask;
 
@@ -69,7 +69,7 @@ void* thr_writer(void* arg)
             break;
         }
     }
-    
+
     sleep(1);
 
     printf("###################################################\n");
@@ -80,8 +80,8 @@ void* thr_writer(void* arg)
 }
 
 void* thr_reader(void* arg)
-{   
-    struct swmr_context* queue = (struct swmr_context*) 
+{
+    struct swmr_context* queue = (struct swmr_context*)
                                 malloc(sizeof(struct swmr_context));
     cpu_set_t cpu_mask;
 
@@ -109,21 +109,21 @@ void* thr_reader(void* arg)
         sk_m_add(&m);
 
         if (r[0] != (previous+1)) {
-            num_wrong++;  
+            num_wrong++;
         }
 
         previous++;
-        
+
         if (previous == NUM_WRITES-1) {
             break;
         }
     }
-    
+
     printf("###################################################\n");
     if (num_wrong) {
-        printf("Reader %"PRIu64": Test Failed \n", ((uint64_t)arg));
+        printf("Reader %" PRIu64 ": Test Failed \n", ((uint64_t)arg));
     } else {
-        printf("Reader %"PRIu64": Test Succeeded \n", ((uint64_t)arg));
+        printf("Reader %" PRIu64 ": Test Succeeded \n", ((uint64_t)arg));
     }
     printf("###################################################\n");
     sk_m_print_analysis(&m);
@@ -143,11 +143,10 @@ int main(int argc, char ** argv)
     }
     sleep(1);
 
-    pthread_create(&tids[num_readers], NULL, thr_writer, (void*) 0); 
+    pthread_create(&tids[num_readers], NULL, thr_writer, (void*) 0);
     for (uint64_t i = 0; i < (uint64_t) num_readers+1; i++) {
         pthread_join(tids[i], NULL);
     }
 
     return 0;
 }
-

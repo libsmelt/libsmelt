@@ -20,24 +20,24 @@ unsigned num_runs = 10000000;
 void* worker(void* a)
 {
     uint64_t my_id = (uint64_t) a;
-    
+
     struct smlt_msg* msg = smlt_message_alloc(56);
     for (int i = 0; i < NUM_THREADS; i++) {
         // If its my turn send to all nodes
-        if (i == my_id) {
+        if ((unsigned) i == my_id) {
             for (int z = 0; z < NUM_THREADS; z++) {
-                if (z == my_id) {
+                if ((unsigned) z == my_id) {
                     continue;
                 }
 
-                for (int j = 0; j < num_runs; j++) {
+                for (unsigned int j = 0; j < num_runs; j++) {
                     //printf("Node %ld: Sending to %d\n", my_id, z);
                     smlt_send(z, msg);
                     smlt_recv(z, msg);
                 }
             }
         } else {
-            for (int j = 0; j < num_runs; j++) {
+            for (unsigned int j = 0; j < num_runs; j++) {
                 smlt_recv(i, msg);
                 //printf("Node %ld: Recving from %d \n", my_id, i);
                 smlt_send(i, msg);

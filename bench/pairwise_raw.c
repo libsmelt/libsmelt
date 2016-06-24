@@ -126,21 +126,21 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    struct smlt_node **nodes = calloc(num_cores, sizeof(void *));
+    struct smlt_node **nodes = (struct smlt_node**) calloc(num_cores, sizeof(void *));
     if (!nodes) {
         printf("FAILED TO INITIALIZE !\n");
         return -1;
     }
 
 
-    queue_pairs = calloc(num_cores, sizeof(*queue_pairs));
+    queue_pairs = (struct smlt_qp***) calloc(num_cores, sizeof(*queue_pairs));
     if (queue_pairs == NULL) {
         printf("FAILED TO INITIALIZE !\n");
         return -1;
     }
 
     for (coreid_t s=0; s<num_cores; s++) {
-        queue_pairs[s] = calloc(num_cores, sizeof(void *));
+        queue_pairs[s] = (struct smlt_qp**) calloc(num_cores, sizeof(void *));
         if (queue_pairs[s] == NULL) {
             printf("FAILED TO INITIALIZE !\n");
             return -1;

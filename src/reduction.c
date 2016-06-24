@@ -18,7 +18,7 @@
 
 /**
  * @brief performs a reduction on the current instance
- * 
+ *
  * @param ctx       The smelt context
  * @param msg        input for the reduction
  * @param result     returns the result of the reduction
@@ -61,8 +61,8 @@ errval_t smlt_reduce(struct smlt_context *ctx,
     // --------------------------------------------------
     bool recv[count];
     memset(recv, 0, sizeof(bool)*count);
-    int num_recv = 0;
-    int i = 0;
+    unsigned num_recv = 0;
+    unsigned i = 0;
     while( num_recv < count) {
         if (!recv[i] && smlt_channel_can_recv(&children[i])) {
             err = smlt_channel_recv(&children[i], result);
@@ -166,8 +166,8 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
 
     bool recv[count];
     memset(recv, 0, sizeof(bool)*count);
-    int num_recv = 0;
-    int i = 0;
+    unsigned num_recv = 0;
+    unsigned i = 0;
     while( num_recv < count) {
         if (!recv[i] && smlt_channel_can_recv(&children[i])) {
             err = smlt_channel_recv_notification(&children[i]);
@@ -215,12 +215,12 @@ errval_t smlt_reduce_notify(struct smlt_context *ctx)
 
 /**
  * @brief performs a reduction and distributes the result to all nodes
- * 
+ *
  * @param ctx       The smelt context
  * @param msg       input for the reduction
  * @param result    returns the result of the reduction
  * @param operation  function to be called to calculate the aggregate
- * 
+ *
  * @returns TODO:errval
  */
 errval_t smlt_reduce_all(struct smlt_context *ctx,

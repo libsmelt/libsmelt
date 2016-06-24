@@ -38,7 +38,7 @@ static uint16_t model2[64] = { 0, 70, 70, 70, 1, 0, 0, 0,
                               0, 0, 0, 0, 0, 51, 0, 0};
 
 
-static char *name = "binary_tree";
+static const char *name = "binary_tree";
 int main(int argc, char **argv)
 {
     errval_t err;
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     m->ncores = NUM_THREADS;
     m->len = NUM_THREADS;
     printf("Creating other tree \n");
-    smlt_topology_create(m, name, &topo2);  
+    smlt_topology_create(m, name, &topo2);
 
 
     printf("Creating shared memory based tree \n");
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
     m->len = NUM_THREADS;
     struct smlt_topology *topo3 = NULL;
     name = "hybrid";
-    smlt_topology_create(m, name, &topo3);  
+    smlt_topology_create(m, name, &topo3);
 
     printf("Creating adaptivetree \n");
     struct smlt_generated_model *m2 = NULL;
@@ -82,6 +82,5 @@ int main(int argc, char **argv)
     }
 
     smlt_generate_model(cores, NUM_THREADS, name, &m2);
-    smlt_topology_create(m2, name, &topo2);  
-
+    smlt_topology_create(m2, name, &topo2);
 }

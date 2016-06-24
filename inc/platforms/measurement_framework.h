@@ -46,7 +46,7 @@ struct sk_measurement {
     uint32_t max;
 
     // Name of the measurement
-    char *label;
+    const char *label;
 };
 
 inline static cycles_t sk_m_get_max(struct sk_measurement *m)
@@ -59,7 +59,7 @@ inline static cycles_t sk_m_get_max(struct sk_measurement *m)
  */
 inline static void sk_m_init(struct sk_measurement *m,
                              uint32_t max,
-                             char *name,
+                             const char *name,
                              cycles_t *buf)
 {
     m->max = max;

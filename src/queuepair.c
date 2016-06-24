@@ -41,7 +41,7 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
     uint8_t src_affinity = smlt_platform_cluster_of_core(core_src);
     uint8_t dst_affinity = smlt_platform_cluster_of_core(core_dst);
 
-    struct smlt_qp *qp_src = smlt_platform_alloc_on_node(sizeof (*qp_src),
+    struct smlt_qp *qp_src = (struct smlt_qp*) smlt_platform_alloc_on_node(sizeof (*qp_src),
                                                          SMLT_ARCH_CACHELINE_SIZE,
                                                          src_affinity, true);
 
@@ -49,7 +49,7 @@ errval_t smlt_queuepair_create(smlt_qp_type_t type,
         printf("malloc failed, affinities: %u->%u, %u->%u\n", core_src, src_affinity, core_dst, dst_affinity);
         return SMLT_ERR_MALLOC_FAIL;
     }
-    struct smlt_qp *qp_dst = smlt_platform_alloc_on_node(sizeof (*qp_dst),
+    struct smlt_qp *qp_dst = (struct smlt_qp*) smlt_platform_alloc_on_node(sizeof (*qp_dst),
                                                          SMLT_ARCH_CACHELINE_SIZE,
                                                          dst_affinity, true);
     if (!qp_dst) {

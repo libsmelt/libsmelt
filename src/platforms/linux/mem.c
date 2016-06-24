@@ -71,7 +71,7 @@ void *smlt_platform_alloc(uintptr_t bytes, uintptr_t align, bool do_clear)
 
     void *buf_aligned = SMLT_MEM_ALIGN((char *)buf + 2 * sizeof(uintptr_t), align);
 
-    uintptr_t *ret_buf = buf_aligned;
+    uintptr_t *ret_buf = (uintptr_t*) buf_aligned;
 
     *(ret_buf - 1) = (uintptr_t)buf;
     *(ret_buf - 2) = (uintptr_t)(bytes + align + 2* sizeof(void *));
@@ -142,7 +142,7 @@ void *smlt_platform_alloc_on_node(uint64_t bytes, uintptr_t align, uint8_t node,
 
     void *buf_aligned =  SMLT_MEM_ALIGN((char *)buf + 2 * sizeof(uintptr_t), align);
 
-    uintptr_t *ret_buf = buf_aligned;
+    uintptr_t *ret_buf = (uintptr_t*) buf_aligned;
 
     *(ret_buf - 1) = (uintptr_t)buf;
     *(ret_buf - 2) = (uintptr_t)(bytes + align + 2* sizeof(void *));
@@ -164,7 +164,7 @@ void smlt_platform_free(void *buf)
 #ifdef SMLT_CONFIG_LINUX_NUMA_ALIGN
     free(buf);
 #else
-    uintptr_t *hdr = buf;
+    uintptr_t *hdr = (uintptr_t*) buf;
     numa_free((void *)hdr[-1], hdr[-2]);
 #endif
 }

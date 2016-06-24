@@ -14,16 +14,16 @@
 
 #define NUM_THREADS 32
 
-static char *name = "adaptivetree";
+static const char *name = "adaptivetree";
 static uint32_t cores[NUM_THREADS];
 int main(int argc, char **argv)
-{   
+{
     for (int i = 0; i < NUM_THREADS; i++) {
         cores[i] = i;
     }
     struct smlt_generated_model* model;
     smlt_generate_model(cores, NUM_THREADS, name, &model);
-    
+
 /*
     smlt_tree_generate(NUM_THREADS, cores, name,
                        &model, &leafs, &last_node);

@@ -65,37 +65,40 @@ errval_t smlt_barrier_wait(struct smlt_context *ctx)
 }
 
 errval_t smlt_dissem_barrier_init(uint32_t* cores, uint32_t num_cores,
-                                  struct smlt_dissem_barrier** bar) 
+                                  struct smlt_dissem_barrier** bar)
 {
     errval_t err;
-    (*bar) = smlt_platform_alloc(sizeof(struct smlt_dissem_barrier),
-                                 SMLT_ARCH_CACHELINE_SIZE, true);
+    (*bar) = (struct smlt_dissem_barrier*)
+        smlt_platform_alloc(sizeof(struct smlt_dissem_barrier),
+                            SMLT_ARCH_CACHELINE_SIZE, true);
     struct smlt_dissem_barrier* b = *bar;
     b->num_threads = num_cores;
-    
-    b->cores = smlt_platform_alloc(sizeof(uint32_t)*num_cores,
-                                   SMLT_ARCH_CACHELINE_SIZE, true);    
-    b->channels = smlt_platform_alloc(sizeof(struct smlt_channel*)*num_cores*num_cores,
-                                      SMLT_ARCH_CACHELINE_SIZE, true);    
 
-    for (int i = 0; i < num_cores; i++) {
+    b->cores = (uint32_t*) smlt_platform_alloc(sizeof(uint32_t)*num_cores,
+                                   SMLT_ARCH_CACHELINE_SIZE, true);
+    b->channels = (struct smlt_channel**)
+        smlt_platform_alloc(sizeof(struct smlt_channel*)*num_cores*num_cores,
+                            SMLT_ARCH_CACHELINE_SIZE, true);
+
+    for (unsigned i = 0; i < num_cores; i++) {
         b->cores[i] = cores[i];
     }
 
     for (uint32_t i = 0; i < num_cores; i++) {
         for (uint32_t j = i; j < num_cores; j++) {
-            b->channels[i*num_cores+j] = smlt_platform_alloc(sizeof(struct smlt_channel),
-                                                             SMLT_ARCH_CACHELINE_SIZE,
-                                                             true);           
-            err = smlt_channel_create(&b->channels[i*num_cores+j], 
+            b->channels[i*num_cores+j] = (struct smlt_channel*)
+                smlt_platform_alloc(sizeof(struct smlt_channel),
+                                    SMLT_ARCH_CACHELINE_SIZE,
+                                                             true);
+            err = smlt_channel_create(&b->channels[i*num_cores+j],
                                       &cores[i], &cores[j], 1, 1);
             if (smlt_err_is_fail(err)) {
                 return SMLT_ERR_CHAN_CREATE;
             }
             b->channels[j*num_cores+i] = b->channels[i*num_cores+j];
         }
-    }    
-    
+    }
+
     b->rounds = ceil(log2(num_cores));
 
     return SMLT_SUCCESS;
@@ -106,7 +109,7 @@ errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier* bar)
     int step = 1;
     int my_id = 0;
     int peer;
-    errval_t err = SMLT_SUCCESS; 
+    errval_t err = SMLT_SUCCESS;
 
     for (int i = 0; i < bar->num_threads; i++) {
         if (bar->cores[i] == smlt_node_self_id) {
@@ -114,17 +117,17 @@ errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier* bar)
         }
     }
     // m = 1
-    for (int r = 0; r < bar->rounds; r++) {
-    
+    for (unsigned r = 0; r < bar->rounds; r++) {
+
         // send to peer
         peer = (my_id + step) % bar->num_threads;
         err = smlt_channel_notify(bar->channels[my_id*bar->num_threads+peer]);
-        
+
         if(smlt_err_is_fail(err)) {
             printf("Dissemination Barrier failed \n");
             return err;
         }
-       
+
         // recv from peer
         peer = (my_id - step);
         while (peer < 0) {
@@ -140,19 +143,19 @@ errval_t smlt_dissem_barrier_wait(struct smlt_dissem_barrier* bar)
         }
         // m = 1
         step = step*2;
-    }    
+    }
     return SMLT_SUCCESS;
 }
 
-errval_t smlt_dissem_barrier_destroy(struct smlt_dissem_barrier* bar) 
+errval_t smlt_dissem_barrier_destroy(struct smlt_dissem_barrier* bar)
 {
-    
-    for (uint32_t i = 0; i < bar->num_threads; i++) {
-        for (uint32_t j = i; j < bar->num_threads; j++) {
-            smlt_platform_free((void*) bar->channels[i*bar->num_threads+j]);     
+
+    for (int i = 0; i < bar->num_threads; i++) {
+        for (int j = i; j < bar->num_threads; j++) {
+            smlt_platform_free((void*) bar->channels[i*bar->num_threads+j]);
         }
-    }    
-    
+    }
+
     smlt_platform_free(bar->cores);
     smlt_platform_free(bar->channels);
     smlt_platform_free(bar);

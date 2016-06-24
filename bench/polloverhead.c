@@ -301,8 +301,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    queue_pairs[0] = calloc(NUM_CHANNELS, sizeof(void *));
-    queue_pairs[1] = calloc(NUM_CHANNELS, sizeof(void *));
+    queue_pairs[0] = (smlt_qp**) calloc(NUM_CHANNELS, sizeof(void *));
+    queue_pairs[1] = (smlt_qp**) calloc(NUM_CHANNELS, sizeof(void *));
     if (queue_pairs[0] == NULL || queue_pairs[1] == NULL) {
         printf("FAILED TO INITIALIZE calloc!\n");
         return -1;
@@ -332,19 +332,21 @@ int main(int argc, char **argv)
 
 #if 1
     for (size_t i = 1; i < num_cores - 1; ++i) {
-        struct thr_args arg = {
-            .s = 0,
-            .r = 0,
-            .num_channels = i
+        struct thr_args arg = (struct thr_args) {
+            /* .s = 0, */
+            /* .r = 0, */
+            /* .num_channels = i */
+            0, 0, (coreid_t) i
         };
         thr_poll(&arg);
     }
 
     for (size_t i = num_cores - 1; i < chan_max; i += num_cores) {
-        struct thr_args arg = {
-            .s = 0,
-            .r = 0,
-            .num_channels = i
+        struct thr_args arg = (struct thr_args) {
+            /* .s = 0, */
+            /* .r = 0, */
+            /* .num_channels = (coreid_t) i */
+            0, 0, (coreid_t) i
         };
 
         thr_poll(&arg);

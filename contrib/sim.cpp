@@ -28,7 +28,7 @@ static char* get_env_str(const char *envname, const char *defaultvalue)
     return env;
 }
 
-int smlt_tree_parse_wrapper(char* json_string,
+int smlt_tree_parse_wrapper(const char* json_string,
                             unsigned ncores,
                             uint16_t** model,
                             uint32_t** leafs,
@@ -173,7 +173,7 @@ static int smlt_tree_config_request(const char *hostname,
 
 int smlt_tree_generate_wrapper(unsigned ncores,
                                uint32_t* cores,
-                               char* tree_name,
+                               const char* tree_name,
                                uint16_t** model,
                                uint32_t** leafs,
                                uint32_t* t_root,
@@ -202,7 +202,7 @@ int smlt_tree_generate_wrapper(unsigned ncores,
         printf("Overriding hosname %s --> %s\n", thishost, machine);
         strncpy(thishost, machine, NAMELEN);
     }
-    
+
     Json::Value root;   // 'root' will contain the root value after parsing.
     root["machine"] = thishost;
 
