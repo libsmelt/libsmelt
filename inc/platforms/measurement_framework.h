@@ -19,9 +19,7 @@
 #include <stdio.h>
 #include <sched.h>
 
-#ifdef __linux__
-#include "linux.h"
-#endif
+#include "smlt_platform.h"
 
 #ifdef BARRELFISH
 #include <barrelfish/domain.h>

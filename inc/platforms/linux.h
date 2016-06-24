@@ -62,7 +62,7 @@ inline void bench_init(void)
 {
 }
 
-inline cycles_t bench_tscoverhead(void)
+static inline cycles_t bench_tscoverhead(void)
 {
     return 0;
 }
