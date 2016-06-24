@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 {
     total = sysconf(_SC_NPROCESSORS_ONLN);
     chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*total);
-    for (int i = 0; i < total; i++) {
+    for (size_t i = 0; i < total; i++) {
         chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*total);
     }
 
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
         "Barrier",
     };
 
-    char *topo_names[NUM_TOPO] = {
+    const char *topo_names[NUM_TOPO] = {
         "mst",
         "bintree",
         "cluster",
