@@ -1,9 +1,16 @@
+image: stefankaestle/gcc
+
+before_script:
+  - "apt-get update; apt-get install -y git libnuma-dev build-essential"
+
+# BUILD
+# --------------------------------------------------
+
 stages:
   - build
   - test
 
 compile:
-  image: stefankaestle/gcc
   stage: build
   artifacts:
     paths:
@@ -13,8 +20,15 @@ compile:
   script:
     - make
 
+debug-compile:
+  stage: build
+  script:
+    - "BUILDTYPE=debug make"
+
+# EXECUTE
+# --------------------------------------------------
+
 basetest:
-  image: stefankaestle/gcc
   stage: test
   dependencies:
     - compile
@@ -25,7 +39,6 @@ basetest:
     - test/channel-test
 
 shmtest:
-  image: stefankaestle/gcc
   stage: test
   dependencies:
     - compile
@@ -35,7 +48,6 @@ shmtest:
     - test/shm-queue-test
 
 fftest:
-  image: stefankaestle/gcc
   stage: test
   dependencies:
     - compile
