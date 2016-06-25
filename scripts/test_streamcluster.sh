@@ -30,9 +30,9 @@ function run_test() {
 	cd $BASEDIR
 	SMLTDIR=$(pwd)
 
-	# Smelt
+	# Smelt - build the libraries in case they don't exists
 	# ------------------------------
-	make
+	make libsmltrt.so libsmltcontrib.so
 
 	cd $APPSDIR
 
