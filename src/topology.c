@@ -243,6 +243,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                              smlt_platform_alloc(sizeof(struct smlt_topology_node*)*
                                                  shm_children, SMLT_DEFAULT_ALIGNMENT,
                                                  true);
+        assert (node->children_shm!=NULL);
         node->num_children_shm = shm_children;
         // set model
         for(unsigned int y = 0; y < model->len; y++){
