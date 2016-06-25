@@ -40,7 +40,9 @@ function run_test() {
 
 	export SMLT_HOSTNAME=sgv-skaestle-01
 
-	scripts/run.sh
+	scripts/run.sh || exit 1
+
+	exit 0
 }
 
 function run_build() {
@@ -52,7 +54,7 @@ function run_build() {
 
 	# Smelt - build the libraries in case they don't exists
 	# ------------------------------
-	make libsmltrt.so libsmltcontrib.so
+	make libsmltrt.so libsmltcontrib.so || exit 1
 
 	cd $APPSDIR
 
@@ -96,7 +98,7 @@ function run_build() {
 		export SK_USE_SHOAL=1
 		export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 		make clean-fast
-		make
+		make || exit 1
 
 	)
 }
