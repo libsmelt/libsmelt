@@ -18,7 +18,6 @@
 #include <smlt_generator.h>
 #include <pthread.h>
 
-#define NUM_THREADS 4
 #define NUM_RUNS 10
 
 struct smlt_context *context = NULL;
@@ -45,17 +44,17 @@ void* thr_worker(void* arg)
     struct smlt_msg* msg = smlt_message_alloc(56);
     uintptr_t r = 0;
     uint64_t id = (uint64_t) arg;
-    for(int i = 0; i < NUM_RUNS; i++) {
+    for(unsigned int i = 0; i < NUM_RUNS; i++) {
         if (id == 0) {
             r++;
             msg->data[0] = r;
         }
-
         smlt_broadcast(context, msg);
         r = msg->data[0];
-        if (r != (unsigned) (i+1)) {
+        if (r != (i+1)) {
            printf("Node %ld: Test failed %ld should be %d \n",
                   id, r, i+1);
+           exit(1);
         }
     }
 
@@ -77,9 +76,10 @@ void* thr_worker(void* arg)
 
 int main(int argc, char **argv)
 {
-    pthread_barrier_init(&bar, NULL, NUM_THREADS);
+    size_t num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    pthread_barrier_init(&bar, NULL, num_threads);
     errval_t err;
-    err = smlt_init(NUM_THREADS, true);
+    err = smlt_init(num_threads, true);
     if (smlt_err_is_fail(err)) {
         printf("FAILED TO INITIALIZE !\n");
         return 1;
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     }
 
     struct smlt_node *node;
-    for (uint64_t i = 0; i < NUM_THREADS; i++) {
+    for (uint64_t i = 0; i < num_threads; i++) {
         node = smlt_get_node_by_id(i);
         err = smlt_node_start(node, thr_worker, (void*) i);
         if (smlt_err_is_fail(err)) {
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
         }
     }
 
-    for (int i=0; i < NUM_THREADS; i++) {
+    for (unsigned int i=0; i < num_threads; i++) {
         node = smlt_get_node_by_id(i);
         smlt_node_join(node);
     }
