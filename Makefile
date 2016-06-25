@@ -114,6 +114,7 @@ all: $(TARGET) \
 		 test/shm-queue-test \
 		 test/queuepair-test \
 		 test/context-test \
+		 test/hybrid-context-test \
 		 test/smlt-mp-test \
 		 test/channel-test \
 		 bench/bar-bench \
@@ -165,6 +166,8 @@ test/shmqp-test: test/shmqp-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/shmqp-test.c -o $@ -lsmltrt
 test/context-test: test/context-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/context-test.c -o $@ -lsmltrt
+test/hybrid-context-test: test/hybrid-context-test.c $(TARGET)
+	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/hybrid-context-test.c -o $@ -lsmltrt
 test/smlt-mp-test: test/smlt-mp-test.c $(TARGET)
 	$(CC) $(CFLAGS)  $(INC) $(LIBS) test/smlt-mp-test.c -o $@ -lsmltrt
 test/channel-test: test/channel-test.c $(TARGET)
