@@ -226,7 +226,7 @@ bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.c
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
-	$(CXX) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -lm -o $(TARGET)
+	$(CXX) -shared $(CXXFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -lm -o $(TARGET)
 	ar rcs $(patsubst %.so,%.a,$(TARGET)) $(OBJS) $(EXTERNAL_OBJS)
 
 contrib/libsmltcontrib.so:
