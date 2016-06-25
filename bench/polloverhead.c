@@ -301,8 +301,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    queue_pairs[0] = (smlt_qp**) calloc(NUM_CHANNELS, sizeof(void *));
-    queue_pairs[1] = (smlt_qp**) calloc(NUM_CHANNELS, sizeof(void *));
+    queue_pairs[0] = (struct smlt_qp**) calloc(NUM_CHANNELS, sizeof(void *));
+    queue_pairs[1] = (struct smlt_qp**) calloc(NUM_CHANNELS, sizeof(void *));
     if (queue_pairs[0] == NULL || queue_pairs[1] == NULL) {
         printf("FAILED TO INITIALIZE calloc!\n");
         return -1;

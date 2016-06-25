@@ -74,7 +74,7 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
     uint32_t num_nodes = smlt_topology_get_num_nodes(topo);
 
-    ctx = (smlt_context*) smlt_platform_alloc(sizeof(*ctx) + num_nodes * sizeof(struct smlt_context_node),
+    ctx = (struct smlt_context*) smlt_platform_alloc(sizeof(*ctx) + num_nodes * sizeof(struct smlt_context_node),
                               SMLT_ARCH_CACHELINE_SIZE, true);
 
     if (ctx == NULL) {
@@ -96,14 +96,15 @@ errval_t smlt_context_create(struct smlt_topology *topo,
 
             // if we use shared memory need to allocate additional channel
             if (smlt_topology_node_use_shm(tn)) {
-                n->children = (smlt_channel*) smlt_platform_alloc((num_children+1)* sizeof(*(n->children)),
-                                        SMLT_ARCH_CACHELINE_SIZE, true);
+                n->children = (struct smlt_channel*) smlt_platform_alloc\
+                    ((num_children+1)* sizeof(*(n->children)),
+                     SMLT_ARCH_CACHELINE_SIZE, true);
+                assert (n->children != NULL);
             } else {
-                n->children = (smlt_channel*) smlt_platform_alloc(num_children * sizeof(*(n->children)),
-                                        SMLT_ARCH_CACHELINE_SIZE, true);
-            }
-            if (!n->children) {
-                assert (n->children);
+                n->children = (struct smlt_channel*) smlt_platform_alloc\
+                    (num_children * sizeof(*(n->children)),
+                     SMLT_ARCH_CACHELINE_SIZE, true);
+                assert (n->children != NULL);
             }
 
             /* setup channels */
@@ -120,9 +121,10 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         }
 
         if ((num_children == 0) && smlt_topology_node_use_shm(tn)) {
-            n->children = (smlt_channel*)
+            n->children = (struct smlt_channel*)
                 smlt_platform_alloc(sizeof(*(n->children)),
                                     SMLT_ARCH_CACHELINE_SIZE, true);
+            assert (n->children!=NULL);
         }
 
         // shared memory children (TODO adds the shm channel at the end)
@@ -156,11 +158,10 @@ errval_t smlt_context_create(struct smlt_topology *topo,
         tn = smlt_topology_node_next(tn);
     }
 
-    ctx->nid_to_node = (smlt_context_node**) smlt_platform_alloc((ctx->max_nid+1)  * sizeof(void *),
-                                           SMLT_ARCH_CACHELINE_SIZE, true);
-    if (!ctx->nid_to_node) {
-
-    }
+    ctx->nid_to_node = (struct smlt_context_node**) smlt_platform_alloc\
+        ((ctx->max_nid+1)  * sizeof(void *),
+         SMLT_ARCH_CACHELINE_SIZE, true);
+    assert(ctx->nid_to_node!=NULL);
 
     for (uint32_t i = 0; i < num_nodes; ++i) {
         struct smlt_context_node *n = &ctx->all_nodes[i];

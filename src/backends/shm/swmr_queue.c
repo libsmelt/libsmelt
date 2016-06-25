@@ -104,9 +104,11 @@ void swmr_queue_create(struct swmr_queue** queue,
 
     swmr_init_context(shm, &(*queue)->src, count, 0, sep_header, queue_size);
 
-    (*queue)->dst = (swmr_context*) smlt_platform_alloc_on_node(sizeof(struct swmr_context)*count,
-                                                SMLT_ARCH_CACHELINE_SIZE,
-                                                numa_node_of_cpu(dst[0]), true);
+    (*queue)->dst = (struct swmr_context*) smlt_platform_alloc_on_node\
+        (sizeof(struct swmr_context)*count,
+         SMLT_ARCH_CACHELINE_SIZE,
+         numa_node_of_cpu(dst[0]), true);
+    assert ((*queue)->dst != NULL);
 
     for (int i = 0; i < count ; i++) {
         swmr_init_context(shm, &((*queue)->dst[i]), count, i,

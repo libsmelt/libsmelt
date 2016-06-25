@@ -89,8 +89,10 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
                SMLT_NODE_SIZE(smlt_gbl_num_proc), smlt_gbl_num_proc,
                sizeof(struct smlt_node), sizeof(struct smlt_qp));
 
-    smlt_gbl_all_nodes = (smlt_node**) smlt_platform_alloc(smlt_gbl_num_proc * sizeof(void *),
-                                             SMLT_ARCH_CACHELINE_SIZE, true);
+    smlt_gbl_all_nodes = (struct smlt_node**) smlt_platform_alloc\
+        (smlt_gbl_num_proc * sizeof(void *),
+         SMLT_ARCH_CACHELINE_SIZE, true);
+
     if (smlt_gbl_all_nodes == NULL) {
         /* TODO: cleanup master share */
         SMLT_ERROR("failed to allocate the node\n");
