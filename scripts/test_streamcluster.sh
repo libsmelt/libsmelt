@@ -37,6 +37,7 @@ function run_test() {
 	export SK_USE_SYNC=1
 	export SK_USE_SHOAL=1
 	export LD_LIBRARY_PATH=.:$LIBSMELT_BASE:$LIBSHOAL:$LD_LIBRARY_PATH
+	export SMLT_TOPOLOGY=binary_tree
 
 	export SMLT_HOSTNAME=sgv-skaestle-01
 
