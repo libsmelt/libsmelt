@@ -89,6 +89,11 @@ function run_build() {
 		echo -e "Building Streamcluster .. in: "
 		pwd
 
+		# Downlod workload
+		if [[ ! -f input_4k.txt ]]; then
+			wget -O input_4k.txt http://people.inf.ethz.ch/skaestle/static/input_4k.txt
+		fi
+
 		# Link libshl.so
 		ln -s -f ../../libshl.so .
 
