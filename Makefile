@@ -1,6 +1,7 @@
 # Makefile for libsync
 
-CC=g++
+CC=gcc
+CXX=g++
 
 TARGET=libsmltrt.so
 INSTALL_DIR=/mnt/scratch/smelt-runtime-system/bench/
@@ -57,7 +58,7 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 COMMONFLAGS += -Werror -Wall -Wfatal-errors \
 			   -pthread -fPIC -DSMLT_VERSION=\"$(GIT_VERSION)\"
 CXXFLAGS += -std=c++11 $(COMMONFLAGS)
-CFLAGS += -std=c++11 $(COMMONFLAGS) -D_GNU_SOURCE
+CFLAGS += -std=c99 $(COMMONFLAGS) -D_GNU_SOURCE
 
 
 # libraries
@@ -225,7 +226,7 @@ bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.c
 # Build shared library
 # --------------------------------------------------
 $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
-	$(CC) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -lm -o $(TARGET)
+	$(CXX) -shared $(CFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -lm -o $(TARGET)
 	ar rcs $(patsubst %.so,%.a,$(TARGET)) $(OBJS) $(EXTERNAL_OBJS)
 
 contrib/libsmltcontrib.so:
