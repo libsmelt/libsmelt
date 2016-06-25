@@ -64,7 +64,10 @@ function run_build() {
 	    # Clone via SSH - this does currently not work, since it
 	    # is not public, but should eventually be possible and
 	    # would be much cleaner
-	    git clone git@gitlab.inf.ethz.ch:skaestle/streamcluster.git streamcluster
+	    ## git clone ssh://vcs-user@code.systems.ethz.ch:8006/diffusion/SCSYNC/streamcluster-sync.git streamcluster
+	    wget -O streamcluster.zip http://people.inf.ethz.ch/skaestle/static/streamcluster.zip
+	    mkdir streamcluster
+	    (cd streamcluster && unzip ../streamcluster.zip)
 	fi
 	( # Build Streamcluster
 		cd streamcluster
