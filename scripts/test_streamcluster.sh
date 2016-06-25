@@ -11,6 +11,7 @@ function usage() {
 	echo ""
 	echo "action:"
 	echo " clean: cleanup previous test-runs"
+	echo " compile: compile Streamcluster"
 	echo " test: run the test"
     exit 1
 }
@@ -24,6 +25,12 @@ function clean() {
 }
 
 function run_test() {
+	echo "Running tests .. "
+	cd $APPSDIR/streamcluster/usr/streamcluster
+	scripts/run.sh
+}
+
+function run_build() {
 
 	mkdir -p $APPSDIR
 
@@ -83,6 +90,11 @@ function run_test() {
 if [[ "$1" == "clean" ]]; then
 	echo "Cleaning up .."
 	clean
+fi
+
+if [[ "$1" == "build" ]]; then
+	echo "Running builds .. "
+	run_build
 fi
 
 if [[ "$1" == "test" ]]; then
