@@ -26,7 +26,20 @@ function clean() {
 
 function run_test() {
 	echo "Running tests .. "
+
+	cd $BASEDIR
+	SMLTDIR=$(pwd)
+
 	cd $APPSDIR/streamcluster/usr/streamcluster
+
+	export LIBSMELT_BASE=$SMLTDIR
+	export LIBSHOAL=../../shoal-master/shoal/
+	export SK_USE_SYNC=1
+	export SK_USE_SHOAL=1
+	export LD_LIBRARY_PATH=.:$LIBSMELT_BASE:$LIBSHOAL:$LD_LIBRARY_PATH
+
+	export SMLT_HOSTNAME=sgv-skaestle-01
+
 	scripts/run.sh
 }
 
@@ -95,14 +108,20 @@ function run_build() {
 if [[ "$1" == "clean" ]]; then
 	echo "Cleaning up .."
 	clean
+	exit 0
 fi
 
 if [[ "$1" == "build" ]]; then
 	echo "Running builds .. "
 	run_build
+	exit 0
 fi
 
 if [[ "$1" == "test" ]]; then
 	echo "Running tests .. "
 	run_test
+	exit 0
 fi
+
+echo "No action set, exiting"
+exit 1
