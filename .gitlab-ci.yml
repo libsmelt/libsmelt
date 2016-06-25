@@ -63,5 +63,6 @@ streamcluster:
   dependencies:
     - compile
   script:
+    - "apt-get update; apt-get install -y git wget unzip"
     - "scripts/test_streamcluster.sh build"
     - "scripts/test_streamcluster.sh test"

@@ -64,24 +64,22 @@ function run_build() {
 	    # would be much cleaner
 	    ## git clone ssh://vcs-user@code.systems.ethz.ch:8006/diffusion/SCSYNC/streamcluster-sync.git streamcluster
 	    wget -O streamcluster.zip http://people.inf.ethz.ch/skaestle/static/streamcluster.zip
-	    unzip streamcluster.zip
+	    mkdir streamcluster
+	    (cd streamcluster && unzip ../streamcluster.zip)
 	fi
 	( # Build Streamcluster
 		cd streamcluster
-
-		# Copy libraries - prevents Streamcluster's Makefile from rebuilding them
-		cp $SMLTDIR/libsmltrt.so .
-		cp $SMLTDIR/libsmltcontrib.so .
-
-		# Download libshl.so - a pre-combiled library build from the github repository
-		if [[ ! -f libshl.so ]]; then
-			wget -O libshl.so http://people.inf.ethz.ch/skaestle/static/libshl.so
-		fi
 
 		# Downlod the Shoal source-code
 		if [[ ! -f shoal.zip ]]; then
 			wget -O shoal.zip https://github.com/libshoal/shoal/archive/master.zip
 			unzip shoal.zip
+		fi
+
+		# Download libshl.so - a pre-combiled library build from the github repository
+		SHLLIB=shoal-master/shoal/
+		if [[ ! -f $SHLLIB/libshl.so ]]; then
+			(cd $SHLLIB && wget -O libshl.so http://people.inf.ethz.ch/skaestle/static/libshl.so)
 		fi
 
 		cd usr/streamcluster
