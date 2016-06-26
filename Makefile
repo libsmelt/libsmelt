@@ -1,7 +1,13 @@
 # Makefile for libsync
 
-CC=gcc
-CXX=g++
+# Allows to switch the compiler
+ifdef CLANG
+	CC=clang
+	CXX=clang++
+else
+	CC=gcc
+	CXX=g++
+endif
 
 TARGET=libsmltrt.so
 INSTALL_DIR=/mnt/scratch/smelt-runtime-system/bench/
