@@ -30,6 +30,7 @@ clang-compile:
   script:
     - "apt-get update; apt-get install -y clang"
     - "CLANG=1 make"
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "test/queuepair-test ump"
     - "test/context-test ump"
 #   - "test/channel-test" << this one did not terminate for me
