@@ -75,7 +75,6 @@ static void* barrier(void* a)
 int main(int argc, char **argv)
 {
     errval_t err;
-    int tids[num_threads];
 
     unsigned nthreads = sysconf(_SC_NPROCESSORS_CONF);
     num_threads = nthreads;

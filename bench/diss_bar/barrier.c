@@ -149,6 +149,10 @@ void run_diss(bool fill, bool hyperthreads) {
 
         cores = placement(n_thr, fill, hyperthreads);
 
+        g_timerfreq = 0;      // SK: can somebody verify this?
+        rdtsc_synchro = NULL; // SK: can somebody verify this?
+        rdtsc_latency = 0;    // SK: can somebody verify this?
+        naccesses = 0;        // SK: can somebody verify this?
         initThreads(n_thr, threaddata, shm, g_timerfreq, rdtsc_synchro,
                     rdtsc_latency, naccesses, &accesses, shm->m,
                     shm->rounds, cores, fill, false);
@@ -242,7 +246,8 @@ void run_mcs(bool fill, bool hyperthreads) {
     
         mcs_barrier_init(bar_mcs, n_thr);
 
-        initThreads(n_thr, threaddata, shm, 0, 0, 0, naccesses, &accesses, 
+        naccesses = 0;        // SK: can somebody verify this?
+        initThreads(n_thr, threaddata, shm, 0, 0, 0, naccesses, &accesses,
                     shm->m, shm->rounds,
                     cores, fill, false);
 
@@ -285,7 +290,6 @@ void run_smlt(bool fill, bool smlt_dissem, bool hyperthreads) {
     int accesses;
     uint32_t* cores;
     errval_t err;
-    struct smlt_node* node;
     int num_threads;
 
     if (hyperthreads) {
@@ -341,6 +345,10 @@ void run_smlt(bool fill, bool smlt_dissem, bool hyperthreads) {
             fprintf(stderr, "Core[%d]=%d\n", t, cores[t]);
         }
 
+        g_timerfreq = 0;          // SK: can somebody verify this?
+        rdtsc_synchro = 0;        // SK: can somebody verify this?
+        rdtsc_latency = 0;        // SK: can somebody verify this?
+        naccesses = 0;            // SK: can somebody verify this?
         initThreads(n_thr, threaddata, shm, g_timerfreq, rdtsc_synchro,
                     rdtsc_latency, naccesses, &accesses, shm->m, shm->rounds,
                     cores, fill, smlt_dissem);

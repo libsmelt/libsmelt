@@ -35,7 +35,7 @@
 
 int get_rdtsc_latency(){
 	/** used to store Registers {R|E}AX, {R|E}BX, {R|E}CX and {R|E}DX */
-	unsigned long long a,b,c,d;
+	unsigned long long a,b;
 	unsigned long long reg_a,reg_b,reg_c,reg_d;
 	unsigned int latency=0xffffffff,i;
 	double tmp;
@@ -86,7 +86,7 @@ void init_time(UINT64_T * g_timerfreq, int * rdtsc_latency){
 }
 
 void generate_rdtscsynchro (UINT64_T * rdtsc_synchro, int length, UINT64_T g_timerfreq ){
-	int i,j, index = 0;
+	int j, index = 0;
 	UINT64_T interval, actual;
 	HRT_TIMESTAMP_T tmp;
 	HRT_GET_TIMESTAMP(tmp);

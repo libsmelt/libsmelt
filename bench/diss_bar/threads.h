@@ -77,17 +77,10 @@ void initThreads(int num_threads, threaddata_t * threaddata, sharedMemory_t * sh
 
 
 void* function_thread (void * arg_threaddata){
-	my_timer_t timer;
 	threaddata_t * threaddata = ((threaddata_t*)arg_threaddata);
 	unsigned int thread_id = threaddata->thread_id;
 
-	int i,n,j,m;
-
-	double tmp_usecs;
-
-	int ell;
-	HRT_TIMESTAMP_T actual;
-	UINT64_T ticks;
+	int n;
 
     char outname[512];
 	//set affinity
@@ -108,9 +101,8 @@ void* function_thread (void * arg_threaddata){
 	threaddata->ack = 1;
 
 	while(threaddata->ack);
-       
 
-	int index_rdtsc=0;
+
 	for (n=0; n<NITERS; n++){
 
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
@@ -123,15 +115,16 @@ void* function_thread (void * arg_threaddata){
         sk_m_add(&mes);
 	}
     sk_m_print(&mes);
+
+    return NULL;
 }
 
 
 void* function_thread_mcs(void * arg_threaddata){
-	my_timer_t timer;
 	threaddata_t * threaddata = ((threaddata_t*)arg_threaddata);
 	unsigned int thread_id = threaddata->thread_id;
 
-	int i,n,j,m;
+	int n;
 
     char outname[512];
 	//set affinity
@@ -152,9 +145,8 @@ void* function_thread_mcs(void * arg_threaddata){
 	threaddata->ack = 1;
 
 	while(threaddata->ack);
-       
 
-	int index_rdtsc=0;
+
 	for (n=0; n<NITERS; n++){
 
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
@@ -167,21 +159,16 @@ void* function_thread_mcs(void * arg_threaddata){
         sk_m_add(&mes);
 	}
     sk_m_print(&mes);
+
+    return NULL;
 }
 
 
 void* function_thread_smlt(void * arg_threaddata){
-	my_timer_t timer;
 	threaddata_t * threaddata = ((threaddata_t*)arg_threaddata);
 	unsigned int thread_id = threaddata->thread_id;
 
-	int i,n,j,m;
-
-	double tmp_usecs;
-
-	int ell;
-	HRT_TIMESTAMP_T actual;
-	UINT64_T ticks;
+	int n;
 
     char outname[512];
 	//set affinity
@@ -210,7 +197,6 @@ void* function_thread_smlt(void * arg_threaddata){
 
 	while(threaddata->ack);
 
-	int index_rdtsc=0;
 	for (n=0; n<NITERS; n++){
 		//TSC syncrho
 		barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
@@ -227,10 +213,12 @@ void* function_thread_smlt(void * arg_threaddata){
             smlt_barrier_wait(context);
             sk_m_add(&mes);
         }
-		
+
 	}
     sk_m_print(&mes);
     free(buf);
+
+    return NULL;
 }
 
 

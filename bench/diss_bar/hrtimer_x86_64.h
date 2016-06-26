@@ -78,10 +78,5 @@ typedef struct {
 
 #define HRT_GET_TIME(t1, time) time = (((( UINT64_T ) t1.h) << 32) | t1.l)
 
-static double HRT_GET_USEC(unsigned long long ticks, unsigned long long g_timerfreq) {
-	return 1e6*(double)ticks/(double)g_timerfreq;
-}
-
-
 
 #endif /* HRTIMER_X86_64_H_ */

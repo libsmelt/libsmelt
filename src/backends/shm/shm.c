@@ -529,13 +529,11 @@ int shm_cluster_get_unique_reader_id(unsigned cid,
 /**
  * \brief Add value to sum atomically using shared memory
  */
+#if 0
 static inline void shm_reduce_add(uint64_t *sum, uint64_t *value)
 {
-#if 0
     __sync_add_and_fetch(sum, *value);
-#endif
 }
-#if 0
 /**
  *\ brief Atomically update shared state of reduction
  *
