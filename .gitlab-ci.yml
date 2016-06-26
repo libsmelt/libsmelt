@@ -25,6 +25,14 @@ debug-compile:
   script:
     - "BUILDTYPE=debug make"
 
+clang-compile:
+  stage: build
+  script:
+    - "CLANG=1 make"
+    - "test/queuepair-test ump"
+    - "test/context-test ump"
+#   - "test/channel-test" << this one did not terminate for me
+
 # EXECUTE
 # --------------------------------------------------
 
