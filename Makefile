@@ -203,31 +203,32 @@ bench/pairwise_raw_s: $(DEPS) $(EXTERNAL_OBJS) bench/pairwise_raw.c
 	$(CC) $(CFLAGS) -DPRINT_SUMMARY=1 $(INC) $(LIBS) bench/pairwise_raw.c -o $@ -lsmltrt
 
 bench/pingpong: $(DEPS) $(EXTERNAL_OBJS) bench/pingpong.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pingpong.c -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/pingpong.c -o $@
 
 bench/polloverhead: $(DEPS) $(EXTERNAL_OBJS) bench/polloverhead.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/polloverhead.c -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/polloverhead.c -o $@
 
 bench/writeoverhead: $(DEPS) $(EXTERNAL_OBJS) bench/writeoverhead.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/writeoverhead.c -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/writeoverhead.c -o $@
 
 bench/multimessage: $(DEPS) $(EXTERNAL_OBJS) bench/multimessage.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/multimessage.c -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/multimessage.c -o $@
 
 bench/shm-mp-bench: $(DEPS) $(EXTERNAL_OBJS) bench/shm-mp-bench.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/shm-mp-bench.c -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/shm-mp-bench.c -o $@
 
 bench/colbench: $(DEPS) $(EXTERNAL_OBJS) bench/colbench.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/colbench.c -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/colbench.c -o $@
 
 bench/ab-bench-opt: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench-opt.c
-	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-bench-opt.c -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/ab-bench-opt.c -o $@
 
-bench/bar-bench: bench/diss_bar/barrier.c
-	$(CC) -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/barrier.c bench/diss_bar/mcs.c $(LIBS) -lpthread -lsmltrt -lm -o $@
+bench/bar-bench: $(DEPS) $(EXTERNAL_OBJS) bench/diss_bar/barrier.c
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/diss_bar/barrier.c bench/diss_bar/mcs.c -o $@
 
 bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.c
-	$(CC) -O0 -std=c99 -D_GNU_SOURCE -L. $(INC) -I bench/diss_bar bench/diss_bar/mcs.c bench/ab-throughput.c -o $(LIBS) -lpthread -lsmltrt -lm -o $@
+	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -I bench/diss_bar bench/diss_bar/mcs.c \
+	bench/ab-throughput.c -o $@
 
 # Build shared library
 # --------------------------------------------------
