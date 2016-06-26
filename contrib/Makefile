@@ -1,5 +1,14 @@
 # Makefile for libsync
 
+# Allows to switch the compiler
+ifdef CLANG
+	CC=clang
+	CXX=clang++
+else
+	CC=gcc
+	CXX=g++
+endif
+
 TARGET=libsmltcontrib.so
 
 CFILES= sim.cpp\

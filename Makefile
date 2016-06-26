@@ -236,8 +236,13 @@ $(TARGET): $(DEPS) $(EXTERNAL_OBJS)
 	$(CXX) -shared $(CXXFLAGS) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -lm -o $(TARGET)
 	ar rcs $(patsubst %.so,%.a,$(TARGET)) $(OBJS) $(EXTERNAL_OBJS)
 
+ifdef CLANG
+contrib/libsmltcontrib.so:
+	CLANG=1 make -C contrib
+else
 contrib/libsmltcontrib.so:
 	make -C contrib
+endif
 
 
 # Compile object files
