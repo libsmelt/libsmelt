@@ -28,6 +28,7 @@ debug-compile:
 clang-compile:
   stage: build
   script:
+    - "apt-get update; apt-get install -y clang"
     - "CLANG=1 make"
     - "test/queuepair-test ump"
     - "test/context-test ump"
