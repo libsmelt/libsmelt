@@ -91,7 +91,11 @@ endif
 ifeq ($(BUILDTYPE),debug)
 	OPT=-ggdb -O0 -pg -DSYNC_DEBUG_BUILD -gdwarf-2
 else
-	OPT=-O3 -ggdb
+	ifeq ($(BUILDTYPE),valgrind)
+		OPT=-g -ggdb -O1 -DSYNC_DEBUG_BUILD -gdwarf-2
+	else
+		OPT=-O3 -ggdb
+	endif
 endif
 
 CXXFLAGS += $(OPT)

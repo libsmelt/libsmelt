@@ -66,6 +66,16 @@ fftest:
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "test/queuepair-test ffq"
 
+# Valgrind
+# --------------------------------------------------
+valgrind:
+  stage: test
+  script:
+    - "apt-get update; apt-get install -y valgrind"
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
+    - "BUILDTYPE=valgrind make"
+    - "valgrind --fair-sched=yes --leak-check=yes test/queuepair-test ump 100"
+
 # STREAMCLUSTER
 # --------------------------------------------------
 streamcluster:
