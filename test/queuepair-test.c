@@ -142,7 +142,8 @@ int main(int argc, char **argv)
     struct smlt_qp* qp1;
     struct smlt_qp* qp2;
 
-    pthread_t *tids = (pthread_t*) malloc(sizeof(pthread_t));
+    pthread_t *tids = (pthread_t*) malloc(2*sizeof(pthread_t));
+    assert(tids!=NULL);
 
     if (argc>2) {
         // Accept number of runs as second argument, but only if first
@@ -213,6 +214,8 @@ int main(int argc, char **argv)
         smlt_queuepair_destroy(qp1);
         smlt_queuepair_destroy(qp2);
     }
+
+    free (tids);
 
     return 0;
 }
