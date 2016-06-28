@@ -23,7 +23,8 @@
 #include <smlt.h>
 #include <smlt_queuepair.h>
 
-#define NUM_RUNS 10000000
+#define NUM_RUNS 10000000             // << default number of runs
+static uint64_t num_runs = NUM_RUNS;  // << can be configured via param #2
 
 volatile uint8_t signal = 0;
 
@@ -40,7 +41,7 @@ void* thr_worker1(void* arg)
     struct smlt_msg* msg = smlt_message_alloc(7);
 
     int num_wrong = 0;
-    for (uint64_t i = 0; i < NUM_RUNS; i++) {
+    for (uint64_t i = 0; i < num_runs; i++) {
         msg->data[0] = i;
         msg->words = 1;
         smlt_queuepair_send(qp, msg);
@@ -79,7 +80,7 @@ void* thr_worker2(void* arg)
     struct smlt_msg* msg = smlt_message_alloc(7);
 
     int num_wrong = 0;
-    for (uint64_t i = 0; i < NUM_RUNS; i++) {
+    for (uint64_t i = 0; i < num_runs; i++) {
         msg->words = 1;
         // test send/receive
         smlt_queuepair_recv(qp, msg);
@@ -141,7 +142,14 @@ int main(int argc, char **argv)
     struct smlt_qp* qp1;
     struct smlt_qp* qp2;
 
-    pthread_t *tids = (pthread_t*) malloc(sizeof(pthread_t));
+    pthread_t *tids = (pthread_t*) malloc(2*sizeof(pthread_t));
+    assert(tids!=NULL);
+
+    if (argc>2) {
+        // Accept number of runs as second argument, but only if first
+        // argument is the backend
+        num_runs = atoi(argv[2]);
+    }
 
     if (argc > 1) {
        if (!strcmp(argv[1], "ump")) {
@@ -153,7 +161,7 @@ int main(int argc, char **argv)
           smlt_queuepair_destroy(qp2);
        }
 
-       if (!strcmp(argv[1], "ffq")) {
+       else if (!strcmp(argv[1], "ffq")) {
           smlt_queuepair_create(SMLT_QP_TYPE_FFQ, &qp1,
                           &qp2, 0, 1);
           run(qp1, qp2, tids);
@@ -162,13 +170,23 @@ int main(int argc, char **argv)
           smlt_queuepair_destroy(qp2);
        }
 
-       if (!strcmp(argv[1], "shm")) {
+       else if (!strcmp(argv[1], "shm")) {
           smlt_queuepair_create(SMLT_QP_TYPE_SHM, &qp1,
                           &qp2, 0, 1);
           run(qp1, qp2, tids);
 
           smlt_queuepair_destroy(qp1);
           smlt_queuepair_destroy(qp2);
+       }
+
+       else {
+
+           printf("Usage: %s [backend] [num_runs]\n\n", argv[0]);
+           printf("backend: backend to use. One of 'ump', 'ffq' or 'shm' "
+                  "(default: all of them)\n"
+                  "num_runs: number of runs to be executed (default: %d)\n\n"
+                  "Single argument is interpreted as backend.\n", NUM_RUNS);
+           return 1;
        }
     } else {
         smlt_queuepair_create(SMLT_QP_TYPE_UMP, &qp1,
@@ -196,6 +214,8 @@ int main(int argc, char **argv)
         smlt_queuepair_destroy(qp1);
         smlt_queuepair_destroy(qp2);
     }
+
+    free (tids);
 
     return 0;
 }
