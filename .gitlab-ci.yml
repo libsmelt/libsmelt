@@ -56,7 +56,6 @@ shmtest:
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "test/queuepair-test shm"
     - test/shm-queue-test
-    - test/hybrid-context-test
 
 fftest:
   stage: test

@@ -254,7 +254,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                     SMLT_DEBUG(SMLT_DBG__INIT,"Parent of %d is %d \n", x, y);
                     node->parent = &((*topo)->all_nodes[y]);
                 } else if ((val > 69) && (val != 99)) {
-                    assert (!"Fix compile bug");
+                    assert (!"NYI Hybrid models");
                     // master of shared memory channel
                     /* node->use_shm = true; */
                     /* SMLT_DEBUG(SMLT_DBG__GENERAL,"Child (SHM) of %d is %d at pos %d \n", */
