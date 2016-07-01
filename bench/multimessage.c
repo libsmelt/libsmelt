@@ -35,8 +35,7 @@ enum mode {
     BENCH_MODE_TOTAL=0,
     BENCH_MODE_LAST=1,
     BENCH_MODE_ALL=2,
-    BENCH_MODE_ALL_TOTAL=3,
-    BENCH_MODE_MAX=4
+    BENCH_MODE_MAX=3
 };
 
 const char *modestring [4] = {
@@ -168,16 +167,6 @@ void* thr_write(void* a)
             tsc_start = bench_tsc();
             for (uint32_t i = 0; i < nc; ++i) {
                 tsc_start = bench_tsc();
-                smlt_queuepair_send(*qp, msg);
-                qp++;
-            }
-            tsc_end = bench_tsc();
-            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
-            break;
-            case BENCH_MODE_ALL_TOTAL :
-            tsc_start = bench_tsc();
-            for (uint32_t i = 0; i < nc; ++i) {
-                tsc_end = bench_tsc();
                 smlt_queuepair_send(*qp, msg);
                 qp++;
             }
@@ -373,8 +362,6 @@ int main(int argc, char **argv)
             printf("\n-----------------------------------------------------\n");
             memset(tsc_measurements, 0, sizeof(tsc_measurements));
             run_experiment(nl, nr, BENCH_MODE_TOTAL, true);
-            memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(nl, nr, BENCH_MODE_ALL_TOTAL, false);
             memset(tsc_measurements, 0, sizeof(tsc_measurements));
             run_experiment(nl, nr, BENCH_MODE_LAST, false);
             memset(tsc_measurements, 0, sizeof(tsc_measurements));
