@@ -47,8 +47,6 @@ const char *modestring [4] = {
 
 #define STR(X) #X
 
-const char *glb_label = NULL;
-
 cycles_t tsc_measurements[NUM_DATA];
 
 //#define bench_tsc() rdtscp()
@@ -57,8 +55,6 @@ struct thr_args {
     struct smlt_qp **queue_pairs;
     coreid_t *cores;
     uint32_t num_cores;
-    uint32_t num_local;
-    uint32_t num_remote;
     enum mode mode;
 };
 
@@ -114,7 +110,7 @@ static void eval_data(struct thr_args*arg)
     sum /= count;
 
     printf("r=%u,l=%u, mode=%s, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
-            arg->num_remote, arg->num_local, modestring[arg->mode], avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
+           0, 0, modestring[arg->mode], avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
 
 
 }
@@ -131,6 +127,7 @@ void* thr_write(void* a)
     uint32_t nc = arg->num_cores;
 
     for (size_t iter=0; iter<NUM_EXP; iter++) {
+
         // Wait a while to ensure that receivers already polled the
         // line, so that it is in shared state
         assert (tsc_overhead>0);
@@ -193,15 +190,17 @@ void* thr_write(void* a)
 void* thr_receiver(void* a)
 {
     struct thr_args* arg = (struct thr_args*) a;
+
+    assert (arg->num_cores == 1); // Receivers only need one core ID (sender)
+
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-    //printf("receiver: queue_pairs[1][%u]\n", arg->cores[0]);
+    struct smlt_qp *qp = queue_pairs[1][arg->cores[0]];
 
     for (size_t j=0; j<NUM_EXP; j++) {
-        struct smlt_qp *qp = queue_pairs[1][arg->cores[0]];
-        smlt_queuepair_recv(qp, msg);
 
+        smlt_queuepair_recv(qp, msg);
         smlt_queuepair_send(qp, msg);
     }
 
@@ -209,53 +208,29 @@ void* thr_receiver(void* a)
 }
 
 
-int run_experiment(uint32_t num_local, uint32_t num_remote, enum mode m, bool print)
+/**
+ * \brief Run experiments
+ *
+ * \param num_cores: Number of cores and size of array cores
+ * \param cores: List of cores to send a message to
+ * \param m: Mode of measurement - one of enum mode
+ */
+int run_experiment(size_t num_cores, coreid_t* cores, enum mode m)
 {
     errval_t err;
+    struct thr_args args[num_cores + 1];
 
-    //printf("run_experiment(nl=%u, nr=%u)\n", num_local,num_remote);
-
-    struct thr_args args[num_local + num_remote + 1];
-
-    args[0].queue_pairs = (struct smlt_qp **) calloc(num_local + num_remote, sizeof(void *));
+    args[0].queue_pairs = (struct smlt_qp **) calloc(num_cores, sizeof(void *));
     assert (args[0].queue_pairs);
 
-    coreid_t *cores = (coreid_t*) calloc(num_local + num_remote, sizeof(coreid_t));
-    assert (cores);
-
-    uint32_t idx = 0;
-
-    coreid_t *cluster_cores;
-    uint32_t num_cores;
-
-    if (print) printf("# remote cores: ");
-    for (uint32_t i = 1; i <= num_remote; ++i) {
-        /* */
-        err = smlt_platform_cores_of_cluster(i, &cluster_cores, &num_cores);
-        if (smlt_err_is_fail(err)) { printf("error getting cores of cluster\n");}
-        args[0].queue_pairs[idx] = queue_pairs[0][cluster_cores[0]];
-
-        cores[idx++] = cluster_cores[0];
-        if (print)  printf("%u ", cluster_cores[0]);
-
-        free(cluster_cores);
+    // Copy preinitialized queue pairs
+    for (size_t i=0; i<num_cores; i++) {
+        args[0].queue_pairs[i] = queue_pairs[0][cores[i]];
     }
 
-    if (print) printf("\tlocal cores: ");
-    err = smlt_platform_cores_of_cluster(0, &cluster_cores, &num_cores);
-    if (smlt_err_is_fail(err)) { printf("error getting cores of cluster\n");}
 
-    for (uint32_t i = 1; i <= num_local; ++i) {
-        args[0].queue_pairs[idx] = queue_pairs[0][cluster_cores[i]];
-        cores[idx++] = cluster_cores[i];
-        if (print) printf("%u ", cluster_cores[i]);
-    }
-    free(cluster_cores);
-    if (print) printf("\n");
-
-
-    for (coreid_t i = 0; i < num_local + num_remote; ++i) {
-
+    // Start receiver threads
+    for (coreid_t i = 0; i < num_cores; ++i) {
 
         struct smlt_node *dst = smlt_get_node_by_id(cores[i]);
         args[i].cores = cores + i;
@@ -263,35 +238,81 @@ int run_experiment(uint32_t num_local, uint32_t num_remote, enum mode m, bool pr
         err = smlt_node_start(dst, thr_receiver, args + i);
         if (smlt_err_is_fail(err)) {
             printf("Staring node failed \n");
+            abort();
         }
     }
 
-    args[0].num_cores = num_local + num_remote;
+    // Start sender thread
+    args[0].num_cores = num_cores;
     args[0].cores = cores;
-    args[0].num_local = num_local;
-    args[0].num_remote = num_remote;
     args[0].mode = m;
 
     thr_write(args);
 
-    for (coreid_t i = 0; i < num_local + num_remote; ++i) {
+    // Join threads
+    for (coreid_t i = 0; i < num_cores; ++i) {
         struct smlt_node *dst = smlt_get_node_by_id(cores[i]);
         smlt_node_join(dst);
     }
 
-    free(cores);
     free(args[0].queue_pairs);
 
     return 0;
 }
 
-
 int main(int argc, char **argv)
 {
-    errval_t err;
-    coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF) / NUM_THREADS;
-    printf("Running with %d cores\n", num_cores);
+    if (argc<2) {
 
+        printf("Usage: %s <num_cores> <cores>\n", argv[0]);
+        printf("\n");
+        printf("cores: comma-separate list of receiving cores\n");
+
+        return 1;
+    }
+
+    size_t cores_max = sysconf(_SC_NPROCESSORS_CONF);
+
+    coreid_t cores[cores_max];
+
+    // Parse cores
+    printf("cores: ");
+    size_t idx = 0;
+    char * tmp = (char *) argv[1];
+    do {
+        size_t l = strcspn (tmp, ",");
+        printf("%.*s ", (int) l, tmp);
+        tmp += l + 1;
+
+        cores[idx++] = atoi(tmp);
+        assert (atoi(tmp)<cores_max);
+
+    } while (tmp[-1] && idx<cores_max);
+    printf("\n");
+
+    // Make sure we reached the end of the comma separated list when
+    // leaving the loop, and not because we are running out of spaces
+    // in the array of cores. If the latter is the case, the argument
+    // contains more cores tain evailable in the system.
+    if (tmp[-1]) {
+        printf("Too many cores given\n"); abort();
+    }
+
+    // Parse arguments
+    size_t num_cores = idx;
+    printf("num_cores: %zu\n", num_cores);
+
+    errval_t err;
+    if (num_cores>cores_max) {
+
+        printf("Machine does not have enough cores: %zu %zu\n",
+               num_cores, cores_max);
+        abort();
+    }
+
+    printf("Running with %zu cores\n", num_cores);
+
+    // Calibrate TSC overhead
     printf("Calibrating TSC overhead\n");
 
     #define TSC_ROUNDS 1000
@@ -315,7 +336,7 @@ int main(int argc, char **argv)
 
     printf("Calibrating TSC overhead is %lu cycles\n", tsc_overhead);
 
-
+    // Initalize Smelt
     err = smlt_init(num_cores, true);
     if (smlt_err_is_fail(err)) {
         printf("FAILED TO INITIALIZE smlt !\n");
@@ -324,13 +345,14 @@ int main(int argc, char **argv)
 
     queue_pairs[0] = (struct smlt_qp**) calloc(num_cores, sizeof(void *));
     queue_pairs[1] = (struct smlt_qp**) calloc(num_cores, sizeof(void *));
+
     if (queue_pairs[0] == NULL || queue_pairs[1] == NULL) {
         printf("FAILED TO INITIALIZE calloc!\n");
-        return -1;
+        abort();
     }
 
-    glb_label = "WRITEN";
-
+    // Initialize message channels. One channel from the master thread
+    // to each other core
     for (size_t s=0; s<num_cores; s++) {
         struct smlt_qp **src = &(queue_pairs[0][s]);
         struct smlt_qp **dst = &(queue_pairs[1][s]);
@@ -339,39 +361,25 @@ int main(int argc, char **argv)
                                     src, dst, 0, s);
         if (smlt_err_is_fail(err)) {
             printf("FAILED TO INITIALIZE queuepair! for core %lu\n", s);
-            return -1;
+            abort();
         }
     }
 
-    smlt_platform_pin_thread(0);
+    smlt_platform_pin_thread(0); // << pin master thread
 
-    coreid_t num_local_cores = smlt_platform_num_cores_of_cluster(0) / NUM_THREADS;
-    uint32_t num_cluster = smlt_platform_num_clusters();
+    // Execute benchmark
+    for (coreid_t i = 0; i < num_cores; ++i) {
 
-    printf("num_local_cores=%u, num_cluster=%u\n", num_local_cores, num_cluster);
+        memset(tsc_measurements, 0, sizeof(tsc_measurements));
+        run_experiment(i, cores, BENCH_MODE_TOTAL);
 
-    printf("=============================================\n");
+        memset(tsc_measurements, 0, sizeof(tsc_measurements));
+        run_experiment(i, cores, BENCH_MODE_LAST);
 
-
-    for (coreid_t nr = 0; nr < num_cluster; ++nr) {
-        for (coreid_t nl = 0; nl < num_local_cores; ++nl) {
-            if (nl == 0 && nr == 0) {
-                continue;
-            }
-            printf("\n-----------------------------------------------------\n");
-            memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(nl, nr, BENCH_MODE_TOTAL, true);
-            memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(nl, nr, BENCH_MODE_LAST, false);
-            memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(nl, nr, BENCH_MODE_ALL, false);
-        }
+        memset(tsc_measurements, 0, sizeof(tsc_measurements));
+        run_experiment(i, cores, BENCH_MODE_ALL);
     }
 
-
-
-    printf("=============================================\n");
-
-
+    return 0;
 
 }
