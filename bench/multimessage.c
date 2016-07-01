@@ -143,8 +143,7 @@ void* thr_write(void* a)
 
         struct smlt_qp **qp = arg->queue_pairs;
         switch (arg->mode) {
-            case BENCH_MODE_LAST :
-
+        case BENCH_MODE_LAST :
             for (uint32_t i = 1; i < nc; ++i) {
                 smlt_queuepair_send(*qp, msg);
                 qp++;
@@ -154,7 +153,7 @@ void* thr_write(void* a)
             tsc_end = bench_tsc();
             tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
             break;
-            case BENCH_MODE_TOTAL :
+        case BENCH_MODE_TOTAL :
             tsc_start = bench_tsc();
             for (uint32_t i = 0; i < nc; ++i) {
                 smlt_queuepair_send(*qp, msg);
@@ -163,7 +162,7 @@ void* thr_write(void* a)
             tsc_end = bench_tsc();
             tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
             break;
-            case BENCH_MODE_ALL :
+        case BENCH_MODE_ALL :
             tsc_start = bench_tsc();
             for (uint32_t i = 0; i < nc; ++i) {
                 tsc_start = bench_tsc();
@@ -173,7 +172,7 @@ void* thr_write(void* a)
             tsc_end = bench_tsc();
             tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
             break;
-            default:
+        default:
             printf("ERROR: UNKNOWN MODE\n");
         }
 
