@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include "debug.h"
+#include "smlt_debug.h"
 
 /**
  * @brief prints an message to stdout

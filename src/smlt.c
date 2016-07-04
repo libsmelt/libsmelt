@@ -11,7 +11,7 @@
 #include <smlt_node.h>
 #include <smlt_topology.h>
 #include <shm/smlt_shm.h>
-#include  "debug.h"
+#include "smlt_debug.h"
 
 uint8_t smlt_initialized = 0;
 

@@ -10,7 +10,7 @@
 #include <smlt_topology.h>
 #include <smlt_generator.h>
 #include <smlt_queuepair.h>
-#include "debug.h"
+#include "smlt_debug.h"
 #include <stdio.h>
 
 /**

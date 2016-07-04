@@ -10,7 +10,7 @@
 #include <smlt_channel.h>
 #include <smlt_context.h>
 #include <smlt_broadcast.h>
-#include "debug.h"
+#include "smlt_debug.h"
 
 /**
  * @brief performs a broadcast to the nodes of the subtree routed at the 

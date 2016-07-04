@@ -9,7 +9,7 @@
 #ifndef INTERNAL_DEBUG_H
 #define INTERNAL_DEBUG_H 1
 
-#include "debug.h"
+#include "smlt_debug.h"
 
 //struct shm_context {//
 //
