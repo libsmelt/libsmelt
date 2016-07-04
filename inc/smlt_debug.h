@@ -9,7 +9,10 @@
 #ifndef SMLT_DEBUG_H_
 #define SMLT_DEBUG_H_ 1
 
-//#define SMLT_DEBUG_ENABLED 1
+#ifdef SYNC_DEBUG_BUILD
+// Enable debug output for buildtype "debug"
+#define SMLT_DEBUG_ENABLED 1
+#endif
 
 #define SMLT_DBG_ERR       (1 << 31)
 #define SMLT_DBG_WARN      (1 << 30)
@@ -60,6 +63,8 @@
         SMLT_ERROR(__VA_ARGS__);    \
         exit(1);                    \
     } while(0);                     \
+
+#define dbg_printf(...) SMLT_DEBUG(SMLT_DBG__GENERAL, __VA_ARGS__);
 
 /*
  * ===========================================================================
