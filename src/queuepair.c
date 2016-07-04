@@ -20,7 +20,8 @@
 /**
   * @brief creates the queue pair
   *
-  * @param TODO: information specification
+  * @param qp1: Forward channel
+  * @param qp2: Backward channel
   *
   * @returns 0
   */
