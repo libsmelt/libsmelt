@@ -15,10 +15,19 @@
 #include <smlt.h>
 #include <smlt_node.h>
 #include <smlt_queuepair.h>
+#include "smlt_debug.h"
 
 #include <platforms/measurement_framework.h>
 
-struct smlt_qp **queue_pairs[2];
+/**
+ * \brief 2x#cpus matrix - stores full mesh of queuepairs from core 0
+ * to all other cores
+ *
+ * [0] -> Forward channels
+ * [1] -> Backward channels
+ */
+struct smlt_qp **queue_pairs[2]; // WHY two?
+
 size_t chan_per_core = 0;
 cycles_t tsc_overhead = 0;
 
@@ -49,10 +58,13 @@ const char *modestring [4] = {
 
 cycles_t tsc_measurements[NUM_DATA];
 
-//#define bench_tsc() rdtscp()
-
 struct thr_args {
-    struct smlt_qp **queue_pairs;
+    /**
+     * \brief Pointers to queue pairs
+     *
+     * Sender:
+     */
+    struct smlt_qp **queue_pairs; // Only used for sender thread
     coreid_t *cores;
     uint32_t num_cores;
     enum mode mode;
@@ -79,6 +91,13 @@ static cycles_t *do_sorting(cycles_t *array,
     return sorted_array;
 } // end function: do_sorting
 
+
+/**
+ * \brief Print results
+ *
+ * This is called by the sender with the same thread arguments as it
+ * is called itself.
+ */
 static void eval_data(struct thr_args*arg)
 {
     cycles_t sum = 0, max = 0, min = (cycles_t)-1;
@@ -138,7 +157,9 @@ void* thr_write(void* a)
             }
         }
 
+        // Array of queue pairs we have to send to
         struct smlt_qp **qp = arg->queue_pairs;
+
         switch (arg->mode) {
         case BENCH_MODE_LAST :
             for (uint32_t i = 1; i < nc; ++i) {
@@ -192,10 +213,14 @@ void* thr_receiver(void* a)
     struct thr_args* arg = (struct thr_args*) a;
 
     assert (arg->num_cores == 1); // Receivers only need one core ID (sender)
+    assert (arg->queue_pairs == NULL); // Not used, queuepair lookup
+                                       // based on core ID given
 
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
+    // Fetch Backward queue pair
+    dbg_printf("Fetching backward queue pair for %" PRIuCOREID "\n", arg->cores[0]);
     struct smlt_qp *qp = queue_pairs[1][arg->cores[0]];
 
     for (size_t j=0; j<NUM_EXP; j++) {
@@ -247,6 +272,7 @@ int run_experiment(size_t num_cores, coreid_t* cores, enum mode m)
     args[0].cores = cores;
     args[0].mode = m;
 
+    assert (args[0].queue_pairs != NULL);
     thr_write(args);
 
     // Join threads
@@ -301,6 +327,11 @@ int main(int argc, char **argv)
     // Parse arguments
     size_t num_cores = idx;
     printf("num_cores: %zu\n", num_cores);
+
+    // Debug output of cores
+    for (coreid_t c = 0; c<num_cores; c++) {
+        printf("Core %" PRIuCOREID ": %" PRIuCOREID "\n", c, cores[c]);
+    }
 
     errval_t err;
     if (num_cores>cores_max) {
