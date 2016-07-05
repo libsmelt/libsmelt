@@ -9,6 +9,8 @@
 #ifndef SMLT_DEBUG_H_
 #define SMLT_DEBUG_H_ 1
 
+#include "smlt_platform.h"
+
 #ifdef SYNC_DEBUG_BUILD
 // Enable debug output for buildtype "debug"
 #define SMLT_DEBUG_ENABLED 1
@@ -79,5 +81,13 @@
  */
 void smlt_debug_print(uint32_t subs, const char *fmt, ...);
 
+/**
+ * @brief Print message and abort
+ */
+static void panic(const char *str)
+{
+    printf("PANIC: %s\n", str);
+    abort();
+}
 
 #endif /* SMLT_DEBUG_H_ */

@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <sched.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 //#define SMLT_CONFIG_LINUX_NUMA_ALIGN 1
 
