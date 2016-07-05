@@ -138,11 +138,13 @@ errval_t smlt_init(uint32_t num_proc, bool eagerly)
 }
 
 /**
- * @brief obtains the node based on the id
+ * @brief Obtains the node based on the id
  *
- * @param id    node id
+ * @param id The node ID, which as to be smaller than the number of
+ *   cores given as an argument to Smelt initialization.
  *
- * @return pointer ot the Smelt node
+ * @return pointer ot the Smelt node or NULL in case requested node
+ *   does not exist.
  */
 struct smlt_node *smlt_get_node_by_id(smlt_nid_t id)
 {
@@ -154,6 +156,7 @@ struct smlt_node *smlt_get_node_by_id(smlt_nid_t id)
 
 errval_t smlt_add_node(struct smlt_node *node)
 {
+    panic("Not yet implemented");
 
     // smlt_node_set_id(smlt_all_node_count++);
     // smlt_all_nodes[smlt_node_get_id(node)] = node;
