@@ -84,10 +84,6 @@ void smlt_debug_print(uint32_t subs, const char *fmt, ...);
 /**
  * @brief Print message and abort
  */
-static void panic(const char *str)
-{
-    printf("PANIC: %s\n", str);
-    abort();
-}
+void panic(const char *str);
 
 #endif /* SMLT_DEBUG_H_ */

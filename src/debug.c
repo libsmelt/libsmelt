@@ -42,3 +42,9 @@ void smlt_debug_print(uint32_t subs, const char *fmt, ...)
 
     printf(str, sizeof(str));
 }
+
+void panic(const char *str)
+{
+    printf("PANIC: %s\n", str);
+    abort();
+}
