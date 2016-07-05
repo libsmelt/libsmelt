@@ -70,6 +70,36 @@ struct thr_args {
     enum mode mode;
 };
 
+static size_t parse_cores(const char* str,
+                          coreid_t cores_max,
+                          coreid_t *_cores)
+{
+    printf("cores: ");
+    size_t idx = 0;
+    const char * tmp = str;
+    do {
+        size_t l = strcspn (tmp, ",");
+        printf("%.*s ", (int) l, tmp);
+
+        _cores[idx++] = atoi(tmp);
+        assert (atoi(tmp)<cores_max);
+
+        tmp += l + 1;
+
+    } while (tmp[-1] && idx<cores_max);
+    printf("\n");
+
+    // Make sure we reached the end of the comma separated list when
+    // leaving the loop, and not because we are running out of spaces
+    // in the array of cores. If the latter is the case, the argument
+    // contains more cores tain evailable in the system.
+    if (tmp[-1]) {
+        printf("Too many cores given\n"); abort();
+    }
+
+    return idx;
+}
+
 static cycles_t *do_sorting(cycles_t *array,
                             size_t len)
 {
@@ -128,8 +158,22 @@ static void eval_data(struct thr_args*arg)
 
     sum /= count;
 
-    printf("r=%u,l=%u, mode=%s, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
-           0, 0, modestring[arg->mode], avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
+    // Prepare core ID string. Let's assume we have a maximum of 2
+    // digits per core, plus one character for comma [xx,]+
+    int max_len = arg->num_cores * 3 + 1; // +1 for \0
+    char cores_str[max_len];
+    char *cores_tmp = cores_str;
+
+    for (coreid_t c = 0; c<arg->num_cores; c++) {
+
+        int l = sprintf(cores_tmp, "%02d,", arg->cores[c]);
+        assert (l==3); // Otherwise core id > 100
+
+        cores_tmp += 3;
+    }
+
+    printf("cores=%s mode=%s, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
+           cores_str, modestring[arg->mode], avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
 
 
 }
@@ -240,27 +284,52 @@ void* thr_receiver(void* a)
  * \param cores: List of cores to send a message to
  * \param m: Mode of measurement - one of enum mode
  */
-int run_experiment(size_t num_cores, coreid_t* cores, enum mode m)
+int run_experiment(size_t num_local, coreid_t* local_cores,
+                   size_t num_remote, coreid_t* remote_cores, enum mode m)
 {
+    dbg_printf("Running experiment for %zu %zu cores\n", num_local, num_remote);
+
+    coreid_t num_cores = num_local + num_remote;
+
     errval_t err;
     struct thr_args args[num_cores + 1];
 
+    // Initialize queue pairs for sender
     args[0].queue_pairs = (struct smlt_qp **) calloc(num_cores, sizeof(void *));
     assert (args[0].queue_pairs);
 
+    // Determine the cores to run in this iteration
+    coreid_t cores[num_cores]; size_t idx = 0;
+    for (coreid_t r = 0; r < num_remote; r++) { // remote first
+        cores[idx++] = remote_cores[r];
+    }
+    for (coreid_t l = 0; l < num_local; l++) { // followed by local
+        cores[idx++] = local_cores[l];
+    }
+    printf("idx %zu\n", idx);
+
     // Copy preinitialized queue pairs
     for (size_t i=0; i<num_cores; i++) {
+
+        // Get forward channel to ith core given as argument
+        dbg_printf("Setting forward channel %" PRIuCOREID "\n", cores[i]);
+        assert (queue_pairs[0][cores[i]] != NULL);
         args[0].queue_pairs[i] = queue_pairs[0][cores[i]];
     }
-
 
     // Start receiver threads
     for (coreid_t i = 0; i < num_cores; ++i) {
 
         struct smlt_node *dst = smlt_get_node_by_id(cores[i]);
-        args[i].cores = cores + i;
-        args[i].num_cores = 1;
-        err = smlt_node_start(dst, thr_receiver, args + i);
+        struct thr_args *a = args + (i+1); // args[0] is sender
+
+        if (!dst) panic("smlt_get_node_by_id failed");
+
+        a->cores = cores + i;
+        a->num_cores = 1;
+        a->queue_pairs = NULL; // Receiver fetches queuepair
+                               // depending on core ID
+        err = smlt_node_start(dst, thr_receiver, a);
         if (smlt_err_is_fail(err)) {
             printf("Staring node failed \n");
             abort();
@@ -288,49 +357,35 @@ int run_experiment(size_t num_cores, coreid_t* cores, enum mode m)
 
 int main(int argc, char **argv)
 {
-    if (argc<2) {
+    if (argc<3) {
 
-        printf("Usage: %s <num_cores> <cores>\n", argv[0]);
+        printf("Usage: %s <local_cores> <remote_cores>\n", argv[0]);
         printf("\n");
-        printf("cores: comma-separate list of receiving cores\n");
+        printf("local cores: comma-separate list of local receiving cores\n");
+        printf("remote cores: comma-separate list of remote receiving cores\n");
 
         return 1;
     }
 
     size_t cores_max = sysconf(_SC_NPROCESSORS_CONF);
 
-    coreid_t cores[cores_max];
+    coreid_t local_cores[cores_max];
+    coreid_t remote_cores[cores_max];
 
     // Parse cores
-    printf("cores: ");
-    size_t idx = 0;
-    char * tmp = (char *) argv[1];
-    do {
-        size_t l = strcspn (tmp, ",");
-        printf("%.*s ", (int) l, tmp);
-        tmp += l + 1;
-
-        cores[idx++] = atoi(tmp);
-        assert (atoi(tmp)<cores_max);
-
-    } while (tmp[-1] && idx<cores_max);
-    printf("\n");
-
-    // Make sure we reached the end of the comma separated list when
-    // leaving the loop, and not because we are running out of spaces
-    // in the array of cores. If the latter is the case, the argument
-    // contains more cores tain evailable in the system.
-    if (tmp[-1]) {
-        printf("Too many cores given\n"); abort();
-    }
+    size_t num_local  = parse_cores(argv[1], cores_max, local_cores);
+    size_t num_remote = parse_cores(argv[2], cores_max, remote_cores);
+    size_t num_cores = num_local + num_remote;
 
     // Parse arguments
-    size_t num_cores = idx;
-    printf("num_cores: %zu\n", num_cores);
+    printf("num_cores: local=%zu remote=%zu\n", num_local, num_remote);
 
     // Debug output of cores
-    for (coreid_t c = 0; c<num_cores; c++) {
-        printf("Core %" PRIuCOREID ": %" PRIuCOREID "\n", c, cores[c]);
+    for (coreid_t c = 0; c<num_local; c++) {
+        printf("Core %" PRIuCOREID ": %" PRIuCOREID "\n", c, local_cores[c]);
+    }
+    for (coreid_t c = 0; c<num_remote; c++) {
+        printf("Core %" PRIuCOREID ": %" PRIuCOREID "\n", c, remote_cores[c]);
     }
 
     errval_t err;
@@ -368,14 +423,14 @@ int main(int argc, char **argv)
     printf("Calibrating TSC overhead is %lu cycles\n", tsc_overhead);
 
     // Initalize Smelt
-    err = smlt_init(num_cores, true);
+    err = smlt_init(cores_max, true);
     if (smlt_err_is_fail(err)) {
         printf("FAILED TO INITIALIZE smlt !\n");
         return 1;
     }
 
-    queue_pairs[0] = (struct smlt_qp**) calloc(num_cores, sizeof(void *));
-    queue_pairs[1] = (struct smlt_qp**) calloc(num_cores, sizeof(void *));
+    queue_pairs[0] = (struct smlt_qp**) calloc(cores_max, sizeof(void *));
+    queue_pairs[1] = (struct smlt_qp**) calloc(cores_max, sizeof(void *));
 
     if (queue_pairs[0] == NULL || queue_pairs[1] == NULL) {
         printf("FAILED TO INITIALIZE calloc!\n");
@@ -383,8 +438,8 @@ int main(int argc, char **argv)
     }
 
     // Initialize message channels. One channel from the master thread
-    // to each other core
-    for (size_t s=0; s<num_cores; s++) {
+    // to each other core: full mesh
+    for (size_t s=0; s<cores_max; s++) {
         struct smlt_qp **src = &(queue_pairs[0][s]);
         struct smlt_qp **dst = &(queue_pairs[1][s]);
 
@@ -399,16 +454,20 @@ int main(int argc, char **argv)
     smlt_platform_pin_thread(0); // << pin master thread
 
     // Execute benchmark
-    for (coreid_t i = 0; i < num_cores; ++i) {
+    for (coreid_t i = 0; i <= num_local; i++) {
+        for (coreid_t j = 0; j <= num_remote; j++) {
 
-        memset(tsc_measurements, 0, sizeof(tsc_measurements));
-        run_experiment(i, cores, BENCH_MODE_TOTAL);
+            if (i==0 && j==0) continue;
 
-        memset(tsc_measurements, 0, sizeof(tsc_measurements));
-        run_experiment(i, cores, BENCH_MODE_LAST);
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
+            run_experiment(i, local_cores, j, remote_cores, BENCH_MODE_TOTAL);
 
-        memset(tsc_measurements, 0, sizeof(tsc_measurements));
-        run_experiment(i, cores, BENCH_MODE_ALL);
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
+            run_experiment(i, local_cores, j, remote_cores, BENCH_MODE_LAST);
+
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
+            run_experiment(i, local_cores, j, remote_cores, BENCH_MODE_ALL);
+        }
     }
 
     return 0;
