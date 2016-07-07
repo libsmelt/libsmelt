@@ -193,29 +193,31 @@ void* thr_write(void* a)
 
         // Wait a while to ensure that receivers already polled the
         // line, so that it is in shared state
-        assert (tsc_overhead>0);
-        for (size_t i=0;; i++) {
-            bench_tsc(); // Waste some time
-            if (i*tsc_overhead>1000) {
-                break;
-            }
-        }
+        //
+        // Also, ensure that the write-buffer is empty
+        tsc_start = bench_tsc();
+        while (bench_tsc()<tsc_start + 1000) ; // wait 100'000 cycles
 
         // Array of queue pairs we have to send to
         struct smlt_qp **qp = arg->queue_pairs;
 
         switch (arg->mode) {
         case BENCH_MODE_LAST :
-            for (uint32_t i = 1; i < nc; ++i) {
+            // Measure cost of LAST message (includes one TSC)
+            // --------------------------------------------------
+            // Send n-1 messages
+            for (uint32_t i = 0; i < nc-1; ++i) {
                 smlt_queuepair_send(*qp, msg);
                 qp++;
             }
             tsc_start = bench_tsc();
-            smlt_queuepair_send(*qp, msg);
+            smlt_queuepair_send(*qp, msg);  // send last message
             tsc_end = bench_tsc();
             tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
             break;
         case BENCH_MODE_TOTAL :
+            // Measure total time of the batch
+            // --------------------------------------------------
             tsc_start = bench_tsc();
             for (uint32_t i = 0; i < nc; ++i) {
                 smlt_queuepair_send(*qp, msg);
@@ -225,6 +227,9 @@ void* thr_write(void* a)
             tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
             break;
         case BENCH_MODE_ALL :
+            // Measure cost of last message, but have one rdtsc()
+            // between each of them
+            // --------------------------------------------------
             tsc_start = bench_tsc();
             for (uint32_t i = 0; i < nc; ++i) {
                 tsc_start = bench_tsc();
@@ -236,12 +241,6 @@ void* thr_write(void* a)
             break;
         default:
             printf("ERROR: UNKNOWN MODE\n");
-        }
-
-        qp = arg->queue_pairs;
-        for (uint32_t i = 0; i < nc; ++i) {
-            smlt_queuepair_recv(*qp, msg);
-            qp++;
         }
     }
 
@@ -270,7 +269,6 @@ void* thr_receiver(void* a)
     for (size_t j=0; j<NUM_EXP; j++) {
 
         smlt_queuepair_recv(qp, msg);
-        smlt_queuepair_send(qp, msg);
     }
 
     return NULL;
@@ -280,14 +278,16 @@ void* thr_receiver(void* a)
 /**
  * \brief Run experiments
  *
- * \param num_cores: Number of cores and size of array cores
- * \param cores: List of cores to send a message to
+ * \param num_local: Number of local cores and size of array cores
+ * \param local cores: List of local cores to send a message to
+ * \param num_remote: Number of remote cores and size of array cores
+ * \param remote cores: List of remote cores to send a message to
  * \param m: Mode of measurement - one of enum mode
  */
 int run_experiment(size_t num_local, coreid_t* local_cores,
                    size_t num_remote, coreid_t* remote_cores, enum mode m)
 {
-    dbg_printf("Running experiment for %zu %zu cores\n", num_local, num_remote);
+    printf("Running experiment for %zu %zu cores\n", num_local, num_remote);
 
     coreid_t num_cores = num_local + num_remote;
 
@@ -302,11 +302,14 @@ int run_experiment(size_t num_local, coreid_t* local_cores,
     coreid_t cores[num_cores]; size_t idx = 0;
     for (coreid_t r = 0; r < num_remote; r++) { // remote first
         cores[idx++] = remote_cores[r];
+        dbg_printf("adding remote core %" PRIuCOREID " %" PRIuCOREID "\n",
+                   r, remote_cores[r]);
     }
     for (coreid_t l = 0; l < num_local; l++) { // followed by local
         cores[idx++] = local_cores[l];
+        dbg_printf("adding local core %" PRIuCOREID " %" PRIuCOREID "\n",
+                   l, local_cores[l]);
     }
-    printf("idx %zu\n", idx);
 
     // Copy preinitialized queue pairs
     for (size_t i=0; i<num_cores; i++) {
@@ -357,10 +360,11 @@ int run_experiment(size_t num_local, coreid_t* local_cores,
 
 int main(int argc, char **argv)
 {
-    if (argc<3) {
+    if (argc<4) {
 
-        printf("Usage: %s <local_cores> <remote_cores>\n", argv[0]);
+        printf("Usage: %s <sender> <local_cores> <remote_cores>\n", argv[0]);
         printf("\n");
+        printf("sender core: sender of the batch\n");
         printf("local cores: comma-separate list of local receiving cores\n");
         printf("remote cores: comma-separate list of remote receiving cores\n");
 
@@ -373,11 +377,13 @@ int main(int argc, char **argv)
     coreid_t remote_cores[cores_max];
 
     // Parse cores
-    size_t num_local  = parse_cores(argv[1], cores_max, local_cores);
-    size_t num_remote = parse_cores(argv[2], cores_max, remote_cores);
+    coreid_t sender = atoi(argv[1]);
+    size_t num_local  = parse_cores(argv[2], cores_max, local_cores);
+    size_t num_remote = parse_cores(argv[3], cores_max, remote_cores);
     size_t num_cores = num_local + num_remote;
 
     // Parse arguments
+    printf("sender: %" PRIuCOREID "\n", sender);
     printf("num_cores: local=%zu remote=%zu\n", num_local, num_remote);
 
     // Debug output of cores
@@ -409,12 +415,12 @@ int main(int argc, char **argv)
         bench_tsc();
         bench_tsc();
         bench_tsc();
+        bench_tsc(); //5
         bench_tsc();
         bench_tsc();
         bench_tsc();
         bench_tsc();
-        bench_tsc();
-        bench_tsc();
+        bench_tsc(); //10
     }
     cycles_t tsc_end = bench_tsc();
 
@@ -451,22 +457,25 @@ int main(int argc, char **argv)
         }
     }
 
-    smlt_platform_pin_thread(0); // << pin master thread
+    smlt_platform_pin_thread(sender); // << pin master thread
 
     // Execute benchmark
-    for (coreid_t i = 0; i <= num_local; i++) {
-        for (coreid_t j = 0; j <= num_remote; j++) {
+    for (coreid_t n_local = 0; n_local <= num_local; n_local++) {
+        for (coreid_t n_remote = 0; n_remote <= num_remote; n_remote++) {
 
-            if (i==0 && j==0) continue;
-
-            memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(i, local_cores, j, remote_cores, BENCH_MODE_TOTAL);
+            if (n_local==0 && n_remote==0) continue;
 
             memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(i, local_cores, j, remote_cores, BENCH_MODE_LAST);
+            run_experiment(n_local, local_cores,
+                           n_remote, remote_cores, BENCH_MODE_TOTAL);
 
             memset(tsc_measurements, 0, sizeof(tsc_measurements));
-            run_experiment(i, local_cores, j, remote_cores, BENCH_MODE_ALL);
+            run_experiment(n_local, local_cores,
+                           n_remote, remote_cores, BENCH_MODE_LAST);
+
+            memset(tsc_measurements, 0, sizeof(tsc_measurements));
+            run_experiment(n_local, local_cores,
+                           n_remote, remote_cores, BENCH_MODE_ALL);
         }
     }
 
