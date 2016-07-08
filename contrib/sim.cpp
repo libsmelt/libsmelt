@@ -51,6 +51,10 @@ int smlt_tree_parse_wrapper(const char* json_string,
     int lnval = ln.asInt();
     *t_root = (uint32_t)lnval;
 
+    // Extract GIT revision number
+    Json::Value git_revision = root.get("git-version", "");
+    printf("Simulator GIT revision %s\n", git_revision.asString().c_str());
+
     // Extract leaf node
 
     Json::Value leafs_j = root.get("leaf_nodes", "");
