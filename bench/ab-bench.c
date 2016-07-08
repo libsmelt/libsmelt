@@ -334,7 +334,7 @@ int main(int argc, char **argv)
         "Barrier",
     };
 
-    const char *topo_names[NUM_TOPO] = {
+    const char *default_topos[NUM_TOPO] = {
         "mst",
         "bintree",
         "cluster",
@@ -345,6 +345,20 @@ int main(int argc, char **argv)
         "adaptivetree_mm",
         "adaptivetree_mmlast",
     };
+
+    // Parse arguments
+    // --------------------------------------------------
+    const char** topo_names;
+    if (argc>1) {
+
+        topo_names = (const char**) malloc(sizeof(char*)); assert (topo_names);
+        topo_names[0] = argv[1];
+        num_topos = 1;
+    } else {
+
+        topo_names = default_topos;
+    }
+
 
     pthread_barrier_init(&bar, NULL, num_threads);
     errval_t err;
