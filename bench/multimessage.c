@@ -74,6 +74,11 @@ static size_t parse_cores(const char* str,
                           coreid_t cores_max,
                           coreid_t *_cores)
 {
+    if (strcmp(str, "none")==0) {
+        printf("none given, setting to 0 cores\n");
+        return 0;
+    }
+
     printf("cores: ");
     size_t idx = 0;
     const char * tmp = str;
