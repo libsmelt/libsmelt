@@ -31,7 +31,7 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 6
+#define NUM_TOPO 14
 #define NUM_EXP 1
 
 uint32_t num_topos = NUM_TOPO;
@@ -350,9 +350,18 @@ int main(int argc, char **argv)
         "bintree",
         "cluster",
         "badtree",
-        //"fibonacci",
-        "sequential",
+        "fibonacci",
+        //        "sequential",
+        "mst-naive",
+        "bintree-naive",
+        "cluster-naive",
+        "badtree-naive",
+        "fibonacci-naive",
+        //        "sequential-naive",
         "adaptivetree",
+        "adaptivetree-shuffle-sort",
+        "adaptivetree-nomm",
+        "adaptivetree-nomm-shuffle-sort",
     };
 
     errval_t err;
@@ -422,4 +431,6 @@ int main(int argc, char **argv)
            }
         }
     }
+
+    return 0;
 }
