@@ -20,6 +20,7 @@
 #include <smlt_context.h>
 #include <smlt_generator.h>
 #include <smlt_barrier.h>
+#include <smlt_debug.h>
 #include <platforms/measurement_framework.h>
 
 //#define PRINT_SUMMARY
@@ -59,72 +60,87 @@ __thread struct sk_measurement m2;
                                smlt_topology_get_name(active_topo), \
                                gl_num_threads);
 
+#define min(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-static uint32_t* placement(uint32_t n, bool do_fill)
+/**
+ * @brief Returns an array of cores of size req_cores choosen
+ *     round-robin from NUMA nodes in batches of req_step.
+ *
+ * @param req_step The step with - how many cores should be picked
+ *     from each NUMA node in each iteration. Use a negative value
+ *     for a "fill"-strategy, where NUMA nodes are completely filled
+ *     before moving on to the next one.
+ */
+void placement(size_t req_cores, size_t req_step, coreid_t *cores)
 {
-    uint32_t* result = (uint32_t*) malloc(sizeof(uint32_t)*n);
-    uint32_t numa_nodes = numa_max_node()+1;
-    uint32_t num_cores = numa_num_configured_cpus();
-    struct bitmask* nodes[numa_nodes];
+    size_t max_node = numa_max_node();
+    size_t num_cores = numa_num_configured_cpus();
+    size_t cores_per_node = num_cores/(max_node+1);
 
-    for (unsigned i = 0; i < numa_nodes; i++) {
-        nodes[i] = numa_allocate_cpumask();
-        numa_node_to_cpus(i, nodes[i]);
+    printf("req_cores: %zu\n", req_cores);
+    printf("req_step: %zu\n", req_step);
+    printf("cores / NUMA node: %zu\n", cores_per_node);
+    printf("max_node: %zu\n", max_node);
+
+    size_t num_selected = 0;
+    size_t curr_numa_idx = 0;
+
+    // How many nodes to choose from each NUMA node
+    size_t choose_per_node[max_node+1];
+    memset(choose_per_node, 0, sizeof(size_t)*(max_node+1));
+
+    // Step 1:
+    // Figure out how many cores to choose from each node
+
+    while (num_selected<req_cores) {
+
+        // Determine number of cores of that node
+
+        // How many cores should be choosen in this step?
+        // At max req_step
+        size_t num_choose = min(min(req_step, req_cores-num_selected),
+                                cores_per_node);
+
+        // Increment counter indicating how many to choose from this node
+        choose_per_node[curr_numa_idx] += num_choose;
+        num_selected += num_choose;
+
+        // Move on to the next NUMA node
+        curr_numa_idx = (curr_numa_idx + 1) % (max_node+1);
     }
 
-    unsigned num_taken = 0;
-    if (numa_available() == 0) {
-        if (do_fill) {
-            for (unsigned i = 0; i < numa_nodes; i++) {
-                for (unsigned j = 0; j < num_cores; j++) {
-                    if (numa_bitmask_isbitset(nodes[i], j)) {
-                        result[num_taken] = j;
-                        num_taken++;
-                    }
+    // Step 2:
+    // Get the cores from each NUMA node
+    //
+    // hyperthreads? -> should have higher core IDs, and hence picked in
+    // the end.
 
-                    if (num_taken == n) {
-                        return result;
-                    }
-                }
-           }
-        } else {
-            int cores_per_node = n/numa_nodes;
-            int rest = n - (cores_per_node*numa_nodes);
-            int taken_per_node = 0;
+    struct bitmask *mask = numa_allocate_cpumask();
 
-            fprintf(stderr, "Cores per node %d \n", cores_per_node);
-            fprintf(stderr, "rest %d \n", rest);
-            for (unsigned i = 0; i < numa_nodes; i++) {
-                for (unsigned j = 0; j < num_cores; j++) {
-                    if (numa_bitmask_isbitset(nodes[i], j)) {
-                        if (taken_per_node == cores_per_node) {
-                            if (rest > 0) {
-                                result[num_taken] = j;
-                                num_taken++;
-                                rest--;
-                                if (num_taken == n) {
-                                    return result;
-                                }
-                            }
-                            break;
-                        }
-                        result[num_taken] = j;
-                        num_taken++;
-                        taken_per_node++;
+    size_t idx = 0;
 
-                        if (num_taken == n) {
-                            return result;
-                        }
-                    }
-                }
-                taken_per_node = 0;
+    for (size_t i=0; i<=max_node; i++) {
+
+        dbg_printf("node %2zu choosing %2zu\n", i, choose_per_node[i]);
+
+        // Determine which cores are on node i
+        numa_node_to_cpus(i, mask);
+
+        size_t choosen = 0;
+
+        for (coreid_t p=0; p<num_cores && choosen<choose_per_node[i]; p++) {
+
+            // Is processor p on node i
+            if (numa_bitmask_isbitset(mask, p)) {
+
+                cores[idx++] = p;
+                choosen++;
+
+                dbg_printf("Choosing %" PRIuCOREID "\n", p);
             }
         }
-    } else {
-        printf("Libnuma not available \n");
-        return NULL;
     }
-    return NULL;
+
 }
 
 errval_t operation(struct smlt_msg* m1, struct smlt_msg* m2)
@@ -260,7 +276,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // TODO to many channels
+    // Full mesh of channels
     for (unsigned int i = 0; i < total; i++) {
         for (unsigned int j = 0; j < total; j++) {
             struct smlt_channel* ch = &chan[i][j];
@@ -273,9 +289,22 @@ int main(int argc, char **argv)
     }
 
     for (int top = 0; top < NUM_TOPO; top++) {
-        for (unsigned int j = 2; j < total+1; j++) {
-            gl_num_threads = j;
-            gl_cores = placement(num_threads, true);
+        for (size_t num_threads = 2; num_threads < total+1; num_threads++) {
+
+            coreid_t cores[num_threads];
+
+            // Make available globally
+            gl_num_threads = num_threads;
+            gl_cores = cores;
+
+            placement(num_threads, -1, cores);
+
+            printf("Cores (%zu threads): ", num_threads);
+            for (size_t dbg=0; dbg<num_threads; dbg++) {
+                printf(" %" PRIuCOREID, cores[dbg]);
+            }
+            printf("\n");
+
             pthread_barrier_init(&bar, NULL, num_threads);
             struct smlt_generated_model* model = NULL;
 
