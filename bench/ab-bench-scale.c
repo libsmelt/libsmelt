@@ -34,10 +34,16 @@
 #define NUM_TOPO 14
 #define NUM_EXP 1
 
-uint32_t num_topos = NUM_TOPO;
-uint32_t num_threads;
-uint32_t total;
-uint32_t* cores;
+// --------------------------------------------------
+// Global state
+//
+// Is used from within functions
+// --------------------------------------------------
+
+uint32_t gl_num_topos = NUM_TOPO;
+size_t gl_num_threads; // set before starting teh benchmarks
+uint32_t gl_total;
+coreid_t* gl_cores;
 
 
 struct smlt_context *context = NULL;
@@ -49,7 +55,9 @@ static struct smlt_topology *active_topo;
 __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
-#define TOPO_NAME(x,y) sprintf(x, "%s_%s%d", y, smlt_topology_get_name(active_topo), num_threads);
+#define TOPO_NAME(x,y) sprintf(x, "%s_%s%zu", y, \
+                               smlt_topology_get_name(active_topo), \
+                               gl_num_threads);
 
 
 static uint32_t* placement(uint32_t n, bool do_fill)
@@ -131,8 +139,8 @@ static uint32_t* get_leafs(struct smlt_topology* topo,
         struct smlt_topology_node* tn;
         tn = smlt_topology_get_first_node(active_topo);
         int num_leafs = 0;
-        for (unsigned i = 0; i < total; i++) {
-            for (unsigned j = 0; j < num_threads; j++) {
+        for (unsigned i = 0; i < gl_total; i++) {
+            for (unsigned j = 0; j < gl_num_threads; j++) {
                 if (smlt_topology_node_is_leaf(tn) && (i == cores[j])) {
                     num_leafs++;
                 }
@@ -144,8 +152,8 @@ static uint32_t* get_leafs(struct smlt_topology* topo,
 
         int index = 0;
         tn = smlt_topology_get_first_node(active_topo);
-        for (unsigned i = 0; i < total; i++) {
-            for (unsigned j = 0; j < num_threads; j++) {
+        for (unsigned i = 0; i < gl_total; i++) {
+            for (unsigned j = 0; j < gl_num_threads; j++) {
                 if (smlt_topology_node_is_leaf(tn) && (i == cores[j])) {
                     ret[index] = smlt_topology_node_get_id(tn);
                     index++;
@@ -167,7 +175,7 @@ static void* ab(void* a)
 
     uint32_t count = 0;
     uint32_t* leafs;
-    leafs = get_leafs(active_topo, &count, cores);
+    leafs = get_leafs(active_topo, &count, gl_cores);
 
     struct smlt_msg* msg = smlt_message_alloc(56);
     for (unsigned i = 0; i < count; i++) {
@@ -203,7 +211,9 @@ static void* ab(void* a)
 
 int main(int argc, char **argv)
 {
-    total = sysconf(_SC_NPROCESSORS_ONLN);
+    size_t total = sysconf(_SC_NPROCESSORS_ONLN);
+    gl_total = total;
+
     chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*total);
     for (size_t i = 0; i < total; i++) {
         chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*total);
@@ -264,12 +274,12 @@ int main(int argc, char **argv)
 
     for (int top = 0; top < NUM_TOPO; top++) {
         for (unsigned int j = 2; j < total+1; j++) {
-            num_threads = j;
-            cores = placement(num_threads, true);
+            gl_num_threads = j;
+            gl_cores = placement(num_threads, true);
             pthread_barrier_init(&bar, NULL, num_threads);
             struct smlt_generated_model* model = NULL;
 
-            fprintf(stderr, "%s nthreads %d \n", topo_names[top], num_threads);
+            fprintf(stderr, "%s nthreads %zu \n", topo_names[top], num_threads);
             err = smlt_generate_model(cores, num_threads, topo_names[top], &model);
 
             if (smlt_err_is_fail(err)) {
