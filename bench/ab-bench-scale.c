@@ -45,7 +45,7 @@ uint32_t gl_num_topos = NUM_TOPO;
 size_t gl_num_threads; // set before starting teh benchmarks
 uint32_t gl_total;
 coreid_t* gl_cores;
-
+size_t gl_step;
 
 struct smlt_context *context = NULL;
 
@@ -56,9 +56,9 @@ static struct smlt_topology *active_topo;
 __thread struct sk_measurement m;
 __thread struct sk_measurement m2;
 
-#define TOPO_NAME(x,y) sprintf(x, "%s_%s%zu", y, \
+#define TOPO_NAME(x,y) sprintf(x, "%s_%s%zu-%zu", y, \
                                smlt_topology_get_name(active_topo), \
-                               gl_num_threads);
+                               gl_num_threads, gl_step);
 
 #define min(X, Y) (((X) < (Y)) ? (X) : (Y))
 
