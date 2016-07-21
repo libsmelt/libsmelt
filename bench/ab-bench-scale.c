@@ -99,7 +99,7 @@ void placement(size_t req_cores, size_t req_step, coreid_t *cores)
         // How many cores should be choosen in this step?
         // At max req_step
         size_t num_choose = min(min(req_step, req_cores-num_selected),
-                                cores_per_node);
+                                cores_per_node-choose_per_node[curr_numa_idx]);
 
         // Increment counter indicating how many to choose from this node
         choose_per_node[curr_numa_idx] += num_choose;
@@ -140,6 +140,8 @@ void placement(size_t req_cores, size_t req_step, coreid_t *cores)
             }
         }
     }
+
+    assert (idx == req_cores);
 
 }
 
