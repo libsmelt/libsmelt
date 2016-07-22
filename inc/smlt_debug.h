@@ -67,6 +67,10 @@
     } while(0);                     \
 
 #define dbg_printf(...) SMLT_DEBUG(SMLT_DBG__GENERAL, __VA_ARGS__);
+#define COND_PANIC(cond, msg) \
+    if (!(cond)) {            \
+        panic(msg);           \
+    }
 
 /*
  * ===========================================================================
