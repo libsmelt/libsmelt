@@ -138,7 +138,7 @@ void placement(size_t req_cores, size_t req_step, coreid_t *cores)
                 cores[idx++] = p;
                 choosen++;
 
-                dbg_printf("Choosing %" PRIuCOREID "\n", p);
+                dbg_printf("Choosing %" PRIuCOREID " on node %zu\n", p, i);
             }
         }
     }
@@ -243,6 +243,11 @@ int main(int argc, char **argv)
         gl_msg[i] = smlt_message_alloc(56);
     }
 
+    // Determine NUMA properties
+    size_t max_node = numa_max_node();
+    size_t num_cores = numa_num_configured_cpus();
+    size_t cores_per_node = num_cores/(max_node+1);
+
     chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*total);
     for (size_t i = 0; i < total; i++) {
         chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*total);
@@ -301,65 +306,73 @@ int main(int argc, char **argv)
         }
     }
 
+    // Foreach topology
     for (int top = 0; top < NUM_TOPO; top++) {
-        for (size_t num_threads = 2; num_threads < total+1; num_threads++) {
 
-            coreid_t cores[num_threads];
+        // For an increasing number of threads
+        for (size_t num_threads = 2; num_threads<total+1; num_threads++) {
 
-            // Make available globally
-            gl_num_threads = num_threads;
-            gl_cores = cores;
+            // For an increasing round-robin batch size
+            for (size_t step=1; step<=cores_per_node; step++) {
 
-            placement(num_threads, -1, cores);
+                coreid_t cores[num_threads];
 
-            printf("Cores (%zu threads): ", num_threads);
-            for (size_t dbg=0; dbg<num_threads; dbg++) {
-                printf(" %" PRIuCOREID, cores[dbg]);
-            }
-            printf("\n");
+                // Make available globally
+                gl_num_threads = num_threads;
+                gl_cores = cores;
+                gl_step = step;
 
-            pthread_barrier_init(&bar, NULL, num_threads);
-            struct smlt_generated_model* model = NULL;
+                placement(num_threads, step, cores);
 
-            fprintf(stderr, "%s nthreads %zu \n", topo_names[top], num_threads);
-            err = smlt_generate_model(cores, num_threads, topo_names[top], &model);
+                printf("Cores (%zu threads): ", num_threads);
+                for (size_t dbg=0; dbg<num_threads; dbg++) {
+                    printf(" %" PRIuCOREID, cores[dbg]);
+                }
+                printf("\n");
 
-            if (smlt_err_is_fail(err)) {
-                printf("Failed to generated model, aborting\n");
-                return 1;
-            }
+                pthread_barrier_init(&bar, NULL, num_threads);
+                struct smlt_generated_model* model = NULL;
 
-            struct smlt_topology *topo = NULL;
-            smlt_topology_create(model, topo_names[top], &topo);
-            active_topo = topo;
+                fprintf(stderr, "%s nthreads %zu \n", topo_names[top], num_threads);
+                err = smlt_generate_model(cores, num_threads, topo_names[top], &model);
 
-            err = smlt_context_create(topo, &context);
-            if (smlt_err_is_fail(err)) {
-                printf("FAILED TO INITIALIZE CONTEXT !\n");
-                return 1;
-            }
+                if (smlt_err_is_fail(err)) {
+                    printf("Failed to generated model, aborting\n");
+                    return 1;
+                }
 
-            for (int i = 0; i < NUM_EXP; i++){
+                struct smlt_topology *topo = NULL;
+                smlt_topology_create(model, topo_names[top], &topo);
+                active_topo = topo;
+
+                err = smlt_context_create(topo, &context);
+                if (smlt_err_is_fail(err)) {
+                    printf("FAILED TO INITIALIZE CONTEXT !\n");
+                    return 1;
+                }
+
+                for (int i = 0; i < NUM_EXP; i++){
 
 
-                printf("----------------------------------------\n");
-                printf("Executing experiment %s\n", labels[i]);
-                printf("----------------------------------------\n");
+                    printf("----------------------------------------\n");
+                    printf("Executing experiment %s\n", labels[i]);
+                    printf("----------------------------------------\n");
 
-                struct smlt_node *node;
-                for (uint64_t j = 0; j < num_threads; j++) {
-                    node = smlt_get_node_by_id(cores[j]);
-                    err = smlt_node_start(node, workers[i], (void*)(uint64_t) cores[j]);
-                    if (smlt_err_is_fail(err)) {
-                        printf("Staring node failed \n");
+                    struct smlt_node *node;
+                    for (uint64_t j = 0; j < num_threads; j++) {
+                        node = smlt_get_node_by_id(cores[j]);
+                        err = smlt_node_start(node, workers[i], (void*)(uint64_t) cores[j]);
+                        if (smlt_err_is_fail(err)) {
+                            printf("Staring node failed \n");
+                        }
+                    }
+
+                    for (unsigned int j=0; j < num_threads; j++) {
+                        node = smlt_get_node_by_id(cores[j]);
+                        smlt_node_join(node);
                     }
                 }
-
-                for (unsigned int j=0; j < num_threads; j++) {
-                    node = smlt_get_node_by_id(cores[j]);
-                    smlt_node_join(node);
-                }
-           }
+            }
         }
     }
 
