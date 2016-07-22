@@ -47,6 +47,8 @@ uint32_t gl_total;
 coreid_t* gl_cores;
 size_t gl_step;
 
+struct smlt_msg **gl_msg;
+
 struct smlt_context *context = NULL;
 
 static pthread_barrier_t bar;
@@ -195,7 +197,8 @@ static void* ab(void* a)
     uint32_t* leafs;
     leafs = get_leafs(active_topo, &count, gl_cores);
 
-    struct smlt_msg* msg = smlt_message_alloc(56);
+    struct smlt_msg* msg = gl_msg[smlt_node_get_id()];
+
     for (unsigned i = 0; i < count; i++) {
         coreid_t last_node = (coreid_t) leafs[i];
         sk_m_reset(&m);
@@ -231,6 +234,14 @@ int main(int argc, char **argv)
 {
     size_t total = sysconf(_SC_NPROCESSORS_ONLN);
     gl_total = total;
+
+    // Allocate memory for Smelt messages
+    gl_msg = (struct smlt_msg**) malloc(sizeof(struct smlt_msg*)*gl_total);
+    COND_PANIC(gl_msg!=NULL, "Failed to allocate gl_msg");
+
+    for (size_t i=0; i<gl_total; i++) {
+        gl_msg[i] = smlt_message_alloc(56);
+    }
 
     chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*total);
     for (size_t i = 0; i < total; i++) {
@@ -350,6 +361,11 @@ int main(int argc, char **argv)
                 }
            }
         }
+    }
+
+    // Free space for messages
+    for (size_t i=0; i<gl_total; i++) {
+        smlt_message_free(gl_msg[i]);
     }
 
     return 0;
