@@ -35,7 +35,10 @@ errval_t smlt_broadcast_subtree(struct smlt_context *ctx,
 
     for (uint32_t i = 0; i < count; ++i) {
 
-        SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to child[%i] %p \n",
+        SMLT_DEBUG(SMLT_DBG__AB, "Node %2d sending to %2d/%2d\n",
+               smlt_node_get_id(), children[i].owner, children[i].trg);
+
+        SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast send to child[%i] %p\n",
                    smlt_node_get_id(), i, (void*) &children[i]);
 
         err = smlt_channel_send(&children[i], msg);

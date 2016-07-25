@@ -38,6 +38,7 @@ extern __thread smlt_nid_t smlt_node_self_id; ///< caches the node id
 struct smlt_channel
 {
     smlt_nid_t owner;
+    smlt_nid_t trg;
     uint32_t m;
     uint32_t n;
     bool use_shm;

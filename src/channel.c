@@ -55,6 +55,7 @@ errval_t smlt_channel_create(struct smlt_channel **chan,
 
     errval_t err;
     if (count_dst == 1) {
+        (*chan)->trg =   dst[0];
             // 1:1
             (*chan)->use_shm = false;
             #if 0
