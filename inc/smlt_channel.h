@@ -9,11 +9,11 @@
 #ifndef SMLT_CHANNEL_H_
 #define SMLT_CHANNEL_H_ 1
 
-#include <smlt_queuepair.h>
-#include <backends/shm/swmr.h>
 #include <string.h>
-//#include <platforms/linux.h>
 
+#include "smlt_queuepair.h"
+#include "smlt_debug.h"
+#include "backends/shm/swmr.h"
 
 /*
  * ===========================================================================
