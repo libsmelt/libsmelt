@@ -39,7 +39,7 @@ static uint32_t* placement(uint32_t n, bool do_fill, bool hyper)
         } else {
             int cores_per_node = n/numa_nodes;
             int rest = n - (cores_per_node*numa_nodes);
-            int taken_per_node = 0;        
+            int taken_per_node = 0;
 
             for (int i = 0; i < numa_nodes; i++) {
                 for (int j = 0; j < num_cores; j++) {
@@ -65,7 +65,7 @@ static uint32_t* placement(uint32_t n, bool do_fill, bool hyper)
                     }
                 }
                 taken_per_node = 0;
-            }            
+            }
         }
     } else {
         printf("Libnuma not available \n");
@@ -75,7 +75,7 @@ static uint32_t* placement(uint32_t n, bool do_fill, bool hyper)
 }
 
 int main(int argc, char** argv){
-    uint32_t num_cores = numa_num_configured_cpus(); ///2;
+    uint32_t num_cores = numa_num_configured_cpus();
     uint32_t num_nodes = numa_max_node()+1;
 
     bool hyper = false;
@@ -100,7 +100,7 @@ int main(int argc, char** argv){
                 printf("%d", fill[i]);
                 fprintf(f,"rank %d=localhost slot=%d \n",i, fill[i]);
             }
-        }    
+        }
 
         printf("\n");
         fprintf(f,"\n");
@@ -119,7 +119,7 @@ int main(int argc, char** argv){
                 printf("%d", rr[i]);
                 fprintf(f,"rank %d=localhost slot=%d \n", i, rr[i]);
             }
-        }    
+        }
         printf("\n");
 
         fflush(f);
@@ -128,7 +128,3 @@ int main(int argc, char** argv){
 
 
 }
-
-
-
-
