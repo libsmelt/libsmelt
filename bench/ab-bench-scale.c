@@ -32,8 +32,10 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 14
-#define NUM_EXP 1
+#define NUM_TOPO 10
+#define NUM_EXP   1
+#define INC_CORES 2
+#define INC_STEPS 2
 
 // --------------------------------------------------
 // Global state
@@ -75,6 +77,10 @@ __thread struct sk_measurement m2;
  */
 void placement(size_t req_cores, size_t req_step, coreid_t *cores)
 {
+    // For convenience, allows to lookup 2*n for n in 0..n/2
+    if (req_step==0)
+        req_step=1;
+
     size_t max_node = numa_max_node();
     size_t num_cores = numa_num_configured_cpus();
     size_t cores_per_node = num_cores/(max_node+1);
@@ -227,30 +233,49 @@ static void* ab(void* a)
 #endif
         }
     }
+
     return 0;
 }
 
 int main(int argc, char **argv)
 {
-    size_t total = sysconf(_SC_NPROCESSORS_ONLN);
+    int core_max = -1;
+    if (argc>1) {
+        core_max = atoi(argv[1]);
+        fprintf(stderr, "Limiting number of cores to %d\n", core_max);
+    }
+
+    size_t num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+    size_t total = num_cores;
+    if (core_max>0 && core_max<total) {
+        total = core_max;
+    }
+    fprintf(stderr, "Running %d threads\n", core_max);
     gl_total = total;
 
     // Allocate memory for Smelt messages
-    gl_msg = (struct smlt_msg**) malloc(sizeof(struct smlt_msg*)*gl_total);
+    gl_msg = (struct smlt_msg**) malloc(sizeof(struct smlt_msg*)*num_cores);
     COND_PANIC(gl_msg!=NULL, "Failed to allocate gl_msg");
 
-    for (size_t i=0; i<gl_total; i++) {
+    for (size_t i=0; i<num_cores; i++) {
         gl_msg[i] = smlt_message_alloc(56);
     }
 
     // Determine NUMA properties
     size_t max_node = numa_max_node();
-    size_t num_cores = numa_num_configured_cpus();
     size_t cores_per_node = num_cores/(max_node+1);
+    if (total<num_cores) {
+        size_t tmp = cores_per_node;
+        cores_per_node = tmp/(num_cores/total);
+        fprintf(stderr, "Scaling down cores_per_node from %zu to %zu\n",
+                tmp, cores_per_node);
+    }
 
-    chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*total);
-    for (size_t i = 0; i < total; i++) {
-        chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*total);
+    chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*num_cores);
+    COND_PANIC(chan!=NULL, "Failed to allocate chan");
+
+    for (size_t i = 0; i < num_cores; i++) {
+        chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*num_cores);
     }
 
     typedef void* (worker_func_t)(void*);
@@ -274,29 +299,23 @@ int main(int argc, char **argv)
         "cluster",
         "badtree",
         "fibonacci",
-        //        "sequential",
-        "mst-naive",
-        "bintree-naive",
-        "cluster-naive",
-        "badtree-naive",
-        "fibonacci-naive",
-        //        "sequential-naive",
-        "adaptivetree",
-        "adaptivetree-shuffle-sort",
+        "sequential",
         "adaptivetree-nomm",
         "adaptivetree-nomm-shuffle-sort",
+        "adaptivetree-shuffle-sort",
+        "adaptivetree",
     };
 
     errval_t err;
-    err = smlt_init(total, true);
+    err = smlt_init(num_cores, true);
     if (smlt_err_is_fail(err)) {
         printf("FAILED TO INITIALIZE !\n");
         return 1;
     }
 
     // Full mesh of channels
-    for (unsigned int i = 0; i < total; i++) {
-        for (unsigned int j = 0; j < total; j++) {
+    for (unsigned int i = 0; i < num_cores; i++) {
+        for (unsigned int j = 0; j < num_cores; j++) {
             struct smlt_channel* ch = &chan[i][j];
             err = smlt_channel_create(&ch, (uint32_t *)&i, (uint32_t*) &j, 1, 1);
             if (smlt_err_is_fail(err)) {
@@ -310,10 +329,11 @@ int main(int argc, char **argv)
     for (int top = 0; top < NUM_TOPO; top++) {
 
         // For an increasing number of threads
-        for (size_t num_threads = 2; num_threads<total+1; num_threads++) {
+        for (size_t num_threads = 2; num_threads<total+1;
+             num_threads+=INC_CORES) {
 
             // For an increasing round-robin batch size
-            for (size_t step=1; step<=cores_per_node; step++) {
+            for (size_t step=0; step<=cores_per_node; step+=INC_STEPS) {
 
                 coreid_t cores[num_threads];
 
@@ -361,6 +381,7 @@ int main(int argc, char **argv)
                     struct smlt_node *node;
                     for (uint64_t j = 0; j < num_threads; j++) {
                         node = smlt_get_node_by_id(cores[j]);
+                        assert(node!=NULL);
                         err = smlt_node_start(node, workers[i], (void*)(uint64_t) cores[j]);
                         if (smlt_err_is_fail(err)) {
                             printf("Staring node failed \n");
@@ -377,7 +398,7 @@ int main(int argc, char **argv)
     }
 
     // Free space for messages
-    for (size_t i=0; i<gl_total; i++) {
+    for (size_t i=0; i<num_cores; i++) {
         smlt_message_free(gl_msg[i]);
     }
 
