@@ -1,0 +1,3 @@
+[submodule "bench/epcc"]
+	path = bench/epcc
+	url = ssh://vcs-user@code.systems.ethz.ch:8006/diffusion/LIBGOMP/gnu-openmp-library-with-smelt-support.git
