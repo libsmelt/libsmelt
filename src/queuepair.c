@@ -15,12 +15,13 @@
 #include <backends/ump/smlt_ump_queuepair.h>
 #include <backends/shm/shm_qp.h>
 #include "qp_func_wrapper.h"
-#include "debug.h"
+#include "smlt_debug.h"
 
 /**
   * @brief creates the queue pair
   *
-  * @param TODO: information specification
+  * @param qp1: Forward channel
+  * @param qp2: Backward channel
   *
   * @returns 0
   */

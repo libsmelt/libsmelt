@@ -11,8 +11,8 @@
 #include <smlt_context.h>
 #include <smlt_reduction.h>
 #include <smlt_broadcast.h>
+#include "smlt_debug.h"
 #include <shm/smlt_shm.h>
-#include "debug.h"
 #include <string.h>
 
 

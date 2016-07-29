@@ -139,6 +139,7 @@ int main(int argc, char **argv)
     for (int i = 4; i < num_threads+1; i++) {
 
         pthread_barrier_init(&bar, NULL, i);
+        printf("Running %d cores\n", i);
 
         active_threads = i;
         uint32_t* cores = placement(i, false);
@@ -148,17 +149,20 @@ int main(int argc, char **argv)
 
         active_cores = cores;
 
+        printf("Generating model\n");
         struct smlt_generated_model* model = NULL;
         err = smlt_generate_model(cores, i, NULL, &model);
         if (smlt_err_is_fail(err)) {
             exit(0);
         }
 
+        printf("Generating topology\n");
         struct smlt_topology *topo = NULL;
         sprintf(name, "adaptivetree_rr%d",i);
         smlt_topology_create(model, name, &topo);
         active_topo = topo;
 
+        printf("Generating context\n");
         err = smlt_context_create(topo, &context);
         if (smlt_err_is_fail(err)) {
             printf("FAILED TO INITIALIZE CONTEXT !\n");

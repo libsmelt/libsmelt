@@ -9,11 +9,11 @@
 #ifndef SMLT_CHANNEL_H_
 #define SMLT_CHANNEL_H_ 1
 
-#include <smlt_queuepair.h>
-#include <backends/shm/swmr.h>
 #include <string.h>
-//#include <platforms/linux.h>
 
+#include "smlt_queuepair.h"
+#include "smlt_debug.h"
+#include "backends/shm/swmr.h"
 
 /*
  * ===========================================================================
@@ -38,6 +38,7 @@ extern __thread smlt_nid_t smlt_node_self_id; ///< caches the node id
 struct smlt_channel
 {
     smlt_nid_t owner;
+    smlt_nid_t trg;
     uint32_t m;
     uint32_t n;
     bool use_shm;

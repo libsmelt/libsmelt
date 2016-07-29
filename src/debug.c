@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include "debug.h"
+#include "smlt_debug.h"
 
 /**
  * @brief prints an message to stdout
@@ -41,4 +41,10 @@ void smlt_debug_print(uint32_t subs, const char *fmt, ...)
     }
 
     printf(str, sizeof(str));
+}
+
+void panic(const char *str)
+{
+    printf("PANIC: %s\n", str);
+    abort();
 }

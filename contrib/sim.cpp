@@ -35,51 +35,62 @@ int smlt_tree_parse_wrapper(const char* json_string,
                             uint32_t* t_root,
                             uint32_t* len_model)
 {
-    Json::Value root;
-    // Json::CharReaderBuilder rbuilder;
-    // rbuilder["collectComments"] = false;
-    std::string errs;
-    // bool ok = Json::parseFromStream(rbuilder, rec, &root, &errs);
 
-    Json::CharReaderBuilder rbuilder;
-    Json::CharReader* reader = rbuilder.newCharReader();
+    try {
 
-    reader->parse(json_string, json_string+strlen(json_string)-1,
-                  &root, &errs);
-    // Extract last node
-    Json::Value ln = root.get("root", "");
-    int lnval = ln.asInt();
-    *t_root = (uint32_t)lnval;
+        Json::Value root;
+        // Json::CharReaderBuilder rbuilder;
+        // rbuilder["collectComments"] = false;
+        std::string errs;
+        // bool ok = Json::parseFromStream(rbuilder, rec, &root, &errs);
 
-    // Extract leaf node
+        Json::CharReaderBuilder rbuilder;
+        Json::CharReader* reader = rbuilder.newCharReader();
 
-    Json::Value leafs_j = root.get("leaf_nodes", "");
-    *leafs = (uint32_t*) malloc(sizeof(uint32_t)*leafs_j.size());
-    assert(*leafs != NULL);
+        reader->parse(json_string, json_string+strlen(json_string)-1,
+                      &root, &errs);
+        // Extract last node
+        Json::Value ln = root.get("root", "");
+        int lnval = ln.asInt();
+        *t_root = (uint32_t)lnval;
 
-    for (unsigned i=0; i<leafs_j.size(); i++) {
-        (*leafs)[i] = leafs_j.get(i, Json::Value()).asInt();
-    }
+        // Extract GIT revision number
+        Json::Value git_revision = root.get("git-version", "");
+        printf("Simulator GIT revision %s\n", git_revision.asString().c_str());
 
-    Json::Value elem = root.get("model", "");
-    *model = (uint16_t*)  malloc(sizeof(uint16_t)*elem.size()*elem.size());
-    assert(*model != NULL);
-    int x = 0;
-    int y = 0;
-    *len_model = elem.size();
-    for (Json::ValueIterator i=elem.begin(); i != elem.end(); i++) {
-        y = 0;
-        Json::Value inner = (*i);
-        for (Json::ValueIterator k=inner.begin(); k != inner.end(); k++) {
+        // Extract leaf node
 
-            Json::Value val = (*k);
-            (*model)[x*elem.size()+y] = (uint32_t) val.asInt();
-            y++;
+        Json::Value leafs_j = root.get("leaf_nodes", "");
+        *leafs = (uint32_t*) malloc(sizeof(uint32_t)*leafs_j.size());
+        assert(*leafs != NULL);
+
+        for (unsigned i=0; i<leafs_j.size(); i++) {
+            (*leafs)[i] = leafs_j.get(i, Json::Value()).asInt();
         }
-        x++;
-    }
 
-    return 0;
+        Json::Value elem = root.get("model", "");
+        *model = (uint16_t*)  malloc(sizeof(uint16_t)*elem.size()*elem.size());
+        assert(*model != NULL);
+        int x = 0;
+        int y = 0;
+        *len_model = elem.size();
+        for (Json::ValueIterator i=elem.begin(); i != elem.end(); i++) {
+            y = 0;
+            Json::Value inner = (*i);
+            for (Json::ValueIterator k=inner.begin(); k != inner.end(); k++) {
+
+                Json::Value val = (*k);
+                (*model)[x*elem.size()+y] = (uint32_t) val.asInt();
+                y++;
+            }
+            x++;
+        }
+
+        return 0;
+    } catch (...) {
+
+        return -1;
+    }
 }
 
 static int smlt_tree_config_request(const char *hostname,
@@ -90,6 +101,10 @@ static int smlt_tree_config_request(const char *hostname,
                                     uint32_t* t_root,
                                     uint32_t* len_model)
 {
+    // Set timeouts
+    struct timeval timeout;
+    timeout.tv_sec = 30;
+    timeout.tv_usec = 0;
 
     int status;
     struct addrinfo host_info;       // The struct that getaddrinfo() fills up with data.
@@ -128,6 +143,14 @@ static int smlt_tree_config_request(const char *hostname,
         return 1;
     }
 
+
+    if (setsockopt (socketfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0)
+        assert(!"setsockopt failed\n");
+
+    if (setsockopt (socketfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0)
+        assert(!"setsockopt failed\n");
 
     int len = strlen(msg);
     int bytes_sent;

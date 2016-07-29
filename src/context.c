@@ -11,7 +11,8 @@
 #include <smlt_topology.h>
 #include <smlt_context.h>
 #include <smlt_channel.h>
-#include "debug.h"
+#include "smlt_debug.h"
+
 #include <stdio.h>
 
 #define SMLT_CONTEXT_NAME_MAX 16

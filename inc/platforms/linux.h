@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <sched.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 //#define SMLT_CONFIG_LINUX_NUMA_ALIGN 1
 
@@ -32,6 +33,7 @@ typedef pthread_t smlt_platform_node_handle_t;
 typedef pthread_spinlock_t smlt_platform_lock_t;
 
 typedef uint32_t coreid_t;
+#define PRIuCOREID PRIu32
 
 typedef uint64_t cycles_t;
 

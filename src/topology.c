@@ -10,7 +10,7 @@
 #include <smlt_topology.h>
 #include <smlt_generator.h>
 #include <smlt_queuepair.h>
-#include "debug.h"
+#include "smlt_debug.h"
 #include <stdio.h>
 
 /**
@@ -57,17 +57,6 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
  */
 errval_t smlt_topology_init(void)
 {
-
-    /*
-    _tree_prepare();
-
-    if (get_thread_id()==0) {
-
-        shl_barrier_init(&tree_setup_barrier, NULL, get_num_threads());
-    }
-
-    _tree_export(qrm_my_name);
-     */
     return SMLT_SUCCESS;
 }
 
