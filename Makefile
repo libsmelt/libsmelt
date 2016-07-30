@@ -134,7 +134,7 @@ all: $(TARGET) \
 	     bench/ab-bench-scale \
 		 bench/ab-bench_s \
 		 bench/ab-bench-opt \
-		 bench/ab-throughput \
+		 bench/barrier-throughput \
 		 bench/pairwise \
 		 bench/pingpong \
 		 bench/polloverhead \
@@ -223,9 +223,9 @@ bench/ab-bench-opt: $(DEPS) $(EXTERNAL_OBJS) bench/ab-bench-opt.c
 bench/bar-bench: $(DEPS) $(EXTERNAL_OBJS) bench/diss_bar/barrier.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) bench/diss_bar/barrier.c bench/diss_bar/mcs.c -o $@
 
-bench/ab-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/ab-throughput.c
+bench/barrier-throughput: $(DEPS) $(EXTERNAL_OBJS) bench/barrier-throughput.c
 	$(CC) $(CFLAGS) $(INC) $(OBJS) $(EXTERNAL_OBJS) $(LIBS) -I bench/diss_bar bench/diss_bar/mcs.c \
-	bench/ab-throughput.c -o $@
+	bench/barrier-throughput.c -o $@
 
 # Build shared library
 # --------------------------------------------------
