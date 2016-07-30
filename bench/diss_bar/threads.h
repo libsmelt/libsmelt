@@ -20,7 +20,7 @@
 extern struct smlt_context* context;
 extern struct smlt_dissem_barrier* bar;
 extern mcs_barrier_t* bar_mcs;
- 
+
 __thread struct sk_measurement mes;
 
 /* data needed by each thread */
@@ -51,9 +51,9 @@ typedef struct timer{
 	UINT64_T elapsed_ticks;
 } my_timer_t;
 
-void initThreads(int num_threads, threaddata_t * threaddata, sharedMemory_t * shm, 
-                 unsigned long long g_timerfreq, UINT64_T * rdtsc_synchro, 
-                 int rdtsc_latency, int naccesses, int *accesses, int m, 
+void initThreads(int num_threads, threaddata_t * threaddata, sharedMemory_t * shm,
+                 unsigned long long g_timerfreq, UINT64_T * rdtsc_synchro,
+                 int rdtsc_latency, int naccesses, int *accesses, int m,
                  int rounds, uint32_t* cores, bool fill, bool smlt_dissem){
 	for(int i=0; i< num_threads; i++){
 		threaddata[i].thread_id = i;
@@ -221,6 +221,52 @@ void* function_thread_smlt(void * arg_threaddata){
     return NULL;
 }
 
+
+void* function_thread_tp (void * arg_threaddata){
+
+	threaddata_t * threaddata = ((threaddata_t*)arg_threaddata);
+	unsigned int thread_id = threaddata->thread_id;
+
+
+    char outname[512];
+	//set affinity
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(threaddata->core_id,&mask);
+	pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
+
+    if (threaddata->fill) {
+        sprintf(outname, "barriers_dis_fill%d", threaddata->num_threads);
+    } else {
+        sprintf(outname, "barriers_dis_rr%d", threaddata->num_threads);
+    }
+
+
+    uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*100);
+    sk_m_init(&mes, 100, outname, buf);
+	threaddata->ack = 1;
+
+	while(threaddata->ack){};
+
+    for (int i = 0; i < 100; i++) {
+            barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                    thread_id,&(threaddata->tag));
+            barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                    thread_id,&(threaddata->tag));
+        sk_m_restart_tsc(&mes);
+        for (int n=0; n<100000; n++){
+            barrier(threaddata->num_threads, threaddata->shm,threaddata->m,threaddata->rounds,
+                    thread_id,&(threaddata->tag));
+        }
+        sk_m_add(&mes);
+        if (thread_id == 0) {
+            printf("%d \n", i);
+        }
+    }
+
+    sk_m_print(&mes);
+    return NULL;
+}
 
 
 

@@ -57,7 +57,7 @@ static uint32_t* placement(uint32_t n, bool do_fill, bool hyperthreads)
         } else {
             int cores_per_node = n/numa_nodes;
             int rest = n - (cores_per_node*numa_nodes);
-            int taken_per_node = 0;        
+            int taken_per_node = 0;
 
             fprintf(stderr, "Cores per node %d \n", cores_per_node);
             fprintf(stderr, "rest %d \n", rest);
@@ -85,13 +85,101 @@ static uint32_t* placement(uint32_t n, bool do_fill, bool hyperthreads)
                     }
                 }
                 taken_per_node = 0;
-            }            
+            }
         }
     } else {
         printf("Libnuma not available \n");
         return NULL;
     }
     return NULL;
+}
+
+void run_diss_tp(bool fill, bool hyperthreads) {
+
+	sharedMemory_t * shm;
+	threaddata_t * threaddata;
+	pthread_t * threads;
+	UINT64_T g_timerfreq;
+	UINT64_T * rdtsc_synchro;
+	int rdtsc_latency;
+    int num_threads = 0;
+    if (hyperthreads) {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN)/2;
+    } else {
+	    num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    }
+    int naccesses; //for no use in barrier, inherited from the bcast benchmark.
+    int accesses;
+    uint32_t* cores;
+    int n_thr;
+    n_thr = num_threads;
+    if (fill) {
+        fprintf(stderr, "Running Dissemination %d fill\n", n_thr);
+    } else {
+        fprintf(stderr, "Running Dissemination %d rr\n", n_thr);
+    }
+
+    if(posix_memalign((void**)(&(shm)), ALIGNMENT,
+                      sizeof(sharedMemory_t))){
+        //returns 0 on success
+        fprintf(stderr, "Error allocation of shared memory structure failed\n");
+        fflush(stderr);
+        exit(127);
+    }
+
+    if(posix_memalign((void**)(&threads),
+                      ALIGNMENT,n_thr*sizeof(pthread_t))){
+        //returns 0 on success
+        fprintf(stderr, "Error allocation of threads failed\n");
+        fflush(stderr);
+        exit(127);
+    }
+
+    if(posix_memalign((void**)(&(threaddata)), ALIGNMENT,
+                      n_thr*sizeof(threaddata_t))){
+        //returns 0 on success
+        fprintf(stderr, "Error allocation of thread data structure failed\n");
+        fflush(stderr);
+        exit(127);
+    }
+
+    initSharedMemory(shm, n_thr);
+
+    cores = placement(n_thr, fill, hyperthreads);
+
+    g_timerfreq = 0;      // RH: the are variables that should be cleaned up 
+                          //     and are not used anymore since we do dnot synchro
+                          //     based on rdtsc but on a dissemination barrier...
+    rdtsc_synchro = NULL; // SK: can somebody verify this?
+    rdtsc_latency = 0;    // SK: can somebody verify this?
+    naccesses = 0;        // SK: can somebody verify this?
+    initThreads(n_thr, threaddata, shm, g_timerfreq, rdtsc_synchro,
+                rdtsc_latency, naccesses, &accesses, shm->m,
+                shm->rounds, cores, fill, false);
+
+    for(int t=0 ; t < n_thr; t++){
+        pthread_create(&threads[t],NULL,function_thread_tp,
+                       (void *)(&(threaddata[t])));
+        while (!threaddata[t].ack); // initialized thread
+    }
+
+    for (int t=0; t < n_thr; t++) {
+        fprintf(stderr, "Core[%d]=%d\n", t, cores[t]);
+    }
+
+    //let them start
+    for(int t=0; t < n_thr; t++)
+        threaddata[t].ack = 0;
+
+    // wait for them to finish
+
+    for (int t=0; t < n_thr; t++){
+        pthread_join(threads[t],NULL);
+    }
+
+    free(threads);
+    free(threaddata);
+    free(shm);
 }
 
 
@@ -158,7 +246,7 @@ void run_diss(bool fill, bool hyperthreads) {
                     shm->rounds, cores, fill, false);
 
         for(int t=0 ; t < n_thr; t++){
-            pthread_create(&threads[t],NULL,function_thread, 
+            pthread_create(&threads[t],NULL,function_thread,
                            (void *)(&(threaddata[t])));
             while (!threaddata[t].ack); // initialized thread
         }
@@ -243,7 +331,7 @@ void run_mcs(bool fill, bool hyperthreads) {
 
         initSharedMemory(shm, n_thr);
         cores = placement(n_thr, fill, hyperthreads);
-    
+
         mcs_barrier_init(bar_mcs, n_thr);
 
         naccesses = 0;        // SK: can somebody verify this?
@@ -252,7 +340,7 @@ void run_mcs(bool fill, bool hyperthreads) {
                     cores, fill, false);
 
         for(int t=0 ; t < n_thr; t++){
-            pthread_create(&threads[t],NULL,function_thread_mcs, 
+            pthread_create(&threads[t],NULL,function_thread_mcs,
                            (void *)(&(threaddata[t])));
             while (!threaddata[t].ack); // initialized thread
         }
@@ -408,7 +496,7 @@ void run_smlt(bool fill, bool smlt_dissem, bool hyperthreads) {
         free(threaddata);
         free(shm);
         if (smlt_dissem) {
-            smlt_dissem_barrier_destroy(bar);       
+            smlt_dissem_barrier_destroy(bar);
         }
     }
 }
@@ -425,7 +513,7 @@ int main(int argc, char** argv){
         printf("Faild to init SMLT \n");
         exit(1);
     }
-    
+
     bool hyper = false;
     if(argc == 2) {
         printf("HYPERTHREADS ENABLED");
@@ -444,9 +532,5 @@ int main(int argc, char** argv){
     run_mcs(true, hyper);
     run_mcs(false, hyper);
 
-
+    //run_diss_tp(true, hyper);
 }
-
-
-
-
