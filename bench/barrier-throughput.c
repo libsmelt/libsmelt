@@ -29,7 +29,7 @@ __thread struct sk_measurement m2;
 
 unsigned num_threads;
 struct smlt_context* ctx;
-#define NUM_RUNS 100000 //50 // 10000 // Tested up to 1.000.000
+#define NUM_RUNS 1000
 #define NUM_RESULTS 1000
 
 mcs_barrier_t mcs_b;
@@ -37,7 +37,9 @@ mcs_barrier_t mcs_b;
 static void* mcs_barrier(void* a)
 {
     coreid_t tid = smlt_node_get_id();
+
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    assert (buf!=NULL);
     sk_m_init(&m, NUM_RESULTS, "mcs-barrier", buf);
 
     sk_m_restart_tsc(&m);
@@ -58,6 +60,7 @@ static void* barrier(void* a)
 {
     coreid_t tid = smlt_node_get_id();
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    assert (buf!=NULL);
     sk_m_init(&m, NUM_RESULTS, "sync-barrier", buf);
 
     sk_m_restart_tsc(&m);
