@@ -40,38 +40,36 @@ static void* mcs_barrier(void* a)
 
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     assert (buf!=NULL);
-    sk_m_init(&m, NUM_RESULTS, "mcs-barrier", buf);
+    sk_m_init(&m, NUM_RESULTS, "barriers_mcs-barrier", buf);
 
-    sk_m_restart_tsc(&m);
-    for (unsigned i=0; i<NUM_RUNS; i++) {
+    for (unsigned j=0; j<NUM_RUNS; j++) {
+        sk_m_restart_tsc(&m);
+        for (unsigned i=0; i<NUM_RUNS; i++) {
 
-        mcs_barrier_wait(&mcs_b, tid);
+            mcs_barrier_wait(&mcs_b, tid);
+        }
+
+        sk_m_add(&m);
     }
-
-    sk_m_add(&m);
-    if (tid == 0) {
-        sk_m_print(&m);
-    }
+    sk_m_print(&m);
 
     return NULL;
 }
 
 static void* barrier(void* a)
 {
-    coreid_t tid = smlt_node_get_id();
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     assert (buf!=NULL);
-    sk_m_init(&m, NUM_RESULTS, "sync-barrier", buf);
+    sk_m_init(&m, NUM_RESULTS, "barriers_sync-barrier", buf);
 
-    sk_m_restart_tsc(&m);
-    for (int epoch=0; epoch<NUM_RUNS; epoch++) {
-        smlt_barrier_wait(ctx);
+    for (unsigned j=0; j<NUM_RUNS; j++) {
+        sk_m_restart_tsc(&m);
+        for (int epoch=0; epoch<NUM_RUNS; epoch++) {
+            smlt_barrier_wait(ctx);
+        }
+        sk_m_add(&m);
     }
-    sk_m_add(&m);
-
-    if (tid == 0) {
-        sk_m_print(&m);
-    }
+    sk_m_print(&m);
 
     return NULL;
 }
