@@ -325,6 +325,12 @@ static inline errval_t smlt_ump_queue_recv_raw(struct smlt_ump_queue *q,
         return SMLT_ERR_QUEUE_EMPTY;
     }
 
+    // Write ack twice: once in the middle
+    // and once at the end
+    if (q->pos == (q->num_msg >> 1)) {
+        *(q->last_ack) = ctrl.c.last_ack;
+    }
+
     if (++q->pos == q->num_msg) {
         q->pos = 0;
         q->epoch = !q->epoch;
