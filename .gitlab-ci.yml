@@ -7,8 +7,14 @@ before_script:
 # --------------------------------------------------
 
 stages:
+  - sanity
   - build
   - test
+
+sanity:
+  stage: sanity
+  script:
+    - "scripts/fix_headers.sh"
 
 compile:
   stage: build
