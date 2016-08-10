@@ -11,7 +11,7 @@
 
 #include <math.h>
 #include "barrier.h"
-#include "measurement_framework.h"
+#include "platforms/measurement_framework.h"
 #include "mcs.h"
 
 #include <smlt.h>

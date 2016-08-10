@@ -12,7 +12,7 @@
 #include <smlt_context.h>
 #include <smlt_generator.h>
 #include <smlt_barrier.h>
-#include "diss_bar/measurement_framework.h"
+#include "platforms/measurement_framework.h"
 
 #include "diss_bar/mcs.h"
 
