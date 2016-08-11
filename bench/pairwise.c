@@ -29,12 +29,18 @@ struct smlt_qp ***queue_pairs;
 
 #define STR(X) #X
 
-#define INIT_SKM(func, id, sender, receiver)                                \
-        char _str_buf_##func[1024];                                                \
-        cycles_t _buf_##func[NUM_DATA];                                             \
-        struct sk_measurement m_##func;                                            \
-        snprintf(_str_buf_##func, 1024, "%s-%zu-%d-%d", STR(func), id, sender, receiver); \
-        sk_m_init(&m_##func, NUM_DATA, _str_buf_##func, _buf_##func);
+/**
+ * Generate the label for the measurements.
+ *
+ * Currently, this is {send,rtt,receive}-batchsize-sender-receiver
+ */
+#define INIT_SKM(func, nummsg, sender, receiver)                        \
+    char _str_buf_##func[1024];                                         \
+    cycles_t _buf_##func[NUM_DATA];                                     \
+    struct sk_measurement m_##func;                                     \
+    snprintf(_str_buf_##func, 1024, "%s-%zu-%d-%d",                     \
+             STR(func), nummsg, sender, receiver);                      \
+    sk_m_init(&m_##func, NUM_DATA, _str_buf_##func, _buf_##func);
 
 
 struct thr_args {
