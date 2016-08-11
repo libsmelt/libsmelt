@@ -515,6 +515,10 @@ int main(int argc, char** argv){
         fprintf(stderr, "Setting number of threads to %d\n", total_threads);
     }
 
+#ifdef THROUGHPUT
+    run_diss_tp(true, total_threads);
+#else
+
     run_diss(true, hyper);
     run_diss(false, hyper);
     // smlt tree barrier
@@ -526,6 +530,7 @@ int main(int argc, char** argv){
 
     run_mcs(true, hyper);
     run_mcs(false, hyper);
+#endif
 
     //run_diss_tp(true, hyper);
 }
