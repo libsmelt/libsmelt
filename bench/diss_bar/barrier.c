@@ -94,7 +94,7 @@ static uint32_t* placement(uint32_t n, bool do_fill, bool hyperthreads)
     return NULL;
 }
 
-void run_diss_tp(bool fill, bool hyperthreads) {
+void run_diss_tp(bool fill, int num_threads) {
 
 	sharedMemory_t * shm;
 	threaddata_t * threaddata;
@@ -102,12 +102,6 @@ void run_diss_tp(bool fill, bool hyperthreads) {
 	UINT64_T g_timerfreq;
 	UINT64_T * rdtsc_synchro;
 	int rdtsc_latency;
-    int num_threads = 0;
-    if (hyperthreads) {
-	    num_threads = sysconf(_SC_NPROCESSORS_ONLN)/2;
-    } else {
-	    num_threads = sysconf(_SC_NPROCESSORS_ONLN);
-    }
     int naccesses; //for no use in barrier, inherited from the bcast benchmark.
     int accesses;
     uint32_t* cores;
@@ -145,7 +139,7 @@ void run_diss_tp(bool fill, bool hyperthreads) {
 
     initSharedMemory(shm, n_thr);
 
-    cores = placement(n_thr, fill, hyperthreads);
+    cores = placement(n_thr, fill, false);
 
     g_timerfreq = 0;      // RH: the are variables that should be cleaned up 
                           //     and are not used anymore since we do dnot synchro
@@ -464,7 +458,7 @@ void run_smlt(bool fill, bool smlt_dissem, bool hyperthreads) {
         } else {
             err = smlt_dissem_barrier_init(cores, n_thr, &bar);
             if (smlt_err_is_fail(err)) {
-                printf("Faild to init SMLT context \n");
+                printf("Failed smlt_dissem_barrier_init \n");
                 return ;
             }
         }
@@ -514,10 +508,11 @@ int main(int argc, char** argv){
         exit(1);
     }
 
-    bool hyper = false;
+    bool hyper = false; // always false
     if(argc == 2) {
-        printf("HYPERTHREADS ENABLED");
-        hyper = true;
+        assert (atoi(argv[1])<=total_threads);
+        total_threads = atoi(argv[1]);
+        fprintf(stderr, "Setting number of threads to %d\n", total_threads);
     }
 
     run_diss(true, hyper);

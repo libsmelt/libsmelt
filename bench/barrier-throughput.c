@@ -29,8 +29,8 @@ __thread struct sk_measurement m2;
 
 unsigned num_threads;
 struct smlt_context* ctx;
-#define NUM_RUNS 1000
-#define NUM_RESULTS 1000
+#define NUM_RUNS 10000
+#define NUM_RESULTS 100
 
 mcs_barrier_t mcs_b;
 
@@ -42,7 +42,7 @@ static void* mcs_barrier(void* a)
     assert (buf!=NULL);
     sk_m_init(&m, NUM_RESULTS, "barriers_mcs-barrier", buf);
 
-    for (unsigned j=0; j<NUM_RUNS; j++) {
+    for (unsigned j=0; j<NUM_RESULTS; j++) {
         sk_m_restart_tsc(&m);
         for (unsigned i=0; i<NUM_RUNS; i++) {
 
@@ -62,7 +62,7 @@ static void* barrier(void* a)
     assert (buf!=NULL);
     sk_m_init(&m, NUM_RESULTS, "barriers_sync-barrier", buf);
 
-    for (unsigned j=0; j<NUM_RUNS; j++) {
+    for (unsigned j=0; j<NUM_RESULTS; j++) {
         sk_m_restart_tsc(&m);
         for (int epoch=0; epoch<NUM_RUNS; epoch++) {
             smlt_barrier_wait(ctx);
@@ -87,6 +87,11 @@ int main(int argc, char **argv)
 
     unsigned nthreads = sysconf(_SC_NPROCESSORS_CONF);
     num_threads = nthreads;
+
+    if (argc>1) {
+        num_threads = atoi(argv[1]);
+        fprintf(stderr, "Setting number of threads to %d\n", num_threads);
+    }
 
     mcs_barrier_init(&mcs_b, num_threads);
 
