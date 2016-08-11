@@ -8,6 +8,7 @@
 #ifndef THREADS_H_
 #define THREADS_H_
 
+#define ADAPTIVETREE "adaptivetree-nomm-shuffle-sort"
 
 #include <math.h>
 #include "barrier.h"
@@ -181,13 +182,13 @@ void* function_thread_smlt(void * arg_threaddata){
         if (threaddata->smlt_dissem) {
             sprintf(outname, "barriers_smltdissem_fill%d", threaddata->num_threads);
         } else {
-            sprintf(outname, "barriers_adaptivetree_fill%d", threaddata->num_threads);
+            sprintf(outname, "barriers_%s_fill%d", ADAPTIVETREE, threaddata->num_threads);
         }
     } else {
         if (threaddata->smlt_dissem) {
             sprintf(outname, "barriers_smltdissem_rr%d", threaddata->num_threads);
         } else {
-            sprintf(outname, "barriers_adaptivetree_rr%d", threaddata->num_threads);
+            sprintf(outname, "barriers_%s_rr%d", ADAPTIVETREE, threaddata->num_threads);
         }
     }
 

@@ -31,6 +31,7 @@ unsigned num_threads;
 struct smlt_context* ctx;
 #define NUM_RUNS 10000
 #define NUM_RESULTS 100
+#define ADAPTIVETREE "adaptivetree-nomm-shuffle-sort"
 
 mcs_barrier_t mcs_b;
 
@@ -122,7 +123,7 @@ int main(int argc, char **argv)
     }
 
     struct smlt_generated_model* model = NULL;
-    err = smlt_generate_model(cores, num_threads, "adaptivetree", &model);
+    err = smlt_generate_model(cores, num_threads, ADAPTIVETREE, &model);
 
     if (smlt_err_is_fail(err)) {
         printf("Failed to generated model, aborting\n");
@@ -130,7 +131,7 @@ int main(int argc, char **argv)
     }
 
     struct smlt_topology *topo = NULL;
-    smlt_topology_create(model, "adaptivetree", &topo);
+    smlt_topology_create(model, ADAPTIVETREE, &topo);
 
     err = smlt_context_create(topo, &ctx);
     if (smlt_err_is_fail(err)) {

@@ -444,7 +444,7 @@ void run_smlt(bool fill, bool smlt_dissem, bool hyperthreads) {
             }
 
             struct smlt_topology *topo = NULL;
-            err = smlt_topology_create(model, "adaptivetree", &topo);
+            err = smlt_topology_create(model, ADAPTIVETREE, &topo);//cf threads.h
             if (smlt_err_is_fail(err)) {
                 printf("Faild to init SMLT model \n");
                 return ;
