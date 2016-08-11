@@ -26,12 +26,15 @@ int barrierKernel(int totalReps, int fill){
 	struct sk_measurement * mes;
 	char outname[512];
 	int i;
-    	
+
 	if (fill) {
-        	sprintf(outname, "barriers_omp_fill%d", omp_get_max_threads());
-    	} else {
-        	sprintf(outname, "barriers_omp_rr%d", omp_get_max_threads());
-    	}
+        sprintf(outname, "barriers_kernel_omp_fill%d", \
+                omp_get_max_threads());
+    } else {
+        sprintf(outname, "barriers_kernel_omp_rr%d", \
+                omp_get_max_threads());
+    }
+
 	mes = (struct sk_measurement*) malloc(sizeof(struct sk_measurement)*omp_get_max_threads());
 	for(i=0; i<omp_get_max_threads(); i++){
 		uint64_t *buf = (uint64_t*) malloc(sizeof(uint64_t)*totalReps);
@@ -95,14 +98,17 @@ int runBarrier(int totalReps, int fill, bool sync){
 	pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask);
 	for (repIter=0; repIter<totalReps; repIter++){
         if (sync){
+            // In case of additional synchronization:
+            // Execute two more barriers before ach barrier
 #pragma omp barrier
 #pragma omp barrier
-        } 
- 		sk_m_restart_tsc(&(mes[tid]));	
-			{
+            // .. and reset the TSC to measure the cost of the next tsc ..
+            sk_m_restart_tsc(&(mes[tid]));
+        }
+        {
 #pragma omp barrier
-			}
-		sk_m_add(&(mes[tid]));	
+        }
+		sk_m_add(&(mes[tid]));
 	}
 	}
 	for(i=0; i<omp_get_max_threads(); i++)
@@ -126,12 +132,12 @@ int barrierDriver(int totalReps){
 
 int main(int argc, char *argv[]){
 
-
     int totalReps = 1000;
-    printf("Calling Barrier driver\n");fflush(stdout);
     if (argc != 2) {
+        printf("Calling Barrier driver\n");
         barrierDriver(totalReps);
     } else {
+        printf("Running barrier benchmark\n");
         runBarrier(totalReps, 1, 0);
         runBarrier(totalReps, 1, 1);
     }
