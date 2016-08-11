@@ -28,6 +28,9 @@
  */
 struct smlt_qp **queue_pairs[2]; // WHY two?
 
+/** Array storing how often a core/thread has to receive messages */
+static size_t *n_p_core;
+
 size_t chan_per_core = 0;
 cycles_t tsc_overhead = 0;
 
@@ -35,7 +38,7 @@ cycles_t tsc_overhead = 0;
 
 #define NUM_THREADS 1
 
-#define NUM_DATA 2000
+#define NUM_DATA 100
 #define NUM_EXP 5000
 #define NUM_WARMUP 5000
 
@@ -72,7 +75,8 @@ struct thr_args {
 
 static size_t parse_cores(const char* str,
                           coreid_t cores_max,
-                          coreid_t *_cores)
+                          coreid_t *_cores,
+                          size_t *_n_p_core)
 {
     if (strcmp(str, "none")==0) {
         printf("none given, setting to 0 cores\n");
@@ -86,8 +90,11 @@ static size_t parse_cores(const char* str,
         size_t l = strcspn (tmp, ",");
         printf("%.*s ", (int) l, tmp);
 
-        _cores[idx++] = atoi(tmp);
-        assert (atoi(tmp)<cores_max);
+        coreid_t curr_core = atoi(tmp);
+        assert (curr_core<cores_max);
+
+        _cores[idx++] = curr_core;
+        _n_p_core[curr_core] += 1;
 
         tmp += l + 1;
 
@@ -105,84 +112,6 @@ static size_t parse_cores(const char* str,
     return idx;
 }
 
-static cycles_t *do_sorting(cycles_t *array,
-                            size_t len)
-{
-    size_t i, j;
-    cycles_t *sorted_array = array;
-    cycles_t temp_holder;
-
-
-    // sort the array
-    for (i = 0; i < len; ++i) {
-        for (j = i; j < len; ++j) {
-            if (sorted_array[i] > sorted_array[j]) {
-                temp_holder = sorted_array[i];
-                sorted_array[i] = sorted_array[j];
-                sorted_array[j] = temp_holder;
-            }
-        } // end for: j
-    } // end for: i
-    return sorted_array;
-} // end function: do_sorting
-
-
-/**
- * \brief Print results
- *
- * This is called by the sender with the same thread arguments as it
- * is called itself.
- */
-static void eval_data(struct thr_args*arg)
-{
-    cycles_t sum = 0, max = 0, min = (cycles_t)-1;
-    size_t count = 0;
-
-    cycles_t *sorted = do_sorting(tsc_measurements, NUM_DATA);
-
-    for (size_t i=0; i<(NUM_DATA * 0.90); i++) {
-        count ++;
-        sum += tsc_measurements[i];
-        if (tsc_measurements[i] < min) {
-            min = tsc_measurements[i];
-        }
-        if (tsc_measurements[i] > max) {
-            max = tsc_measurements[i];
-        }
-    }
-    cycles_t avg = sum / count;
-
-    sum = 0;
-    for (size_t i=0; i<count; i++) {
-        if (tsc_measurements[i] > avg) {
-            sum += (tsc_measurements[i] - avg) * (tsc_measurements[i] - avg);
-        } else {
-            sum += (avg- tsc_measurements[i]) * (avg - tsc_measurements[i]);
-        }
-    }
-
-    sum /= count;
-
-    // Prepare core ID string. Let's assume we have a maximum of 2
-    // digits per core, plus one character for comma [xx,]+
-    int max_len = arg->num_cores * 3 + 1; // +1 for \0
-    char cores_str[max_len];
-    char *cores_tmp = cores_str;
-
-    for (coreid_t c = 0; c<arg->num_cores; c++) {
-
-        int l = sprintf(cores_tmp, "%02d,", arg->cores[c]);
-        assert (l==3); // Otherwise core id > 100
-
-        cores_tmp += 3;
-    }
-
-    printf("cores=%s mode=%s, avg=%lu, stdev=%lu, med=%lu, min=%lu, max=%lu cycles, count=%lu, ignored=%lu\n",
-           cores_str, modestring[arg->mode], avg, (cycles_t)sqrt(sum),sorted[count/2], min, max, count, NUM_EXP - count);
-
-
-}
-
 void* thr_write(void* a)
 {
     struct thr_args* arg = (struct thr_args*) a;
@@ -190,7 +119,7 @@ void* thr_write(void* a)
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
-    cycles_t tsc_start, tsc_end;
+    cycles_t tsc_start;
 
     uint32_t nc = arg->num_cores;
 
@@ -206,8 +135,26 @@ void* thr_write(void* a)
         // Array of queue pairs we have to send to
         struct smlt_qp **qp = arg->queue_pairs;
 
+        struct sk_measurement skm;
+        char title[1000];
+
+        int num =snprintf(title, 1000, "mm-%s", modestring[arg->mode]);
+
+        char *tmp = title + num;
+        size_t max = 1000 - num;
+
+        for (coreid_t i = 0; i <arg->num_cores; ++i) {
+
+            num = snprintf(tmp, max, "-%d", arg->cores[i]);
+            tmp += num;
+            max -= num;
+        }
+
+
+        sk_m_init(&skm, NUM_DATA, title, tsc_measurements);
+
         switch (arg->mode) {
-        case BENCH_MODE_LAST :
+        case BENCH_MODE_LAST:
             // Measure cost of LAST message (includes one TSC)
             // --------------------------------------------------
             // Send n-1 messages
@@ -215,41 +162,37 @@ void* thr_write(void* a)
                 smlt_queuepair_send(*qp, msg);
                 qp++;
             }
-            tsc_start = bench_tsc();
+            sk_m_restart_tsc(&skm);
             smlt_queuepair_send(*qp, msg);  // send last message
-            tsc_end = bench_tsc();
-            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
+            sk_m_add(&skm);
             break;
-        case BENCH_MODE_TOTAL :
+        case BENCH_MODE_TOTAL:
             // Measure total time of the batch
             // --------------------------------------------------
-            tsc_start = bench_tsc();
+            sk_m_restart_tsc(&skm);
             for (uint32_t i = 0; i < nc; ++i) {
                 smlt_queuepair_send(*qp, msg);
                 qp++;
             }
-            tsc_end = bench_tsc();
-            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
+            sk_m_add(&skm);
             break;
-        case BENCH_MODE_ALL :
+        case BENCH_MODE_ALL:
             // Measure cost of last message, but have one rdtsc()
             // between each of them
             // --------------------------------------------------
-            tsc_start = bench_tsc();
+            sk_m_restart_tsc(&skm);
             for (uint32_t i = 0; i < nc; ++i) {
                 tsc_start = bench_tsc();
                 smlt_queuepair_send(*qp, msg);
                 qp++;
             }
-            tsc_end = bench_tsc();
-            tsc_measurements[iter % NUM_DATA] = (tsc_end - tsc_start);
+            sk_m_add(&skm);
             break;
         default:
             printf("ERROR: UNKNOWN MODE\n");
         }
+        sk_m_print(&skm);
     }
-
-    eval_data(arg);
 
     return NULL;
 }
@@ -264,14 +207,21 @@ void* thr_receiver(void* a)
     assert (arg->queue_pairs == NULL); // Not used, queuepair lookup
                                        // based on core ID given
 
+    coreid_t tid = arg->cores[0];
+
     struct smlt_msg* msg = smlt_message_alloc(8);
     msg->words = 0;
 
     // Fetch Backward queue pair
-    dbg_printf("Fetching backward queue pair for %" PRIuCOREID "\n", arg->cores[0]);
+    dbg_printf("Fetching backward queue pair for %" PRIuCOREID "\n", tid);
     struct smlt_qp *qp = queue_pairs[1][arg->cores[0]];
 
-    for (size_t j=0; j<NUM_EXP; j++) {
+
+    assert (n_p_core[tid] != 0);
+    printf("core %" PRIuCOREID " receives %zu times\n", tid, n_p_core[tid]);
+    size_t num_rep = NUM_EXP * n_p_core[tid];
+
+    for (size_t j=0; j<num_rep; j++) {
 
         smlt_queuepair_recv(qp, msg);
     }
@@ -325,8 +275,26 @@ int run_experiment(size_t num_local, coreid_t* local_cores,
         args[0].queue_pairs[i] = queue_pairs[0][cores[i]];
     }
 
-    // Start receiver threads
+    size_t c_max = sysconf(_SC_NPROCESSORS_CONF);
+
+    // Reset array
+    memset(n_p_core, 0, sizeof(size_t)*c_max);
     for (coreid_t i = 0; i < num_cores; ++i) {
+        n_p_core[cores[i]] += 1;
+    }
+
+    // Start receiver threads
+    int already_started[c_max]; // initialize to zero
+    memset(already_started, 0, sizeof(int)*(c_max));
+    for (coreid_t i = 0; i < num_cores; ++i) {
+
+        // Start only one thread per receiver core
+        if (already_started[cores[i]])
+            continue;
+
+        already_started[cores[i]] = 1;
+        printf("Starting receiver on core %d - num %zu\n",
+               cores[i], n_p_core[cores[i]]);
 
         struct smlt_node *dst = smlt_get_node_by_id(cores[i]);
         struct thr_args *a = args + (i+1); // args[0] is sender
@@ -380,11 +348,14 @@ int main(int argc, char **argv)
 
     coreid_t local_cores[cores_max];
     coreid_t remote_cores[cores_max];
+    n_p_core = malloc(sizeof(size_t)*cores_max);
+    COND_PANIC(n_p_core!=NULL, "n_p_core alloc failed");
+    memset(n_p_core, 0, sizeof(size_t)*cores_max);
 
     // Parse cores
     coreid_t sender = atoi(argv[1]);
-    size_t num_local  = parse_cores(argv[2], cores_max, local_cores);
-    size_t num_remote = parse_cores(argv[3], cores_max, remote_cores);
+    size_t num_local  = parse_cores(argv[2], cores_max, local_cores, n_p_core);
+    size_t num_remote = parse_cores(argv[3], cores_max, remote_cores, n_p_core);
     size_t num_cores = num_local + num_remote;
 
     // Parse arguments
@@ -393,10 +364,12 @@ int main(int argc, char **argv)
 
     // Debug output of cores
     for (coreid_t c = 0; c<num_local; c++) {
-        printf("Core %" PRIuCOREID ": %" PRIuCOREID "\n", c, local_cores[c]);
+        printf("Core %" PRIuCOREID ": %" PRIuCOREID " num=%zu\n",
+               c, local_cores[c], n_p_core[local_cores[c]]);
     }
     for (coreid_t c = 0; c<num_remote; c++) {
-        printf("Core %" PRIuCOREID ": %" PRIuCOREID "\n", c, remote_cores[c]);
+        printf("Core %" PRIuCOREID ": %" PRIuCOREID " num=%zu\n",
+               c, remote_cores[c], n_p_core[remote_cores[c]]);
     }
 
     errval_t err;
@@ -483,6 +456,8 @@ int main(int argc, char **argv)
                            n_remote, remote_cores, BENCH_MODE_ALL);
         }
     }
+
+    free(n_p_core);
 
     return 0;
 
