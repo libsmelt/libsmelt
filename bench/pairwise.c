@@ -64,21 +64,15 @@ void* thr_sender(void* a)
     for (size_t i=0; i<NUM_EXP; i++) {
         sk_m_restart_tsc(&m_rtt);
         sk_m_restart_tsc(&m_send);
-        // Warm-up phase
-        for (size_t j = 0; j < arg->num_messages; j++) {
-            smlt_queuepair_send(qp, msg);
-        }
-        // Actual sends
         for (size_t j = 0; j < arg->num_messages; j++) {
             smlt_queuepair_send(qp, msg);
         }
         sk_m_add(&m_send);
 
-        // Wait for "confirmation"
         for (size_t j = 0; j < arg->num_messages; j++) {
             smlt_queuepair_recv(qp, msg);
         }
-        sk_m_add(&m_rtt); // << completly meaningless for m>0
+        sk_m_add(&m_rtt);
     }
 
 #ifdef PRINT_SUMMARY
@@ -104,24 +98,16 @@ void* thr_receiver(void* a)
     INIT_SKM(receive, arg->num_messages, arg->s, arg->r);
 
     for (size_t i=0; i<NUM_EXP; i++) {
-
-        // Warm-up phase ..
-        for (size_t j = 0; j < arg->num_messages; j++) {
+        do {
+            sk_m_restart_tsc(&m_receive);
+            err = smlt_queuepair_try_recv(qp, msg);
+        } while (err != SMLT_SUCCESS) ;
+        for (size_t j = 1; j < arg->num_messages; j++) {
             err = smlt_queuepair_recv(qp, msg);
-            assert (err==SMLT_SUCCESS);
-        }
-
-        // Receive messages
-        for (size_t j = 0; j < arg->num_messages; j++) {
-            err = smlt_queuepair_recv(qp, msg);
-            assert (err==SMLT_SUCCESS);
         }
         sk_m_add(&m_receive);
-
-        // Send one message back
         for (size_t j = 0; j < arg->num_messages; j++) {
             smlt_queuepair_send(qp, msg);
-            assert (err==SMLT_SUCCESS);
         }
     }
 
@@ -209,7 +195,7 @@ int main(int argc, char **argv)
 
             struct smlt_node *dst = nodes[r];
 
-            for (size_t num_messages = 1; num_messages <= NUM_MESSAGES; num_messages *= 2) {
+            for (size_t num_messages = 1; num_messages <= NUM_MESSAGES; num_messages += 2) {
                 struct thr_args arg = {
                     .s = s,
                     .r = r,
