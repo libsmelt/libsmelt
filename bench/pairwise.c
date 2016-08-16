@@ -195,7 +195,10 @@ int main(int argc, char **argv)
 
             struct smlt_node *dst = nodes[r];
 
-            for (size_t num_messages = 1; num_messages <= NUM_MESSAGES; num_messages += 2) {
+            for (size_t num_messages = 1;
+                 num_messages <= NUM_MESSAGES;
+                 num_messages *= 2) {
+
                 struct thr_args arg = {
                     .s = s,
                     .r = r,
