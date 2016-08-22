@@ -27,6 +27,25 @@ struct smlt_generated_model;
 
 /*
  * ===========================================================================
+ * numeric values for encoding the topology in an integer matrix
+ * ===========================================================================
+ */
+#define TOPO_MATRIX_PARENT 99
+#define TOPO_MATRIX_MAX_MP 98
+
+#define TOPO_MATRIX_SHM_MAX 20
+// SLAVE
+#define TOPO_MATRIX_SHM_SLAVE_START 150
+#define TOPO_MATRIX_SHM_SLAVE_MAX  (TOPO_MATRIX_SHM_SLAVE_START + \
+                                      TOPO_MATRIX_SHM_MAX-1)
+// MASTER
+#define TOPO_MATRIX_SHM_MASTER_START (TOPO_MATRIX_SHM_SLAVE_START + \
+                                      TOPO_MATRIX_SHM_MAX)
+#define TOPO_MATRIX_SHM_MASTER_MAX  (TOPO_MATRIX_SHM_MASTER_START + \
+                                      TOPO_MATRIX_SHM_MAX-1)
+
+/*
+ * ===========================================================================
  * creating / destroying Smelt topologies
  * ===========================================================================
  */

@@ -206,7 +206,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
         int max_child = 0;
         for(unsigned int y = 0; y < model->len; y++){
             int tmp = model->model[x*model->len+y];
-            if ((tmp > max_child) && (tmp < 50)){
+            if ((tmp > max_child) && (tmp <= TOPO_MATRIX_MAX_MP)){
                 max_child = model->model[x*model->len+y];
             }
         }
@@ -224,7 +224,8 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
         int shm_children = 0;
         for (unsigned z = 0; z < model->len; z++) {
             int val = model->model[x*(model->len)+z];
-            if ((val > 69) && (val < 99)) {
+            if ((val <= TOPO_MATRIX_SHM_SLAVE_MAX) && \
+                           (val >= TOPO_MATRIX_SHM_SLAVE_START)) {
                 shm_children++;
             }
         }
@@ -235,15 +236,43 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                                                  true);
         assert (node->children_shm!=NULL);
         node->num_children_shm = shm_children;
+
         // set model
         for(unsigned int y = 0; y < model->len; y++){
             int val = model->model[x*(model->len)+y];
             if (val > 0) {
-                if (val == 99) {
-                    // MP parent
+
+                if (val == TOPO_MATRIX_PARENT) {
+
+                    // message passing (parent)
+                    // --------------------------------------------------
+
                     SMLT_DEBUG(SMLT_DBG__INIT,"Parent of %d is %d \n", x, y);
                     node->parent = &((*topo)->all_nodes[y]);
-                } else if ((val > 69) && (val != 99)) {
+
+                    // Check symetry
+                    int val = model->model[y*(model->len)+x];
+                    assert (val>0 && // there should be a connection
+                            val <+ TOPO_MATRIX_MAX_MP); // .. and it should be message-passing one
+
+                } else if (val <= TOPO_MATRIX_MAX_MP) {
+
+                    // message passing (child)
+                    // --------------------------------------------------
+
+                    SMLT_DEBUG(SMLT_DBG__INIT,"Child of %d is %d at pos %d \n",
+                               x, y, val-1);
+                    node->topology = *topo;
+                    node->children[val-1] = &((*topo)->all_nodes[y]);
+                    node->node_id = x; // TODO change to real node ID
+                    (*topo)->all_nodes[y].array_index = val-1;
+
+                } else if ((val >= TOPO_MATRIX_SHM_MASTER_START) &&
+                           (val <= TOPO_MATRIX_SHM_MASTER_MAX)) {
+
+                    // shared memory regions (masters)
+                    // --------------------------------------------------
+
                     assert (!"NYI Hybrid models");
                     // master of shared memory channel
                     /* node->use_shm = true; */
@@ -254,27 +283,35 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                     /* node->node_id = x; // TODO change to real node ID */
                     /* (*topo)->all_nodes[y].array_index_shm = shm_child_index; */
                     /* shm_child_index++; */
-                } else if ((val > 49) && (val < 70)) {
-                    // slave of shared memory channel
+                } else if ((val <= TOPO_MATRIX_SHM_SLAVE_MAX) && \
+                           (val >= TOPO_MATRIX_SHM_SLAVE_START)) {
+
+                    // shared memory regions (slave)
+                    // --------------------------------------------------
+
                     SMLT_DEBUG(SMLT_DBG__INIT,"Parent (SHM) of %d is %d \n",
                                x,y);
                     node->parent = &((*topo)->all_nodes[y]);
-                }else {
-                    // MP child
-                    SMLT_DEBUG(SMLT_DBG__INIT,"Child of %d is %d at pos %d \n",
-                               x, y, val-1);
-                    node->topology = *topo;
-                    node->children[val-1] = &((*topo)->all_nodes[y]);
-                    node->node_id = x; // TODO change to real node ID
-                    (*topo)->all_nodes[y].array_index = val-1;
+
+                } else  {
+
+                    panic("Encountered unexpected integer value in "
+                          "topology matrix - cannot parse");
+
                 }
+
+            } else if (val==0) {
+                // Nothing to do here, no connection
+            }
+            else {
+                panic("Encountered unexpected integer value in "
+                      "topology matrix - cannot parse");
+
             }
 
         }
-
         node->num_children = max_child;
     }
-
     for (unsigned i = 0; i < model->len; i++) {
         for (unsigned j = 0; j < model->num_leafs; j++) {
             if ((model->leafs[j] == i) && (i != 0)) {
