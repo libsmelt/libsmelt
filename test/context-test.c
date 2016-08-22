@@ -38,10 +38,12 @@ void* thr_worker(void* arg)
     uintptr_t r = 0;
     uint64_t id = (uint64_t) arg;
     for(unsigned int i = 0; i < NUM_RUNS; i++) {
-        if (id == 0) {
+
+        if (smlt_context_is_root(context)) {
             r++;
             msg->data[0] = r;
         }
+
         smlt_broadcast(context, msg);
         r = msg->data[0];
         if (r != (i+1)) {
