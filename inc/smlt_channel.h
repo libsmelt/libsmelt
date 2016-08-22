@@ -230,15 +230,14 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
                                          struct smlt_msg *msg)
 {
     // 1:1
-    errval_t err = SMLT_SUCCESS;
     if (chan->n == chan->m) {
         if (chan->owner == smlt_node_self_id){
-            err = smlt_queuepair_recv(&chan->c.mp.send[0], msg);
+            return smlt_queuepair_recv(&chan->c.mp.send[0], msg);
         } else {
-            err = smlt_queuepair_recv(&chan->c.mp.recv[0], msg);
+            return smlt_queuepair_recv(&chan->c.mp.recv[0], msg);
         }
-        // TODO error checking
     } else {
+        errval_t err = SMLT_SUCCESS;
         if (chan->owner == smlt_node_self_id){
             // recv from all channels
             /*
@@ -274,8 +273,8 @@ static inline errval_t smlt_channel_recv(struct smlt_channel *chan,
             }
             //smlt_swmr_recv(&chan->c.shm.send_owner.dst[smlt_node_self_id-1], msg);
         }
+        return err;
     }
-    return err;
 }
 
 /**
@@ -296,15 +295,14 @@ static inline errval_t smlt_channel_recv_index(struct smlt_channel *chan,
                                                uint32_t index)
 {
     // 1:1
-    errval_t err = SMLT_SUCCESS;
     if (chan->n == chan->m) {
         if (chan->owner == smlt_node_self_id){
-            err = smlt_queuepair_recv(&chan->c.mp.send[0], msg);
+            return smlt_queuepair_recv(&chan->c.mp.send[0], msg);
         } else {
-            err = smlt_queuepair_recv(&chan->c.mp.recv[0], msg);
+            return smlt_queuepair_recv(&chan->c.mp.recv[0], msg);
         }
-        // TODO error checking
     } else {
+        errval_t err = SMLT_SUCCESS;
         if (chan->owner == smlt_node_self_id){
             // recv from all channels
             for (unsigned i = 0; i < chan->m; i++) {
@@ -313,8 +311,8 @@ static inline errval_t smlt_channel_recv_index(struct smlt_channel *chan,
         } else {
             smlt_swmr_recv(&chan->c.shm.send_owner.dst[index], msg);
         }
+        return err;
     }
-    return err;
 }
 
 /**
@@ -364,15 +362,14 @@ static inline bool smlt_channel_can_recv(struct smlt_channel *chan)
 static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
 {
     // 1:1
-    errval_t err = SMLT_SUCCESS;
     if (chan->n == chan->m) {
         if (chan->owner == smlt_node_self_id){
-            err = smlt_queuepair_recv0(&chan->c.mp.send[0]);
+            return smlt_queuepair_recv0(&chan->c.mp.send[0]);
         } else {
-            err = smlt_queuepair_recv0(&chan->c.mp.recv[0]);
+            return smlt_queuepair_recv0(&chan->c.mp.recv[0]);
         }
-        // TODO error checking
     } else {
+        errval_t err = SMLT_SUCCESS; // Is it really SUCCESS if nothing gets called?
         if (chan->owner == smlt_node_self_id){
             // recv from all channels
             /*for (int i = 0; i < chan->m; i++) {
@@ -406,8 +403,8 @@ static inline errval_t smlt_channel_recv_notification(struct smlt_channel *chan)
                 }
             }
         }
+        return err;
     }
-    return err;
 }
 
 /*
