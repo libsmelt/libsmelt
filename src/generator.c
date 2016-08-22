@@ -74,6 +74,7 @@ errval_t smlt_generate_modal_from_file(char* filepath, uint32_t ncores,
                                                 sizeof(struct smlt_generated_model),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
+    assert (*model!=NULL);
 
     (*model)->ncores = ncores;
     char *json_string;

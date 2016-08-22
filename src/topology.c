@@ -217,6 +217,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
                              smlt_platform_alloc(sizeof(struct smlt_topology_node*)*
                                                  max_child, SMLT_DEFAULT_ALIGNMENT,
                                                  true);
+        assert (node->children!=NULL);
         node->num_children = max_child;
 
         // find number of children (for SHM) and allocate accordingly
