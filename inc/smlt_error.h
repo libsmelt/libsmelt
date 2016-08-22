@@ -68,6 +68,7 @@ enum smlt_err_code {
     /* send erros */
     SMLT_ERR_SEND,
     SMLT_ERR_NOTIFY,
+    SMLT_ERR
 };
 
 /*
@@ -147,14 +148,6 @@ static inline errval_t smlt_err_push(errval_t errval, enum smlt_err_code errcode
  */
 char* smlt_err_get_code(errval_t errval);
 
-/**
- * @brief returns a string representation of the error description
- *
- * @param errval    the error value
- *
- * @return pointer to the string of the error code
- */
-char* smlt_err_get_string(errval_t errval);
 
 /**
  * @brief prints the call trace of the errors
