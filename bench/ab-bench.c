@@ -313,8 +313,11 @@ int main(int argc, char **argv)
     num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 
     chan = (struct smlt_channel**) malloc(sizeof(struct smlt_channel*)*num_threads);
+    assert (chan!=NULL);
+
     for (unsigned int i = 0; i < num_threads; i++) {
         chan[i] = (struct smlt_channel*) malloc(sizeof(struct smlt_channel)*num_threads);
+        assert (chan[i]);
     }
 
     typedef void* (worker_func_t)(void*);
@@ -358,7 +361,9 @@ int main(int argc, char **argv)
     const char** topo_names;
     if (argc>1) {
 
-        topo_names = (const char**) malloc(sizeof(char*)); assert (topo_names);
+        topo_names = (const char**) malloc(sizeof(char*));
+        assert (topo_names);
+
         topo_names[0] = argv[1];
         num_topos = 1;
     } else {
