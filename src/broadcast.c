@@ -43,7 +43,8 @@ errval_t smlt_broadcast_subtree(struct smlt_context *ctx,
 
         err = smlt_channel_send(&children[i], msg);
         if (smlt_err_is_fail(err)) {
-            // TODO: error handling
+
+            panic("smlt_channel_send failed\n");
         }
     }
 
@@ -75,9 +76,15 @@ errval_t smlt_broadcast_notify_subtree(struct smlt_context *ctx)
                    smlt_node_get_id(), i, (void*) &children[i]);
 
         err = smlt_channel_notify(&children[i]);
-        if (smlt_err_is_fail(err)) {
-            // TODO: error handling
-        }
+
+        // There is no error handling for failures of intermediate
+        // nodes. Returning the error code here is meaningless, since
+        // the broadcast would have failed in an undefined state, with
+        // some messages being sent, and others not.
+        //
+        // Simply resending the message to everybody violates atomic
+        // broadcast properties.
+        COND_PANIC(smlt_err_is_ok(err), "broadcast_notify_subtree failed");
     }
 
     return SMLT_SUCCESS;
@@ -137,9 +144,9 @@ bool smlt_broadcast_can_recv(struct smlt_context *ctx)
         struct smlt_channel *parent;
         err =  smlt_context_get_parent_channel(ctx, &parent);
         if (smlt_err_is_fail(err)) {
-            return false; // TODO: adding more error values
+            return false;
         }
-        
+
         if (smlt_channel_can_recv(parent)) {
             return true;
         } else {
@@ -165,7 +172,7 @@ errval_t smlt_broadcast_notify(struct smlt_context *ctx)
         struct smlt_channel *parent;
         err =  smlt_context_get_parent_channel(ctx, &parent);
         if (smlt_err_is_fail(err)) {
-            return err; // TODO: adding more error values
+            return err;
         }
 
         SMLT_DEBUG(SMLT_DBG__GENERAL, "Node %d: broadcast recv from parent chan %p \n",
@@ -173,7 +180,7 @@ errval_t smlt_broadcast_notify(struct smlt_context *ctx)
 
         err = smlt_channel_recv_notification(parent);
         if (smlt_err_is_fail(err)) {
-            // TODO: error handling
+            return SMLT_ERR;
         }
         return smlt_broadcast_notify_subtree(ctx);
     }
