@@ -112,7 +112,7 @@ errval_t smlt_broadcast(struct smlt_context *ctx,
         err = smlt_channel_recv_index(parent, msg,
                                       smlt_context_node_get_child_idx(ctx));
         if (smlt_err_is_fail(err)) {
-            // TODO: error handling
+            panic("smlt_channel_recv_index failed");
         }
         return smlt_broadcast_subtree(ctx, msg);
     }
