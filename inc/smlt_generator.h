@@ -18,6 +18,8 @@ struct smlt_generated_model {
     uint32_t len;
     uint32_t root;
     uint16_t* model;
+
+    uint32_t num_leafs;
     uint32_t* leafs;
 };
 

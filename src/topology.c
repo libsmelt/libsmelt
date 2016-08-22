@@ -275,7 +275,7 @@ static void smlt_topology_parse_model(struct smlt_generated_model* model,
     }
 
     for (unsigned i = 0; i < model->len; i++) {
-        for (unsigned j = 0; j < model->len; j++) {
+        for (unsigned j = 0; j < model->num_leafs; j++) {
             if ((model->leafs[j] == i) && (i != 0)) {
                 SMLT_DEBUG(SMLT_DBG__INIT,"%d is a leaf \n", i)
                 (*topo)->all_nodes[i].is_leaf = true;

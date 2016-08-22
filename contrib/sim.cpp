@@ -31,6 +31,7 @@ static char* get_env_str(const char *envname, const char *defaultvalue)
 int smlt_tree_parse_wrapper(const char* json_string,
                             unsigned ncores,
                             uint16_t** model,
+                            uint32_t * num_leafs,
                             uint32_t** leafs,
                             uint32_t* t_root,
                             uint32_t* len_model)
@@ -61,10 +62,11 @@ int smlt_tree_parse_wrapper(const char* json_string,
         // Extract leaf node
 
         Json::Value leafs_j = root.get("leaf_nodes", "");
-        *leafs = (uint32_t*) malloc(sizeof(uint32_t)*leafs_j.size());
+        *num_leafs = leafs_j.size();
+        *leafs = (uint32_t*) malloc(sizeof(uint32_t)* (*num_leafs));
         assert(*leafs != NULL);
 
-        for (unsigned i=0; i<leafs_j.size(); i++) {
+        for (unsigned i=0; i<*num_leafs; i++) {
             (*leafs)[i] = leafs_j.get(i, Json::Value()).asInt();
         }
 
@@ -97,6 +99,7 @@ static int smlt_tree_config_request(const char *hostname,
                                     const char* msg,
                                     unsigned ncores,
                                     uint16_t** model,
+                                    uint32_t *num_leafs,
                                     uint32_t** leafs,
                                     uint32_t* t_root,
                                     uint32_t* len_model)
@@ -189,7 +192,8 @@ static int smlt_tree_config_request(const char *hostname,
     assert(model != NULL);
     char* inp = (char*) rec.c_str();
 
-    return smlt_tree_parse_wrapper(inp, ncores, model, leafs, t_root, len_model);
+    return smlt_tree_parse_wrapper(inp, ncores, model, num_leafs,
+                                   leafs, t_root, len_model);
 }
 
 #define NAMELEN 1000U
@@ -198,6 +202,7 @@ int smlt_tree_generate_wrapper(unsigned ncores,
                                uint32_t* cores,
                                const char* tree_name,
                                uint16_t** model,
+                               uint32_t *num_leafs,
                                uint32_t** leafs,
                                uint32_t* t_root,
                                uint32_t* len_model)
@@ -252,9 +257,9 @@ int smlt_tree_generate_wrapper(unsigned ncores,
     }
 
     root["cores"] = coreids;
-    
+
     std::string doc = Json::writeString(wbuilder, root);
 
-    return smlt_tree_config_request(host, doc.c_str(), ncores,
-                                    model, leafs, t_root, len_model);
+    return smlt_tree_config_request(host, doc.c_str(), ncores, model,
+                                    num_leafs, leafs, t_root, len_model);
 }

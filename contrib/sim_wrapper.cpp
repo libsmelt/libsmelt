@@ -17,6 +17,7 @@ using namespace std;
 int smlt_tree_parse(const char* json_string,
                     uint32_t ncores,
                     uint16_t** model,
+                    uint32_t* num_leafs,
                     uint32_t** leafs,
                     uint32_t* last_node,
                     uint32_t* len_model)
@@ -27,7 +28,7 @@ int smlt_tree_parse(const char* json_string,
     while (res!=0 && attempts<MAX_ATTEMPTS) {
 
             res = smlt_tree_parse_wrapper(json_string, ncores,
-                                          model, leafs,
+                                          model, num_leafs, leafs,
                                           last_node, len_model);
             if (res!=0) {
                 sleep(2);
@@ -40,10 +41,11 @@ int smlt_tree_parse(const char* json_string,
 extern "C" {
 	int smlt_tree_generate(uint32_t ncores, uint32_t* cores,
                            const char* tree_name, uint16_t** model,
-                           uint32_t** leafs, uint32_t* last_node,
-                           uint32_t* len_model)
+                           uint32_t *num_leafs, uint32_t** leafs,
+                           uint32_t* last_node, uint32_t* len_model)
 	{
-        return smlt_tree_generate_wrapper(ncores, cores, tree_name,
-                                          model, leafs, last_node, len_model);
+        return smlt_tree_generate_wrapper(ncores, cores, tree_name, model,
+                                          num_leafs, leafs, last_node,
+                                          len_model);
 	}
 }
