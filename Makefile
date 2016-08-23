@@ -118,29 +118,29 @@ INC += -I$(LIBNUMABASE)
 LIBS += -L$(LIBNUMABASE)
 
 all: $(TARGET) \
-	   test/nodes-test \
-		 test/topo-create-test \
-		 test/dissem-bar-test \
-		 test/contrib-lib-test \
-		 test/shm-queue-test \
-		 test/queuepair-test \
-		 test/context-test \
-		 test/hybrid-context-test \
-		 test/smlt-mp-test \
-		 test/channel-test \
-		 bench/bar-bench \
-	     bench/ab-bench \
-	     bench/colbench \
-	     bench/ab-bench-scale \
-		 bench/ab-bench_s \
-		 bench/ab-bench-opt \
-		 bench/barrier-throughput \
-		 bench/pairwise \
-		 bench/pingpong \
-		 bench/polloverhead \
-		 bench/writeoverhead \
-		 bench/shm-mp-bench \
-		 bench/multimessage
+	test/nodes-test \
+	test/topo-create-test \
+	test/dissem-bar-test \
+	test/contrib-lib-test \
+	test/shm-queue-test \
+	test/queuepair-test \
+	test/context-test \
+	test/hybrid-context-test \
+	test/smlt-mp-test \
+	test/channel-test \
+	bench/bar-bench \
+	bench/ab-bench \
+	bench/colbench \
+	bench/ab-bench-scale \
+	bench/ab-bench_s \
+	bench/ab-bench-opt \
+	bench/ab-throughput \
+	bench/pairwise \
+	bench/pingpong \
+	bench/polloverhead \
+	bench/writeoverhead \
+	bench/shm-mp-bench \
+	bench/multimessage
 
 test: test/nodes-test \
 			test/topo-create-test \
