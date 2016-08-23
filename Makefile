@@ -116,9 +116,7 @@ CFLAGS += $(OPT)
 LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
 INC += -I$(LIBNUMABASE)
 LIBS += -L$(LIBNUMABASE)
-
-all: $(TARGET) \
-	test/nodes-test \
+BINS = test/nodes-test \
 	test/topo-create-test \
 	test/dissem-bar-test \
 	test/contrib-lib-test \
@@ -142,13 +140,14 @@ all: $(TARGET) \
 	bench/shm-mp-bench \
 	bench/multimessage
 
+all: $(TARGET) $(BINS)
 	make -C contrib
 
 test: test/nodes-test \
-			test/topo-create-test \
-			test/contrib-lib-test
-			test/shm-queue-test \
-			test/queuepair-test
+	test/topo-create-test \
+	test/contrib-lib-test
+	test/shm-queue-test \
+	test/queuepair-test
 
 
 # Tests
