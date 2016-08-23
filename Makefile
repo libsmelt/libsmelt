@@ -142,6 +142,8 @@ all: $(TARGET) \
 	bench/shm-mp-bench \
 	bench/multimessage
 
+	make -C contrib
+
 test: test/nodes-test \
 			test/topo-create-test \
 			test/contrib-lib-test
