@@ -17,3 +17,5 @@ test/nodes-test
 test/queuepair-test
 test/shm-queue-test
 test/topo-create-test
+contrib/parlib
+contrib/stabilizer
