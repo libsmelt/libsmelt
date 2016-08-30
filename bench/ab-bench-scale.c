@@ -32,8 +32,8 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 10
-#define NUM_EXP   1
+#define NUM_TOPO  8
+#define NUM_EXP   4
 #define INC_CORES 2
 #define INC_STEPS 2
 
@@ -167,7 +167,7 @@ static uint32_t* get_leafs(struct smlt_topology* topo,
         int num_leafs = 0;
         for (unsigned i = 0; i < gl_total; i++) {
             for (unsigned j = 0; j < gl_num_threads; j++) {
-                if (smlt_topology_node_is_leaf(tn) && (i == cores[j])) {
+                if (smlt_topo_is_model_leaf(tn) && (i == cores[j])) {
                     num_leafs++;
                 }
             }
@@ -180,7 +180,7 @@ static uint32_t* get_leafs(struct smlt_topology* topo,
         tn = smlt_topology_get_first_node(active_topo);
         for (unsigned i = 0; i < gl_total; i++) {
             for (unsigned j = 0; j < gl_num_threads; j++) {
-                if (smlt_topology_node_is_leaf(tn) && (i == cores[j])) {
+                if (smlt_topo_is_model_leaf(tn) && (i == cores[j])) {
                     ret[index] = smlt_topology_node_get_id(tn);
                     index++;
                 }
@@ -237,6 +237,128 @@ static void* ab(void* a)
     return 0;
 }
 
+
+static void* reduction(void* a)
+{
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "reduction");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    uint32_t count = 0;
+    uint32_t* leafs;
+    leafs = get_leafs(active_topo, &count, gl_cores);
+
+    struct smlt_msg* msg = smlt_message_alloc(56);
+    for (unsigned int i = 0; i < count; i++) {
+        coreid_t last_node = (coreid_t) leafs[i];
+        sk_m_reset(&m);
+
+        for (int j = 0; j < NUM_RUNS; j++) {
+            sk_m_restart_tsc(&m);
+
+            smlt_reduce(context, msg, msg, operation);
+
+
+            if (smlt_context_is_root(context)) {
+                smlt_channel_send(&chan[last_node][0], msg);
+            } else if (smlt_node_get_id() == last_node) {
+                smlt_channel_recv(&chan[last_node][0], msg);
+                sk_m_add(&m);
+            }
+        }
+
+        if (smlt_node_get_id() == last_node) {
+#ifdef PRINT_SUMMARY
+            sk_m_print_analysis(&m);
+#else
+            sk_m_print(&m);
+#endif
+        }
+    }
+    return 0;
+}
+
+static void* barrier(void* a)
+{
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "barriers");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    sleep(1);
+    pthread_barrier_wait(&bar);
+
+    for (int j = 0; j < NUM_RUNS; j++) {
+
+        sk_m_restart_tsc(&m);
+        smlt_barrier_wait(context);
+        sk_m_add(&m);
+    }
+
+#ifdef PRINT_SUMMARY
+        sk_m_print_analysis(&m);
+#else
+        sk_m_print(&m);
+#endif
+
+    return 0;
+}
+
+static void* agreement(void* a)
+{
+    char outname[1024];
+    cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
+    TOPO_NAME(outname, "agreement");
+
+    sk_m_init(&m, NUM_RESULTS, outname, buf);
+
+    uint32_t count = 0;
+    uint32_t* leafs;
+    leafs = get_leafs(active_topo, &count, gl_cores);
+
+    struct smlt_msg* msg = smlt_message_alloc(56);
+
+    smlt_nid_t root = smlt_topology_get_root_id(active_topo);
+
+    pthread_barrier_wait(&bar);
+
+    for (unsigned int i = 0; i < count; i++) {
+        coreid_t last_node = (coreid_t) leafs[i];
+        sk_m_reset(&m);
+
+        for (int j = 0; j < NUM_RUNS; j++) {
+            sk_m_restart_tsc(&m);
+
+            if (smlt_node_get_id() == last_node) {
+                smlt_channel_send(&chan[last_node][root], msg);
+            }
+
+            if (smlt_context_is_root(context)) {
+                smlt_channel_recv(&chan[last_node][root], msg);
+                smlt_broadcast(context, msg);
+            } else {
+                smlt_broadcast(context, msg);
+            }
+
+            smlt_reduce(context, msg, msg, operation);
+            smlt_broadcast(context, msg);
+            sk_m_add(&m);
+        }
+
+        if (smlt_node_get_id() == last_node) {
+#ifdef PRINT_SUMMARY
+            sk_m_print_analysis(&m);
+#else
+            sk_m_print(&m);
+#endif
+        }
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int core_max = -1;
@@ -281,16 +403,16 @@ int main(int argc, char **argv)
     typedef void* (worker_func_t)(void*);
     worker_func_t * workers[NUM_EXP] = {
         &ab,
-        //&reduction,
-        //&agreement,
-        //&barrier,
+        &reduction,
+        &agreement,
+        &barrier,
     };
 
     const char *labels[NUM_EXP] = {
         "Atomic Broadcast",
-        //"Reduction",
-        //"Agreement",
-        //"Barrier",
+        "Reduction",
+        "Agreement",
+        "Barrier",
     };
 
     const char *topo_names[NUM_TOPO] = {
@@ -300,8 +422,6 @@ int main(int argc, char **argv)
         "badtree",
         "fibonacci",
         "sequential",
-        "adaptivetree-nomm",
-        "adaptivetree-nomm-shuffle-sort",
         "adaptivetree-shuffle-sort",
         "adaptivetree",
     };
