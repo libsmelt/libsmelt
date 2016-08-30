@@ -571,6 +571,11 @@ uint32_t smlt_topology_get_num_nodes(struct smlt_topology *topo)
     return topo->num_nodes;
 }
 
+bool smlt_topo_is_model_leaf(struct smlt_topology_node *node)
+{
+  return node->is_leaf;
+}
+
 
 
 // --------------------------------------------------

@@ -193,6 +193,7 @@ bool smlt_topology_node_is_root(struct smlt_topology_node *node);
  * @return TRUE if the node is a leaf, false otherwise
  */
 bool smlt_topology_node_is_leaf(struct smlt_topology_node *node);
+bool smlt_topo_is_model_leaf(struct smlt_topology_node *node);
 
 /**
  * @brief obtains the child index (the order of the children) from the node
