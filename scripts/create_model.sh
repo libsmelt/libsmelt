@@ -10,8 +10,11 @@ MAKE_NPROC=$(nproc)
 export SMLT_HOSTNAME=$(hostname)
 export SMLT_MACHINE=$(hostname -s)
 
-LOGFILE=$(tty)
-#LOGFILE=$MODEL_ROOT/create_model.log
+if [[ "$1" == "-d" ]]; then
+    LOGFILE=/dev/stdout
+else
+    LOGFILE=$MODEL_ROOT/create_model.log
+fi
 
 LIKWID_PATH="$MODEL_ROOT/likwid"
 LIKWID_REPOSITORY="https://github.com/RRZE-HPC/likwid.git"

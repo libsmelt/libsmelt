@@ -76,9 +76,8 @@ buildmodeltest:
   dependencies:
     - compile
   script:
-    - "apt-get update; apt-get install -y coreutils"
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
-    - "scripts/create_model.sh"
+    - "scripts/create_model.sh -d"
 
 # Valgrind
 # --------------------------------------------------
