@@ -8,7 +8,7 @@ MAKE_NPROC=$(nproc)
 export SMLT_HOSTNAME=$(hostname)
 export SMLT_MACHINE=$(hostname -s)
 
-if [ "$1" == "DEBUG" ]; then
+if [ "$1" == "-d" ]; then
     LOGFILE=$(tty)
 else
     LOGFILE=$MODEL_ROOT/create_model.log
