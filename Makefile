@@ -132,7 +132,6 @@ BINS = test/nodes-test \
 	bench/ab-bench-scale \
 	bench/ab-bench_s \
 	bench/ab-bench-opt \
-	bench/ab-throughput \
 	bench/pairwise \
 	bench/pingpong \
 	bench/polloverhead \
