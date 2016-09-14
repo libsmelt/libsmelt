@@ -2,17 +2,16 @@
 
 set -e
 
+echo "SMELT BUILD MODEL SCRIPT"
+
 MODEL_ROOT="model"
 MAKE_NPROC=$(nproc)
 
 export SMLT_HOSTNAME=$(hostname)
 export SMLT_MACHINE=$(hostname -s)
 
-if [ "$1" == "-d" ]; then
-    LOGFILE=$MODEL_ROOT/create_model.log
-else
-    LOGFILE=$(tty)
-fi
+LOGFILE=$(tty)
+#LOGFILE=$MODEL_ROOT/create_model.log
 
 LIKWID_PATH="$MODEL_ROOT/likwid"
 LIKWID_REPOSITORY="https://github.com/RRZE-HPC/likwid.git"
