@@ -2,17 +2,17 @@
 
 set -e
 
-export SMLT_HOSTNAME=$(hostname)
-
-if [ "$1" == "" ]; then
-    export SMLT_MACHINE=$(hostname -s)
-else
-    export SMLT_MACHINE=$1
-fi
-
 MODEL_ROOT="model"
-
 MAKE_NPROC=$(nproc)
+
+export SMLT_HOSTNAME=$(hostname)
+export SMLT_MACHINE=$(hostname -s)
+
+if [ "$1" == "DEBUG" ]; then
+    LOGFILE=$(tty)
+else
+    LOGFILE=$MODEL_ROOT/create_model.log
+fi
 
 LIKWID_PATH="$MODEL_ROOT/likwid"
 LIKWID_REPOSITORY="https://github.com/RRZE-HPC/likwid.git"
@@ -30,23 +30,23 @@ export LD_LIBRARY_PATH=$LIKWID_PATH:.
 echo "SMLT_MACHINE=$SMLT_MACHINE"
 echo "SMLT_HOSTNAME=$SMLT_HOSTNAME"
 echo "MODEL_ROOT=$MODEL_ROOT"
-echo "Creating model for $SMLT_MACHINE. logfile: $MODEL_ROOT/create_model.log"
+echo "Creating model for $SMLT_MACHINE. logfile: $LOGFILE"
 mkdir -p $MODEL_ROOT
 
 
 if [[ ! -d $SIM_PATH ]]; then
     echo -e " \nSIMULATOR: setting up simulator in $SIM_PATH..."
     echo -n " - cloning simulator repository $SIM_REPOSITORY..."
-    git clone $SIM_REPOSITORY $SIM_PATH > $MODEL_ROOT/create_model.log 2>&1
+    git clone $SIM_REPOSITORY $SIM_PATH > $LOGFILE 2>&1
     echo "OK."
-    mkdir $SIM_PATH/graphs > $MODEL_ROOT/create_model.log 2>&1
-    mkdir $SIM_PATH/visu > $MODEL_ROOT/create_model.log 2>&1
-    mkdir $MACHINEDB > $MODEL_ROOT/create_model.log 2>&1
+    mkdir $SIM_PATH/graphs > $LOGFILE 2>&1
+    mkdir $SIM_PATH/visu > $LOGFILE 2>&1
+    mkdir $MACHINEDB > $LOGFILE 2>&1
     echo -n " - obtaining machinemodel from $SIM_MODEL..."
-    wget $SIM_MODEL -O "$SIM_PATH/machinemodel.gz" > $MODEL_ROOT/create_model.log 2>&1
+    wget $SIM_MODEL -O "$SIM_PATH/machinemodel.gz" > $LOGFILE 2>&1
     echo "OK."
     echo -n " - extracting model to $MACHINEDB..."
-    tar -xzf "$SIM_PATH/machinemodel.gz" -C "$MACHINEDB" > $MODEL_ROOT/create_model.log 2>&1
+    tar -xzf "$SIM_PATH/machinemodel.gz" -C "$MACHINEDB" > $LOGFILE 2>&1
     echo "OK."
     echo "Simulator is successfully setup."
 else
@@ -56,14 +56,14 @@ fi
 if [[ ! -d $LIKWID_PATH ]]; then
     echo -e "\nLIKWID: setting up likwid in $LIKWID_PATH..."
     echo -n " - cloning likwid repository $LIKWID_REPOSITORY..."
-    git clone $LIKWID_REPOSITORY $LIKWID_PATH > $MODEL_ROOT/create_model.log 2>&1
+    git clone $LIKWID_REPOSITORY $LIKWID_PATH > $LOGFILE 2>&1
     echo "OK."
     echo -n " - building likwid in $LIKWID_PATH..."
-    (cd $LIKWID_PATH; make -j$MAKE_NPROC clean) > $MODEL_ROOT/create_model.log 2>&1
-    (cd $LIKWID_PATH; make -j$MAKE_NPROC) > $MODEL_ROOT/create_model.log 2>&1
+    (cd $LIKWID_PATH; make -j$MAKE_NPROC clean) > $LOGFILE 2>&1
+    (cd $LIKWID_PATH; make -j$MAKE_NPROC) > $LOGFILE 2>&1
     echo "OK."
     echo -n " - building local installation of likwid in $LIKWID_PATH..."
-    (cd $LIKWID_PATH; make -j$MAKE_NPROC local) > $MODEL_ROOT/create_model.log 2>&1
+    (cd $LIKWID_PATH; make -j$MAKE_NPROC local) > $LOGFILE 2>&1
     echo "OK"
     echo -e "likwid is successfully setup.\n"
 else
@@ -72,7 +72,7 @@ fi
 
 
 echo -n "SMELT: building bench/pairwise..."
-make -j$MAKE_NPROC bench/pairwise  > $MODEL_ROOT/create_model.log 2>&1
+make -j$MAKE_NPROC bench/pairwise  2>&1 > $LOGFILE
 echo -e "OK.\n"
 
 echo "MODEL: gathering data..."
