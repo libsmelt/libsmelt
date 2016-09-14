@@ -16,6 +16,16 @@
 
 #include <platforms/measurement_framework.h>
 
+// disables printing of mesasurements, adds other prints
+//#define DEBUG
+//#define PRINT_SUMMARY
+
+static coreid_t step_size = 1;
+
+// defines the batch size
+#define NUM_MESSAGES 8
+static size_t num_messages = NUM_MESSAGES;
+
 struct smlt_qp ***queue_pairs;
 
 #ifdef PRINT_SUMMARY
@@ -25,7 +35,7 @@ struct smlt_qp ***queue_pairs;
 #define NUM_EXP 10000
 #define NUM_DATA 2000
 #endif
-#define NUM_MESSAGES 8
+
 
 #define STR(X) #X
 
@@ -75,12 +85,15 @@ void* thr_sender(void* a)
         sk_m_add(&m_rtt);
     }
 
+    smlt_message_free(msg);
+#ifndef DEBUG
 #ifdef PRINT_SUMMARY
     sk_m_print_analysis(&m_send);
     sk_m_print_analysis(&m_rtt);
 #else
     sk_m_print(&m_send);
     sk_m_print(&m_rtt);
+#endif
 #endif
     return NULL;
 }
@@ -111,10 +124,14 @@ void* thr_receiver(void* a)
         }
     }
 
+    smlt_message_free(msg);
+
+#ifndef DEBUG
 #ifdef PRINT_SUMMARY
     sk_m_print_analysis(&m_receive);
 #else
     sk_m_print(&m_receive);
+#endif
 #endif
     return NULL;
 }
@@ -124,7 +141,26 @@ int main(int argc, char **argv)
 {
     errval_t err;
     coreid_t num_cores = (coreid_t) sysconf(_SC_NPROCESSORS_CONF);
-    printf("Running with %d cores\n", num_cores);
+    printf("NUM_CORES=%d\n", num_cores);
+
+    if (argc == 2) {
+        step_size = atoi(argv[1]);
+    }
+
+    printf("STEP_SIZE=%d\n", step_size);
+
+
+// enable this, if you want to make NUM_MSG depend ot the number of cores per cluster
+#if 0
+    uint32_t num_cores_per_cluster = smlt_platform_num_cores_of_cluster(0);
+    assert(num_cores_per_cluster >= 1);
+    if (num_messages > ((num_cores_per_cluster / step_size) - 2))  {
+        num_messages = (num_cores_per_cluster / step_size) - 2;
+    }
+#endif
+
+    printf("NUM_MSG=%zu\n", num_messages);
+    assert(num_messages > 1);
 
     err = smlt_init(num_cores, false);
     if (smlt_err_is_fail(err)) {
@@ -179,30 +215,31 @@ int main(int argc, char **argv)
         }
     }
 
-    for (coreid_t s=0; s<num_cores; s++) {
+    fprintf(stderr, "# starting measurements...\n");
 
-        printf("# moving main thread to core %u\n", s);
+    for (coreid_t s=0; s<num_cores; s += step_size) {
         err = smlt_platform_pin_thread(s);
         if (smlt_err_is_fail(err)) {
             printf("FAILED TO INITIALIZE !\n");
             return -1;
         }
 
-        for (coreid_t r=0; r<num_cores; r++) {
+        fprintf(stderr, "# measuring [%u] -> [", s);
+
+        for (coreid_t r=0; r<num_cores; r += step_size) {
 
             // Measurement does not make sense if sender == receiver
             if (s==r) continue;
 
             struct smlt_node *dst = nodes[r];
+            fprintf(stderr, "%3u", r);
 
-            for (size_t num_messages = 1;
-                 num_messages <= NUM_MESSAGES;
-                 num_messages *= 2) {
+            for (size_t num_msg = 1; num_msg <= num_messages; num_msg *= 2) {
 
                 struct thr_args arg = {
                     .s = s,
                     .r = r,
-                    .num_messages = num_messages,
+                    .num_messages = num_msg,
                 };
 
                 err = smlt_node_start(dst, thr_receiver, &arg);
@@ -217,5 +254,7 @@ int main(int argc, char **argv)
 
             }
         }
+	fprintf(stderr, "]\n");
     }
+    fprintf(stderr, "# done.\n");
 }
