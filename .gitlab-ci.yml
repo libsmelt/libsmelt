@@ -76,7 +76,7 @@ buildmodeltest:
   dependencies:
     - compile
   script:
-    - "apt-get update; apt-get install -y wget"
+    - "apt-get update; apt-get install -y wget cpuid"
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "scripts/create_model.sh -d"
 
