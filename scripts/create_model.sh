@@ -93,6 +93,9 @@ cat /proc/cpuinfo > $OUTDIR/proc_cpuinfo.txt
 echo " - running likwid on $SMLT_MACHINE"
 likwid-topology > $OUTDIR/likwid.txt
 
+echo " - generating topology image on $SMLT_MACHINE"
+lstopo -f --no-legend $OUTDIR/lstopo-graphical.png
+
 echo " - running pairwise on $SMLT_MACHINE"
 ./bench/pairwise | gzip > $OUTDIR/pairwise.gz
 
