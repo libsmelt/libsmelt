@@ -77,7 +77,7 @@ buildmodeltest:
     - compile
   script:
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
-    - "scripts/create_model.sh -d"
+    - "scripts/create_model.sh"
 
 # Valgrind
 # --------------------------------------------------

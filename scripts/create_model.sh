@@ -9,9 +9,9 @@ export SMLT_HOSTNAME=$(hostname)
 export SMLT_MACHINE=$(hostname -s)
 
 if [ "$1" == "-d" ]; then
-    LOGFILE=$(tty)
-else
     LOGFILE=$MODEL_ROOT/create_model.log
+else
+    LOGFILE=$(tty)
 fi
 
 LIKWID_PATH="$MODEL_ROOT/likwid"
