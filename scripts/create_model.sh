@@ -19,7 +19,7 @@ fi
 LIKWID_PATH="$MODEL_ROOT/likwid"
 LIKWID_REPOSITORY="https://github.com/RRZE-HPC/likwid.git"
 
-SIM_REPOSITORY="git@gitlab.inf.ethz.ch:skaestle/Simulator.git"
+SIM_REPOSITORY="https://github.com/libsmelt/Simulator.git"
 SIM_PATH="$MODEL_ROOT/Simulator"
 SIM_MODEL="http://people.inf.ethz.ch/skaestle/machinemodel.gz"
 
