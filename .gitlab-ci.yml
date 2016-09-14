@@ -71,6 +71,14 @@ fftest:
     - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
     - "test/queuepair-test ffq"
 
+buildmodeltest:
+  stage: test
+  dependencies:
+    - compile
+  script:
+    - "export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH"
+    - "scripts/create_model.sh"
+
 # Valgrind
 # --------------------------------------------------
 valgrind:
