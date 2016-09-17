@@ -10,8 +10,10 @@
 #include <smlt_error.h>
 #include <smlt_generator.h>
 #include <smlt_platform.h>
+#include "smlt_debug.h"
 #include "tree_config.h"
 #include <stdio.h> // reading json string from file
+#include <unistd.h>
 
 /**
  * @brief generates a model using the simulator
@@ -31,12 +33,20 @@ errval_t smlt_generate_model(coreid_t* cores, uint32_t len,
                                                 sizeof(struct smlt_generated_model),
                                                 SMLT_DEFAULT_ALIGNMENT,
                                                 true);
+    COND_PANIC(model!=NULL, "Failed to allocated memory for model");
+
     uint32_t len_model;
     int err = smlt_tree_generate(len, cores, name, &((*model)->model),
                                  &((*model)->num_leafs), &((*model)->leafs),
                                  &((*model)->root), &len_model);
 
-    printf("Model Generated \n");
+    if (len_model != sysconf(_SC_NPROCESSORS_ONLN)) {
+
+        // The Simulator returned a model that does not match the requested size
+        panic("Simulator failed, aborting");
+    }
+
+    printf("Model Generated %" PRIu32 "\n", len_model);
     bool all_zeros = true;
     for (unsigned int i = 0; i < len_model; i++) {
         for (unsigned int j = 0; j < len_model; j++) {
