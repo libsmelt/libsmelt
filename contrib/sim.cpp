@@ -238,7 +238,7 @@ int smlt_tree_generate_wrapper(unsigned ncores,
 
     if (tree_name == NULL) {
         printf("Getting topo from env string\n");
-        topo_name = get_env_str("SMLT_TOPO", "adaptivetree");
+        topo_name = get_env_str("SMLT_TOPO", "adaptivetree-shuffle-sort");
     } else {
         topo_name = tree_name;
     }

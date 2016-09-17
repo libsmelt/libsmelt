@@ -11,7 +11,7 @@ There are several environment variables that control how Smelt contacts the Simu
   machine model. If not set, the value given by `gethostname` will be
   used.
 - `SMLT_TOPO`: The topology to be returned from the Simulator. If not
-  set, `adaptivetree-nomm-shuffle-sort` will be used. Note that this
+  set, `adaptivetree-shuffle-sort` will be used. Note that this
   will only be used if the call to `smlt_topology_create` uses `NULL`
   as topology name.
 
