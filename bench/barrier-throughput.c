@@ -31,7 +31,7 @@ unsigned num_threads;
 struct smlt_context* ctx;
 #define NUM_RUNS 10000
 #define NUM_RESULTS 100
-#define ADAPTIVETREE "adaptivetree-nomm-shuffle-sort"
+#define ADAPTIVETREE "adaptivetree-shuffle-sort"
 
 mcs_barrier_t mcs_b;
 

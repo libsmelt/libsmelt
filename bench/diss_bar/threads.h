@@ -8,7 +8,7 @@
 #ifndef THREADS_H_
 #define THREADS_H_
 
-#define ADAPTIVETREE "adaptivetree-nomm-shuffle-sort"
+#define ADAPTIVETREE "adaptivetree-shuffle-sort"
 
 #include <math.h>
 #include "barrier.h"
