@@ -41,7 +41,11 @@ static void* mcs_barrier(void* a)
 
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     assert (buf!=NULL);
-    sk_m_init(&m, NUM_RESULTS, "barriers_mcs-barrier", buf);
+
+    char skmtitle[100];
+    snprintf(skmtitle, 100, "barriers_mcs-barrier%d", num_threads);
+
+    sk_m_init(&m, NUM_RESULTS, skmtitle, buf);
 
     for (unsigned j=0; j<NUM_RESULTS; j++) {
         sk_m_restart_tsc(&m);
@@ -61,7 +65,12 @@ static void* barrier(void* a)
 {
     cycles_t *buf = (cycles_t*) malloc(sizeof(cycles_t)*NUM_RESULTS);
     assert (buf!=NULL);
-    sk_m_init(&m, NUM_RESULTS, "barriers_sync-barrier", buf);
+
+
+
+    char skmtitle[100];
+    snprintf(skmtitle, 100, "barriers_sync-barrier%d", num_threads);
+    sk_m_init(&m, NUM_RESULTS, skmtitle, buf);
 
     for (unsigned j=0; j<NUM_RESULTS; j++) {
         sk_m_restart_tsc(&m);
@@ -160,6 +169,6 @@ int main(int argc, char **argv)
         for (int i=0; i < num_threads; i++) {
             node = smlt_get_node_by_id(i);
             smlt_node_join(node);
-        }   
+        }
     }
 }
