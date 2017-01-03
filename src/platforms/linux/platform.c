@@ -11,6 +11,8 @@
 #include <smlt_node.h>
 #include "../../internal.h"
 
+#include <platforms/linux.h>
+
 #include <numa.h>
 
 
@@ -122,6 +124,10 @@ uint32_t smlt_platform_num_cores(void)
  */
 uint32_t smlt_platform_num_cores_of_cluster(uint8_t cluster_id)
 {
+#ifdef SMLT_CONFIG_LINUX_NUMA_ALIGN
+    assert(!"NYI");
+    return 0;
+#else
     struct bitmask* node = numa_allocate_cpumask();
     uint32_t core_count = 0;
 
@@ -131,6 +137,7 @@ uint32_t smlt_platform_num_cores_of_cluster(uint8_t cluster_id)
     numa_free_cpumask(node);
 
     return core_count;
+#endif
 }
 
 /**
@@ -142,5 +149,5 @@ uint32_t smlt_platform_num_cores_of_cluster(uint8_t cluster_id)
  */
 uint8_t smlt_platform_cluster_of_core(coreid_t core_id)
 {
-    return numa_node_of_cpu(core_id);
+    return 0;
 }
