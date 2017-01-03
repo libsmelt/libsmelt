@@ -37,6 +37,12 @@ struct smlt_msg *smlt_message_alloc(uint32_t size)
     }
 
     msg->words = size/sizeof(uintptr_t);
+
+    if (size % sizeof(uintptr_t) != 0 ) {
+      // size not multiple of word-size, need one more word to transfer
+      msg->words++;
+    }
+
     msg->bufsize = size;
     msg->data = (smlt_msg_payload_t*)
         smlt_platform_alloc(size, SMLT_DEFAULT_ALIGNMENT, true);
