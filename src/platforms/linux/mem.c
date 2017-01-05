@@ -18,6 +18,7 @@
 #include <numa.h>
 #include <assert.h>
 
+#include "platforms/linux.h"
 
 /*
  * ===========================================================================
