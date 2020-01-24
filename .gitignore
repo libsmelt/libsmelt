@@ -16,6 +16,12 @@ bench/multimessage
 bench/pingpong
 bench/polloverhead
 bench/writeoverhead
+bench/ab-bench-scale
+bench/bar-bench
+bench/colbench
+bench/shm-mp-bench
+test/dissem-bar-test
+test/smlt-mp-test
 test/context-test
 test/contrib-lib-test
 test/ffq-test
