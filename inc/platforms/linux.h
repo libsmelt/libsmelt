@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <time.h>
 #include <pthread.h>
 #include <assert.h>
 #include <sched.h>

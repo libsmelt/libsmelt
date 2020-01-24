@@ -50,7 +50,7 @@ HEADERS += $(wildcard inc/arch/*.h)
 
 # includes
 # --------------------------------------------------
-INC += -I inc -I inc/platforms/linux -I inc/backends -I contrib/
+INC += -I inc -I inc/backends -I contrib/
 INC += -I inc/backends/ump -I inc/backends/ffq -I inc/backends/shm
 
 # versiong
@@ -113,9 +113,9 @@ CFLAGS += $(OPT)
 
 # Should a custom libnuma be used?
 
-LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
-INC += -I$(LIBNUMABASE)
-LIBS += -L$(LIBNUMABASE)
+# LIBNUMABASE=/mnt/scratch/skaestle/software/numactl-2.0.9/
+# INC += -I$(LIBNUMABASE)
+# LIBS += -L$(LIBNUMABASE)
 BINS = test/nodes-test \
 	test/topo-create-test \
 	test/dissem-bar-test \
