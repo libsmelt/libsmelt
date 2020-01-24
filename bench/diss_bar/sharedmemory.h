@@ -34,23 +34,26 @@ typedef struct __attribute__((__packed__)) notification{
 
 void initnotification(int num_threads, notification_t *notification, int rounds){
     for (int i = 0; i < MAXOPS; i++) {
-        if(posix_memalign((void **) (&notification[i].notifications),
-                          ALIGNMENT, sizeof(notificationOne_t)*num_threads)) {
+    	void *addr;
+        if(posix_memalign(&addr, ALIGNMENT, sizeof(notificationOne_t)*num_threads)) {
             //returns 0 on success
             fprintf(stderr, "Error allocation of flag structures failed\n"); 
             fflush(stderr);
             exit(127);
-        }       
+        } 
+        notification[i].notifications = addr;
     }    
 
 	for (int i=0; i<MAXOPS; i++){
 		for (int j=0; j<num_threads; j++){
-			if(posix_memalign((void **)(&(notification[i].notifications[j].notificationLines)), 
-                             ALIGNMENT, sizeof(notificationOne_t)*rounds)){
+			void *addr;
+			if(posix_memalign(&addr, ALIGNMENT, sizeof(notificationOne_t)*rounds)){
 				//returns 0 on success
 				fprintf(stderr, "Error allocation of flag structures failed\n"); fflush(stderr);
 				exit(127);
 			}
+
+			notification[i].notifications[j].notificationLines = addr;
 
 			for(int k=0; k<rounds; k++){
 				notification[i].notifications[j].notificationLines[k].flag = 0;

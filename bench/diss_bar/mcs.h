@@ -23,7 +23,7 @@
 #define _MCS_H
 
 #if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-pedantic"
+#pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
 #ifdef __clang__
