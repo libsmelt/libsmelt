@@ -34,3 +34,4 @@ test/hybrid-context-test
 contrib/parlib
 contrib/stabilizer
 *.pyc
+model

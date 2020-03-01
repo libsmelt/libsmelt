@@ -1,5 +1,58 @@
-Executing Smelt
-===============
+Smelt - Machine-aware Atomic Broadcast Trees for Multi-cores
+============================================================
+
+This repository contains `libsmelt`, a library for efficient broadcast
+trees for multi-core machines. 
+
+License
+-------
+
+See LICENSE file in the repository. 
+
+Dependencies
+------------
+
+The library requires the following tools / packages to be installed on the machine:
+
+```
+ $ sudo apt-get install cpuid hwloc libnuma-dev python3
+```
+
+It further uses the Smelt Simulator. See next step. 
+
+
+Creating a machine model
+------------------------
+
+To create the model for the current machine, run the script
+
+```
+./scripts/create_model.sh
+```
+
+This will obtain the dependencies and the collects data on the machine.
+You will need to run this on the machine you want to create the machine
+model for.
+
+The scripts downloads the Smelt Simulator and tools into the `./model` directory. 
+
+
+Creating Overlays
+-----------------
+
+After the model has been built for a machine, the topologies for the
+machine can be created using
+
+```
+./scripts/create_overlays.sh
+```
+
+This serves as a test, that the simulator is able to generate the topology
+overlays for the model.
+
+
+Execution
+---------
 
 There are several environment variables that control how Smelt contacts the Simulator:
 
@@ -16,10 +69,8 @@ There are several environment variables that control how Smelt contacts the Simu
   as topology name.
 
 
-Buildingblocks
-==============
-
-[![build status](https://gitlab.inf.ethz.ch/skaestle/smelt/badges/master/build.svg)](https://gitlab.inf.ethz.ch/skaestle/smelt/commits/master)
+Building Blocks
+===============
 
 Endpoint (EP)
 -------------
@@ -39,7 +90,7 @@ Instance
 
 Eventsets / Waitsets
 --------------------
- * implementationto handle the events on a the queue pairs. (send and recv)
+ * implementation to handle the events on a the queue pairs. (send and recv)
 
 
 EV_RECV: receive message, read tag (possible forward), callback
@@ -53,6 +104,3 @@ variables. Here is a list of them:
 - `BUILDTYPE`: Supported values are `release` and `debug`. The default
   is release-mode.
 
-# Pairwise
-
-See NetOS machine database's README.md
