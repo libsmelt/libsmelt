@@ -29,7 +29,7 @@
 #define NUM_RESULTS 1000
 #endif
 
-#define NUM_TOPO 16
+#define NUM_TOPO 14
 #define NUM_EXP 5
 
 uint32_t num_topos = NUM_TOPO;
@@ -338,12 +338,12 @@ int main(int argc, char **argv)
     };
 
     const char *default_topos[NUM_TOPO] = {
-        "mst",
         "bintree",
         "cluster",
-        "badtree",
         "fibonacci",
         "sequential",
+        "mst",
+        "badtree",
         "mst-naive",
         "bintree-naive",
         "cluster-naive",
@@ -352,8 +352,8 @@ int main(int argc, char **argv)
         "sequential-naive",
         "adaptivetree",
         "adaptivetree-shuffle-sort",
-        "adaptivetree-nomm",
-        "adaptivetree-nomm-shuffle-sort",
+//        "adaptivetree-nomm",
+//        "adaptivetree-nomm-shuffle-sort",
     };
 
     // Parse arguments
