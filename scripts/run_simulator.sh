@@ -18,9 +18,29 @@ function usage() {
 
 # set -x # <<<< Enable for Debug
 
-SIMPATH=~/projects/Simulator/
+MODEL_ROOT="model"
+MAKE_NPROC=$(nproc)
 
-pushd $SIMPATH
+export SMLT_HOSTNAME=$(hostname)
+export SMLT_MACHINE=$(hostname -s)
+
+if [[ "$1" == "-d" ]]; then
+    LOGFILE=/dev/stdout
+else
+    LOGFILE=$MODEL_ROOT/create_model_${SMLT_MACHINE}.log
+fi
+
+LIKWID_PATH="$MODEL_ROOT/likwid"
+LIKWID_REPOSITORY="https://github.com/RRZE-HPC/likwid.git"
+
+SIM_REPOSITORY="https://github.com/libsmelt/Simulator.git"
+SIM_PATH="$MODEL_ROOT/Simulator"
+
+MACHINEDB=$SIM_PATH/machinedb
+OUTDIR=$MACHINEDB/machine-data/$SMLT_MACHINE
+
+
+pushd $SIM_PATH
 
 M=$1; shift
 
@@ -31,9 +51,10 @@ else
 	SIMARGS=$@
 fi
 
-[[ $M == "ziger2" ]] && M="ziger1"
+mkdir -p measurements
+
 DATE=$(date +"%Y-%m-%d-%H-%M")
-FILE="$HOME/projects/phd/thesis/measurements/mp/sim_${MACHINE}_$DATE"
+FILE="measurements/sim_${MACHINE}_$DATE"
 echo "Writing Simulator output to: $FILE"
 ./simulator.py $M $SIMARGS &> "$FILE"; RC=$?
 
@@ -44,6 +65,6 @@ fi
 popd
 
 [[ $RC -eq 0 ]] || error "Generating model failed, aborting"
-cp $SIMPATH/model.h $SIMPATH/model_defs.h inc/
+cp $SIM_PATH/model.h $SIM_PATH/model_defs.h inc/
 
 exit $RC

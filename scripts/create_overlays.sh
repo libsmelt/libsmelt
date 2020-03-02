@@ -37,7 +37,6 @@ pushd $SIM_PATH
 
 MODELS="adaptivetree badtree mst bintree cluster fibonacci sequential"
 
-SMLT_MACHINE=intel_xeon_e5_v2_2x10
 
 for m in $MODELS; do
     echo $m
