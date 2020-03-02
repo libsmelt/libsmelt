@@ -45,7 +45,10 @@ if [[ ! -d $SIM_PATH ]]; then
     mkdir -p $MACHINEDB >> $LOGFILE 2>&1
     echo "Simulator is successfully setup."
 else
-    echo -e "\nSIMULATOR: already set up in $SIM_PATH"
+    echo -e "\nSIMULATOR: already set up in $SIM_PATH pulling changes..."
+    pushd $SIM_PATH > /dev/null
+    git pull
+    popd > /dev/null
 fi
 
 if [[ ! -d $LIKWID_PATH ]]; then
