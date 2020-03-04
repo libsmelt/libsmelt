@@ -28,12 +28,12 @@ def output_ints_as_range(ints):
 
         elif c != c_curr + 1 and c_curr != None:
 
-            print f_prt_range(c_start, c_curr),
+            print(f_prt_range(c_start, c_curr), end=' ')
             c_start = c
 
         c_curr = c
 
-    print f_prt_range(c_start, c_curr),
+    print(f_prt_range(c_start, c_curr), end=' ')
 
 
 def increment_counter(d, fst, snd=None):
@@ -90,8 +90,8 @@ def main():
             recv = int(m.group(2))
 
             if not recv == d_bc_send_last:
-                print 'Warning: sending to child index %d, previous %d' %\
-                    (recv, d_bc_send_last)
+                print('Warning: sending to child index %d, previous %d' %\
+                    (recv, d_bc_send_last))
 
             d_bc_send_last += 1
 
@@ -110,32 +110,32 @@ def main():
             continue
 
 
-        print 'Line not parsed: [%s]' % line
+        print('Line not parsed: [%s]' % line)
 
     # Verify result
     # --------------------------------------------------
     output_ints_as_range(children)
 
     # --------------------------------------------------
-    print d_send
-    for sender, data in d_send.items():
+    print(d_send)
+    for sender, data in list(d_send.items()):
 
-        for receiver, ctr in data.items():
+        for receiver, ctr in list(data.items()):
 
             if not receiver in d_recv or d_recv[receiver] != ctr:
 
-                print 'Receiver %d has receiver %d, but %d where sent' % \
-                    (receiver, d_recv[receiver] if receiver in d_recv else -1, ctr)
+                print('Receiver %d has receiver %d, but %d where sent' % \
+                    (receiver, d_recv[receiver] if receiver in d_recv else -1, ctr))
 
     for i in range(64):
-        if not i in d_send.items()[0][1]:
-            print 'Nothing sent to node %d' % i
+        if not i in list(d_send.items())[0][1]:
+            print('Nothing sent to node %d' % i)
 
-    for sender, data in d_bc_send.items():
-        for receiver, ctr in data.items():
+    for sender, data in list(d_bc_send.items()):
+        for receiver, ctr in list(data.items()):
             if not receiver in d_send[sender]:
-                print 'Node %d has executed bc send, but not send' % \
-                    (receiver)
+                print('Node %d has executed bc send, but not send' % \
+                    (receiver))
 
 
 

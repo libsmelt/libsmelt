@@ -48,6 +48,8 @@ def parse_sk_m_input(stream=sys.stdin):
         if len(l)<1:
             break
         
+        l = l.decode('ascii')
+
         o = parse_sk_m(l)
         if not o:
             continue
@@ -212,7 +214,7 @@ def run_pdflatex(fname, openFile=True):
     d = os.path.dirname(fname)
     if d == '':
         d = '.'
-    print 'run_pdflatex in %s' % d
+    print(('run_pdflatex in %s' % d))
     if subprocess.call(['pdflatex',
                      '-output-directory', d,
                      '-interaction', 'nonstopmode', '-shell-escape',
@@ -224,7 +226,7 @@ def run_pdflatex(fname, openFile=True):
 def dump_stdin_no_colors():
     import fileinput
     for line in fileinput.input('-'):
-        print remove_ascii(line)
+        print((remove_ascii(line)))
 
 def remove_ascii(line):        
     ansi_escape = re.compile(r'\x1b[^m]*m')

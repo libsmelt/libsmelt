@@ -10,7 +10,7 @@ import argparse
 import fileinput
 import re
 import time
-from Queue import Queue
+from queue import Queue
 
 from machineinfo import machines, commands
 
@@ -109,25 +109,25 @@ def main(m, infile=sys.stdin):
 
         num_lines += 1
         if (num_lines % 100000) == 0:
-            print '   Read %dk lines' % (num_lines/1000)
+            print('   Read %dk lines' % (num_lines/1000))
 
         if l.startswith("NUM_CORES=") :
             tmp = l.split("=");
             num_cores = int(tmp[1])
-            print "   NUM_CORES=" + str(num_cores)
+            print("   NUM_CORES=" + str(num_cores))
             continue
 
         if l.startswith("STEP_SIZE=") :
             tmp = l.split("=");
             step_size = int(tmp[1])
-            print "   STEP_SIZE=" + str(step_size)
+            print("   STEP_SIZE=" + str(step_size))
             continue
 
         if l.startswith("NUM_MSG=") :
             tmp = l.split("=")
             if len(tmp) == 2 :
                 BATCHSIZE = int(tmp[1])
-                print "   BATCHSIZE=" + str(BATCHSIZE)
+                print("   BATCHSIZE=" + str(BATCHSIZE))
                 continue
 
         # sk_m_print(0,send-1-0-1) idx= 1 tscdiff= 389
@@ -166,12 +166,12 @@ def main(m, infile=sys.stdin):
 #                del d[key]
 
     # Drain the rest of the queue
-    for ((core, title), l) in d.items():
+    for ((core, title), l) in list(d.items()):
         add_final(core, title, l, final)
 
-    print '   Reading input file done, %d seconds' % (time.time()-start)
+    print('   Reading input file done, %d seconds' % (time.time()-start))
 
-    print '   Generating', f1, f2
+    print('   Generating', f1, f2)
 
     fsend = open(f1, 'w')
     freceive = open(f2, 'w')
@@ -185,12 +185,12 @@ def main(m, infile=sys.stdin):
     num_entries = (num_cores) * (num_cores - 1) * 3 / step_size
 
     if len(final) != (num_entries) :
-        print "   WARNING: dict size is: %d, expected %d" % (len(final), num_entries)
+        print("   WARNING: dict size is: %d, expected %d" % (len(final), num_entries))
 
-    print '   Number of entries in dict: %d' % len(final)
+    print('   Number of entries in dict: %d' % len(final))
 
     #   3         send4-3-2          240.76          236.00           22.10 (90 values)
-    for ((core, title), val) in final.items():
+    for ((core, title), val) in list(final.items()):
         (mean, err, median, _, _) = val
         _tmp = title.split('-')
 
@@ -207,12 +207,12 @@ def main(m, infile=sys.stdin):
             num_rtt += 1
 
         if (num_snd+num_rcv)%50 == 0 and do_print:
-            print '   Found snd=%d/rcv=%d/rtt=%d entries' % (num_snd, num_rcv, num_rtt)
+            print('   Found snd=%d/rcv=%d/rtt=%d entries' % (num_snd, num_rcv, num_rtt))
         else:
             do_print = False
 
-    print '   Reading input file done snd=%d/rcv=%d/rtt=%d, %d seconds' % \
-        (num_snd, num_rcv, num_rtt, time.time()-start)
+    print('   Reading input file done snd=%d/rcv=%d/rtt=%d, %d seconds' % \
+        (num_snd, num_rcv, num_rtt, time.time()-start))
 
     fsend.close()
     freceive.close()

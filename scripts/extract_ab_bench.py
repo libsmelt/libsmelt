@@ -14,14 +14,51 @@ lookup = {
     'binarytree': 'bintree'
     }
 
+
+def parse_metadata(s, meta_data):
+    """Parse meta data from Smelt measurement
+
+    The given file handle will NOT by reset to the beginning of the
+    file. This should be fine in all cases, since there shouuld not be
+    any measurement files before Smelt's initializatin anyway.
+    """
+    num = 0
+
+    # Parse Smelt meta information
+    for line in s:
+
+        l = line.decode('ascii')
+        print ('Searching meta data .. [%s]' % l)
+
+
+        # NOTICE: Initializing Smelt RT version=0480-dirty, num_proc=48
+        m = re.match('.*Initializing Smelt RT version=(\S+), num_proc=(\d+)', l)
+        if m:
+            print ('Found Smelt initialization')
+            meta_data['smelt-rev'] = m.group(1)
+
+        # Simulator GIT revision 231fae5d263f9b558a27914744906af89fab9d08
+        m = re.match('Simulator GIT revision (\S+)', l)
+        if m:
+            print ('Found Simulator initialization')
+            meta_data['sim-rev'] = m.group(1)
+            break
+
+        num += 1
+        if num>100:
+            print ('Something is wrong - did not find meta data')
+            exit(1)
+
+
 def parse_simulator_output(s, output=True):
     """Parse Simulator output from given stream <s>
 
     """
 
     curr_top = None
-    for l in fileinput.input(s):
+    for line in fileinput.input(s):
 
+        l = line.decode('ascii')
         # Simulating machine [sgs-r815-03] with topology [adaptivetree]
         m = re.match('Simulating machine \[(\S+)\] with topology \[(\S+)\]', l)
         if m:
@@ -34,7 +71,7 @@ def parse_simulator_output(s, output=True):
             curr_top = None
 
     if output:
-        print sim
+        print(sim)
 
     return sim
 
@@ -42,7 +79,7 @@ def parse_simulator_output(s, output=True):
 
 def parse_log(s=sys.stdin, output=True):
     if output:
-        print 'Parsing raw output from stdin for sk_m data'
+        print('Parsing raw output from stdin for sk_m data')
 
     d = parse_sk_m_input(s)
 
@@ -51,15 +88,15 @@ def parse_log(s=sys.stdin, output=True):
     for t in [ 'ab', 'reduction', 'barriers', 'agreement' ]:
 
         if output:
-            print
-            print '------------------------------'
-            print t
-            print '------------------------------'
-            print
+            print()
+            print('------------------------------')
+            print(t)
+            print('------------------------------')
+            print()
 
         res = {}
 
-        for ((core, title), values) in d.items():
+        for ((core, title), values) in list(d.items()):
 
             # XXX store with respect to topo
             if title.startswith(t+'_'):
@@ -73,7 +110,7 @@ def parse_log(s=sys.stdin, output=True):
         res_t = []
 
         # Output
-        for (topo, data) in res.items():
+        for (topo, data) in list(res.items()):
             
             # select max. measurements from all cores
             data = sorted(data, key=lambda x: x[1], reverse=True) 
@@ -89,8 +126,8 @@ def parse_log(s=sys.stdin, output=True):
             res_t.append((topo, m, e, pred))
 
             if output:
-                print '%-30s %5d %2d %8.2f     %3d %5d %6.2f' % \
-                    (topo, m, c, e, pred_ln, pred, float(pred)/m )
+                print('%-30s %5d %2d %8.2f     %3d %5d %6.2f' % \
+                    (topo, m, c, e, pred_ln, pred, float(pred)/m ))
 
         all_res.append((t, res_t))
 

@@ -80,25 +80,29 @@ set +x
 killall -s KILL $(basename $BENCH) &>/dev/null
 
 # Run and log ..
-TMP=$(mktemp)
 killall -s KILL $(basename $BENCH) &>/dev/null
 echo "Running benchmark .. ./$BENCH "
 
-./$BENCH | tee /tmp/log; RC=${PIPESTATUS[0]}
-
-[[ $RC -eq 0 ]] || exit $RC
-
-cp /tmp/log $TMP
-
-# Evalute .. 
 DATE=$(date +"%Y-%m-%d-%H-%M")
-mkdir -p measurements
-FILE="measurements/mbench_${MACHINE}_$DATE"
-cat $TMP | model/Simulator/machinedb/scripts/sk_m_parser.py --crop .4
-cat $TMP > $FILE
-echo "Wrote result to $FILE"
 
-rm $TMP
+BENCH_NAME=$(basename $BENCH)
+
+RESULTS_DIR=measurements/$SMTL_MACHINE/
+
+mkdir -p $RESULTS_DIR
+    
+
+./$BENCH | gzip -9 > $RESULTS_DIR/$BENCH_NAME-$DATE.gz 
+cp $RESULTS_DIR/$BENCH_NAME-$DATE.gz  $RESULTS_DIR/$BENCH_NAME.last.gz
+
+# Evaluate .. 
+zcat $RESULTS_DIR/$BENCH_NAME-$DATE.gz  | ./scripts/sk_m_parser.py --crop .4
+
+./scripts/plot-ab-bench.py --machines $SMTL_MACHINE
+#./scripts/plot-ab-bench-heatmap.py  --machines $SMTL_MACHINE
+
+
+
 
 kill -9 $SIM_PID
 
