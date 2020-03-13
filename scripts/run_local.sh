@@ -95,8 +95,10 @@ mkdir -p $RESULTS_DIR
 ./$BENCH | gzip -9 > $RESULTS_DIR/$BENCH_NAME-$DATE.gz 
 cp $RESULTS_DIR/$BENCH_NAME-$DATE.gz  $RESULTS_DIR/$BENCH_NAME.last.gz
 
-# Evaluate .. 
-zcat $RESULTS_DIR/$BENCH_NAME-$DATE.gz  | ./scripts/sk_m_parser.py --crop .4
+
+Evaluate .. 
+
+zcat $RESULTS_DIR/$BENCH_NAME-$DATE.gz  | python3 ./scripts/sk_m_parser.py --crop .4
 
 ./scripts/plot-ab-bench.py --machines $SMTL_MACHINE
 #./scripts/plot-ab-bench-heatmap.py  --machines $SMTL_MACHINE

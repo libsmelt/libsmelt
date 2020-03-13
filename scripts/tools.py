@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import re
@@ -48,8 +48,6 @@ def parse_sk_m_input(stream=sys.stdin):
         if len(l)<1:
             break
         
-        l = l.decode('ascii')
-
         o = parse_sk_m(l)
         if not o:
             continue
